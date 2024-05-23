@@ -29,7 +29,7 @@ Nedenstående relaterer sig til et nyt Python app projekt der er baseret på den
 * Start app'en i docker container: ```docker-compose up```
 * Unit tests: ```pytest```
 * Unit tests med coverage ```pytest --cov=src```
-* Lint: ```flake8 --ignore=E501 src tests --show-source```
+* Lint: ```flake8 --ignore=E501,W293 src tests --show-source```
 
 ### Logning
 * Logning til stdout, sat op i [logging.py](/src/utils/logging.py#L12), kaldes i [main](/src/main.py#L35)
