@@ -1,32 +1,43 @@
-# import psycopg2
-# import logging
+import sqlalchemy
+import logging
 
-# from utils.config import DB_HOST, DB_PORT, DB_DATABASE, DB_USER, DB_PASS
-
-
-# logger = logging.getLogger(__name__)
+import utils.config
 
 
-# def test_database():
-#     try:
-#         conn = psycopg2.connect(host=DB_HOST, port=DB_PORT, database=DB_DATABASE, user=DB_USER, password=DB_PASS)
-#         conn.autocommit = True
-#     except Exception as error:
-#         logger.error(error)
-#         return None
+logger = logging.getLogger(__name__)
 
-#     table = 'mytable'
 
-#     with conn.cursor() as cur:
-#         try:
-#             cur.execute(f"CREATE TABLE IF NOT EXISTS {table} (my_id SERIAL PRIMARY KEY, my_string VARCHAR(255))")
-#             cur.execute(f"INSERT INTO  {table} (my_string) VALUES ('MyTest') ON CONFLICT DO NOTHING")
-#             cur.execute(f"SELECT * FROM {table}")
-#             result = cur.fetchone()
-#             logger.info(str(result))
+def get_database_connection(database):
+    if database.upper() == 'CLIMATE':
+        port = getattr(utils.config, database + '_DB_PORT')
+        databasetype = 'mariadb'
+    elif database.upper() == 'FRONTDESK':
+        port = None
+        databasetype = 'mssql'
+    else:
+        logger.error(f"Invalid database {database}")
+        return None
 
-#         except (Exception, psycopg2.DatabaseError) as error:
-#             logger.error(error)
-#             return None
+    if databasetype == 'mssql':
+        driver = 'mssql+pymssql'
+    elif databasetype == 'mariadb':
+        driver = 'mariadb+mariadbconnector'
+    elif databasetype == 'postgresql':
+        driver = 'postgresql+psycopg2'
+    else:
+        logger.error(f"Invalid database type {databasetype}")
+        return None
 
-#     return 'ok'
+    database = database.upper()
+    
+    host = getattr(utils.config, database + '_DB_HOST')
+    username = getattr(utils.config, database + '_DB_USER')
+    password = getattr(utils.config, database + '_DB_PASS')
+    db = getattr(utils.config, database + '_DB_DATABASE')
+
+    if port:
+        host = host + ':' + port
+    
+    engine = sqlalchemy.create_engine(f'{driver}://{username}:{password}@{host}/{db}')
+
+    return engine.connect()
