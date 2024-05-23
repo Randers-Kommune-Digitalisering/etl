@@ -1,5 +1,6 @@
 Flask==3.0.3
 mariadb
+pandas
 prometheus-client==0.20.0
 psycopg2
 py-healthcheck==1.10.1
@@ -8,3 +9,4 @@ pysftp
 python-dotenv==1.0.1
 requests
 SQLAlchemy
+zipfile36
