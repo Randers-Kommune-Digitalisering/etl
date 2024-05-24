@@ -6,6 +6,7 @@
 # Sæt environment variabel 'CUSTOM_DATA_CONNECTOR_HOST' til 'localhost:1880'
 
 version: "3.9"
+name: elt-dev-tools
 services:
   custom-data-connector:
     image: ghcr.io/randers-kommune-digitalisering/custom-data-connector-node-red:1.0.6
