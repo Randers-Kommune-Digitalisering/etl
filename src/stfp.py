@@ -2,11 +2,15 @@ import os
 import pysftp
 import fnmatch
 import base64
+import logging
 
 import utils.config
 # Supress warning about trusting all host keys - bad practice!
 import warnings
 warnings.filterwarnings('ignore', '.*Failed to load HostKeys.*')
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_key(base64key, name, path='.'):
