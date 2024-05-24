@@ -1,0 +1,58 @@
+# Lav en github token eller brug allerede existerende. https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#creating-a-personal-access-token-classic
+# Kør: TOKEN=<token>
+# Kør: echo %TOKEN%  | docker login ghcr.io -u USERNAME --password-stdin
+# Kør: ./create-dirs.sh (linux) eller crate-dirs.cmd (windows)
+# Kør: docker-compose up
+# Sæt environment variabel 'CUSTOM_DATA_CONNECTOR_HOST' til 'localhost:1880'
+
+version: "3.9"
+services:
+  custom-data-connector:
+    image: ghcr.io/randers-kommune-digitalisering/custom-data-connector-node-red:1.0.6
+    networks:
+      - dev
+    ports:
+      - "1880:1880"
+    environment:
+      REMOTE_IN_PATH: CustomData
+      REMOTE_IN_FAILED_PATH: CustomData/Failed
+      REMOTE_IN_IMPORTED_PATH: CustomData/Archived
+      REMOTE_OUT_PATH: CustomData/Uddata
+      FTP_USER: demo
+      FTP_PASS: pass
+      FTP_PORT: 22
+      FTP_HOST: ftp
+
+    depends_on: 
+      - ftp
+
+  ftp:
+    image: atmoz/sftp:latest
+    restart: always
+    command: demo:pass:::CustomData
+    volumes:
+        - ./CustomData/:/home/demo/CustomData/
+    networks:
+      - dev
+  
+  # Test mariadb database, fx. for at teste klamadatabase
+  mariadb-db:
+    image: mariadb:10.6.11
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MARIADB_ROOT_PASSWORD: pass
+      MARIADB_DATABASE: demo
+    healthcheck:
+      test: mysqladmin ping -h 127.0.0.1 -u root --password=pass
+      start_period: 5s
+      interval: 5s
+      timeout: 5s
+      retries: 55
+    networks:
+      - dev
+
+networks: 
+  dev:
+    name: dev
