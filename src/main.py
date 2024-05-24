@@ -7,7 +7,7 @@ from utils.config import DEBUG, PORT, POD_NAME
 
 
 def create_app():
-    app = Flask(__name__)
+    app = Flask('ETL')
     health = HealthCheck()
     app.add_url_rule("/healthz", "healthcheck", view_func=lambda: health.run())
     app.add_url_rule('/metrics', "metrics", view_func=generate_latest)

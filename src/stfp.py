@@ -24,19 +24,23 @@ def get_key(base64key, name, path='.'):
 
 
 def get_filelist_and_connection(server):
-    # Trust all host keys - bad practice!
-    cnopts = pysftp.CnOpts()
-    cnopts.hostkeys = None
+    try:
+        # Trust all host keys - bad practice!
+        cnopts = pysftp.CnOpts()
+        cnopts.hostkeys = None
 
-    server = server.upper()
-    key_path = get_key(server + '_SSH_KEY_BASE64', server)
-    host = getattr(utils.config, server + '_SFTP_HOST')
-    username = getattr(utils.config, server + '_SFTP_USER')
+        server = server.upper()
+        key_path = get_key(server + '_SSH_KEY_BASE64', server)
+        host = getattr(utils.config, server + '_SFTP_HOST')
+        username = getattr(utils.config, server + '_SFTP_USER')
 
-    # Get connection
-    sftp = pysftp.Connection(host=host, username=username, private_key=key_path, cnopts=cnopts)
+        # Get connection
+        sftp = pysftp.Connection(host=host, username=username, private_key=key_path, cnopts=cnopts)
 
-    # filter away directorires and files without file extensions
-    filelist = [f for f in sftp.listdir() if fnmatch.fnmatch(f, '*.*')]
+        # filter away directorires and files without file extensions
+        filelist = [f for f in sftp.listdir() if fnmatch.fnmatch(f, '*.*')]
 
-    return filelist, sftp
+        return filelist, sftp
+    except Exception as e:
+        logger.error(e)
+        return None, None
