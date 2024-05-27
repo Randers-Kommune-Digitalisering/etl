@@ -31,14 +31,16 @@ def get_filelist_and_connection(server):
 
         server = server.upper()
         key_path = get_key(server + '_SSH_KEY_BASE64', server)
+        key_pass = getattr(utils.config, server + '_SSH_KEY_PASS')
         host = getattr(utils.config, server + '_SFTP_HOST')
         username = getattr(utils.config, server + '_SFTP_USER')
+        remote_dir = getattr(utils.config, server + '_REMOTE_DIR')
 
         # Get connection
-        sftp = pysftp.Connection(host=host, username=username, private_key=key_path, cnopts=cnopts)
+        sftp = pysftp.Connection(host=host, username=username, private_key=key_path, private_key_pass=key_pass, cnopts=cnopts)
 
         # filter away directorires and files without file extensions
-        filelist = [f for f in sftp.listdir() if fnmatch.fnmatch(f, '*.*')]
+        filelist = [f for f in sftp.listdir(remote_dir) if fnmatch.fnmatch(f, '*.*')]
 
         return filelist, sftp
     except Exception as e:
