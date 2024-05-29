@@ -8,10 +8,11 @@ logger = logging.getLogger(__name__)
 
 
 def get_database_connection(database):
-    if database.upper() == 'CLIMATE':
+    database = database.upper()
+    if database == 'CLIMATE':
         port = getattr(utils.config, database + '_DB_PORT')
         databasetype = 'mariadb'
-    elif database.upper() == 'FRONTDESK':
+    elif database == 'FRONTDESK':
         port = None
         databasetype = 'mssql'
     else:

@@ -3,10 +3,11 @@ import pysftp
 import fnmatch
 import base64
 import logging
+import warnings
 
 import utils.config
+
 # Supress warning about trusting all host keys - bad practice!
-import warnings
 warnings.filterwarnings('ignore', '.*Failed to load HostKeys.*')
 
 
@@ -28,15 +29,14 @@ def get_filelist_and_connection(server):
         # Trust all host keys - bad practice!
         cnopts = pysftp.CnOpts()
         cnopts.hostkeys = None
-
+        
         server = server.upper()
-        key_path = get_key(server + '_SSH_KEY_BASE64', server)
+        key_path = get_key(getattr(utils.config, server + '_SSH_KEY_BASE64'), server)
         key_pass = getattr(utils.config, server + '_SSH_KEY_PASS')
         host = getattr(utils.config, server + '_SFTP_HOST')
         username = getattr(utils.config, server + '_SFTP_USER')
-        remote_dir = getattr(utils.config, server + '_REMOTE_DIR')
+        remote_dir = getattr(utils.config, server + '_SFTP_REMOTE_DIR')
 
-        # Get connection
         sftp = pysftp.Connection(host=host, username=username, private_key=key_path, private_key_pass=key_pass, cnopts=cnopts)
 
         # filter away directorires and files without file extensions
