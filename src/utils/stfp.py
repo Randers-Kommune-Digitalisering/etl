@@ -3,6 +3,7 @@ import pysftp
 import fnmatch
 import base64
 import logging
+import pathlib
 import warnings
 
 import utils.config
@@ -14,14 +15,15 @@ warnings.filterwarnings('ignore', '.*Failed to load HostKeys.*')
 logger = logging.getLogger(__name__)
 
 
-def get_key(base64key, name, path='.'):
-    if not os.path.isfile(os.path.join(path, name)):
+def get_key(base64key, name, path='certs'):
+    key_path = os.path.join(pathlib.Path(__file__).parent.resolve(), path, name)
+    if not os.path.isfile(key_path):
         key_data = base64.b64decode(base64key).decode('utf-8')
-
-        with open(os.path.join(path, name), 'w') as key_file:
+        os.makedirs(os.path.dirname(key_path), exist_ok=True)
+        with open(key_path, 'w') as key_file:
             key_file.write(key_data)
 
-    return os.path.abspath(os.path.join(path, name))
+    return os.path.abspath(key_path)
 
 
 def get_filelist_and_connection(server):

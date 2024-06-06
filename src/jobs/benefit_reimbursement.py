@@ -10,7 +10,7 @@ import pandas as pd
 from datetime import timedelta
 
 from utils.config import SERVICEPLATFORM_SFTP_REMOTE_DIR
-from stfp import get_filelist_and_connection
+from utils.stfp import get_filelist_and_connection
 from custom_data_connector import post_data_to_custom_data_connector
 
 
