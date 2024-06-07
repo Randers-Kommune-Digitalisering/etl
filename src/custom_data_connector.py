@@ -4,9 +4,11 @@ import logging
 import urllib.parse
 
 from utils.config import CUSTOM_DATA_CONNECTOR_HOST
+from utils.api_requests import APIClient
 
 
 logger = logging.getLogger(__name__)
+api_client = APIClient(CUSTOM_DATA_CONNECTOR_HOST)
 
 
 def post_data_to_custom_data_connector(filename, file):
@@ -32,14 +34,9 @@ def post_data_to_custom_data_connector(filename, file):
     multipart_form_data = {'file': (encoded_filename, file, 'text/csv')}
 
     try:
-        r = requests.post('http://' + CUSTOM_DATA_CONNECTOR_HOST + '/in', files=multipart_form_data, headers=headers)
-
-        if r.ok:
-            logger.info(filename + ' uploaded to custom-data-connector')
-            return True
-        else:
-            raise Exception('Failed to upload ' + filename, r.text, r.status_code)
-
+        api_client.make_request(path='in', files=multipart_form_data, headers=headers)
+        logger.info(filename + ' uploaded to custom-data-connector')
+        return True
     except Exception as e:
         logger.error(e)
         return False

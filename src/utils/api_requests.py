@@ -92,10 +92,11 @@ class APIClient:
         except Exception as e:
             logger.error(e)
 
-    def make_request(self, path, **kwargs):
+    def make_request(self, **kwargs):
         
-        if not path:
-            raise ValueError('Path is required')
+        if 'path' in kwargs:
+            if not isinstance(kwargs['path'], str) and not kwargs['path'] is None:
+                raise ValueError('Path must be a string')
         
         if self.cert_path:
             import requests_pkcs12 as requests
@@ -104,13 +105,15 @@ class APIClient:
         else:
             import requests            
         
-        url = self.base_url.rstrip('/') + '/' + path.lstrip('/')
+        if 'path' in kwargs:
+            url = self.base_url.rstrip('/') + '/' + kwargs.pop('path').lstrip('/')
+        else:
+            url = self.base_url
 
         if 'headers' in kwargs:
-            headers = kwargs['headers'].update(self._authenticate())
+            kwargs['headers'] = kwargs['headers'].update(self._authenticate())
         else:
-            headers = self._authenticate()
-
+            kwargs['headers'] = self._authenticate()
 
         if not any(ele in kwargs for ele in ['method', 'json', 'data', 'files']):
             method = requests.get
@@ -120,9 +123,8 @@ class APIClient:
             method = requests.post
 
         if 'json' in kwargs:
-            headers['Content-Type'] = 'application/json'
-        print(url)
-        print(kwargs)
+            kwargs['headers']['Content-Type'] = 'application/json'
+
         response = method(url, **kwargs)
         response.raise_for_status()
         return response.json()
