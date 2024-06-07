@@ -46,7 +46,7 @@ class APIClient:
                     if self.token_expiry:
                         if time.time() < self.token_expiry:
                             return {'Authorization': f'Bearer {self.api_key}'}
-                        else: 
+                        else:
                             if self.refresh_token:
                                 if self.refresh_token_expiry:
                                     if time.time() < self.refresh_token_expiry:
@@ -103,7 +103,7 @@ class APIClient:
             kwargs['pkcs12_filename'] = self.cert_path
             kwargs['pkcs12_password'] = self.password
         else:
-            import requests            
+            import requests
         
         if 'path' in kwargs:
             url = self.base_url.rstrip('/') + '/' + kwargs.pop('path').lstrip('/')

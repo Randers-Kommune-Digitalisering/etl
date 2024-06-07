@@ -16,6 +16,7 @@ filename = 'BSelevtrivsel-4til9klasse.csv'
 def job():
     return get_well_being_data()
 
+
 def get_well_being_data():
     try:
         date = datetime.datetime.now()
@@ -53,7 +54,7 @@ def get_well_being_data():
             "indlejret": True,
             "tomme_rækker": False,
             "formattering": "json"
-            }
+        }
         
         data = udddannels_stattistik_client.make_request(json=payload)
         if data:
