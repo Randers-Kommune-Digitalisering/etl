@@ -31,7 +31,7 @@ def get_filelist_and_connection(server):
         # Trust all host keys - bad practice!
         cnopts = pysftp.CnOpts()
         cnopts.hostkeys = None
-        
+
         server = server.upper()
         key_path = get_key(getattr(utils.config, server + '_SSH_KEY_BASE64'), server)
         key_pass = getattr(utils.config, server + '_SSH_KEY_PASS')

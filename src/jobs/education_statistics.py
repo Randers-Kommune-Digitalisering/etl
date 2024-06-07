@@ -24,7 +24,7 @@ def get_well_being_data():
         while date.year > starting_year:
             years.append(f'{date.year - 1}/{date.year}')
             date = date.replace(year=date.year - 1)
-        
+
         payload = {
             "område": "GS",
             "emne": "TRIV",
@@ -55,7 +55,7 @@ def get_well_being_data():
             "tomme_rækker": False,
             "formattering": "json"
         }
-        
+
         data = udddannels_stattistik_client.make_request(json=payload)
         if data:
             expanded_data = []
@@ -68,13 +68,13 @@ def get_well_being_data():
                                 row[key_3] = data[key_0][key_1][key_2][key_3][key_4]
                         expanded_data.append(row)
         df = pd.DataFrame(expanded_data)
-        
+
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
 
     except Exception as e:
         logger.error(e)
         return False
-        
+
     if post_data_to_custom_data_connector(filename, file):
         logger.info('Updated "Elevtrivsel 4. til 9. klasse"')
         return True

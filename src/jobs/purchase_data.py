@@ -43,7 +43,7 @@ def route_files(filelist, connection):
     for t in list(Types):
         t.value['files'] = []
         track_types.append(t.value)
-    
+
     for f in filelist:
         for t in Types:
             if t.value['keyword'] in f:
@@ -77,7 +77,7 @@ def handle_bi_sys(files, connection, prefix):
 
         for i in range(len(all_lines)):
             line = all_lines[i].decode('cp1252')
-            
+
             # Strips leading equal signs from all lines
             if (line[0] == '='):
                 line = line[1:]
@@ -138,7 +138,7 @@ def handle_climate_db(files, connection, prefix, keyword):
                     df[col] = pd.to_numeric(df[col].str.replace(',', '.'))
                 except Exception:
                     pass
-        
+
         df['opdateret'] = pd.Timestamp.now()
         df.index.names = ['id']
 

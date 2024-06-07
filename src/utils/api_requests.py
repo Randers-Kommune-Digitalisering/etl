@@ -1,10 +1,6 @@
-import os
 import time
 import base64
 import logging
-import pathlib
-
-from urllib.parse import urlparse
 
 
 logger = logging.getLogger(__name__)
@@ -27,11 +23,7 @@ class APIClient:
         self.cert_path = None
 
         if cert_base64:
-            cert_path = os.path.join(pathlib.Path(__file__).parent.resolve(), 'certs', 'cert_' + urlparse(self.base_url).netloc.replace('.', '_'))
-            os.makedirs(os.path.dirname(cert_path), exist_ok=True)
-            with open(cert_path, 'wb') as f:
-                f.write(base64.b64decode(cert_base64))
-            self.cert_path = cert_path
+            self.cert_data = base64.b64decode(cert_base64)
 
     def _authenticate(self):
         try:
@@ -41,7 +33,7 @@ class APIClient:
             elif self.client_id and self.client_secret:
                 if not self.realm:
                     raise ValueError('Realm is required for client_id and client_secret authentication')
-                
+
                 if self.access_token:
                     if self.token_expiry:
                         if time.time() < self.token_expiry:
@@ -51,7 +43,7 @@ class APIClient:
                                 if self.refresh_token_expiry:
                                     if time.time() < self.refresh_token_expiry:
                                         refresh_token = True
-                        
+
                 tmp_url = f'{self.base_url}/auth/realms/{self.realm}/protocol/openid-connect/token'
 
                 tmp_headers = {
@@ -74,18 +66,18 @@ class APIClient:
                     tmp_json_data['grant_type'] = 'client_credentials'
 
                 now = time.time()
-                
+
                 response = requests.post(tmp_url, headers=tmp_headers, data=tmp_url)
                 response.raise_for_status()
                 data = response.json()
 
                 self.access_token = data['access_token']
                 self.token_expires = now + data['expires_in']
-                
+
                 if 'refresh_token' in data:
                     self.refresh_token = data['refresh_token']
                     self.refresh_token_expiry = now + data['refresh_expires_in']
-                
+
                 return {'Authorization': f'Bearer {self.access_token}'}
             else:
                 return {}
@@ -93,18 +85,17 @@ class APIClient:
             logger.error(e)
 
     def make_request(self, **kwargs):
-        
         if 'path' in kwargs:
             if not isinstance(kwargs['path'], str) and not kwargs['path'] is None:
                 raise ValueError('Path must be a string')
-        
+
         if self.cert_path:
             import requests_pkcs12 as requests
-            kwargs['pkcs12_filename'] = self.cert_path
+            kwargs['pkcs12_data'] = self.cert_data
             kwargs['pkcs12_password'] = self.password
         else:
             import requests
-        
+
         if 'path' in kwargs:
             url = self.base_url.rstrip('/') + '/' + kwargs.pop('path').lstrip('/')
         else:

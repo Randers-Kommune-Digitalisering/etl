@@ -30,7 +30,7 @@ def get_database_connection(database):
         return None
 
     database = database.upper()
-    
+
     host = getattr(utils.config, database + '_DB_HOST')
     username = getattr(utils.config, database + '_DB_USER')
     password = getattr(utils.config, database + '_DB_PASS')
@@ -38,7 +38,7 @@ def get_database_connection(database):
 
     if port:
         host = host + ':' + port
-    
+
     engine = sqlalchemy.create_engine(f'{driver}://{username}:{password}@{host}/{db}')
 
     return engine.connect()

@@ -59,14 +59,14 @@ def handle_files(files, connection):
 
                 # Filter rows based on min date
                 df = df[df['Uge'] >= min_date]
-                
+
                 df_list.append(df)
 
         df = pd.concat(df_list, ignore_index=True)
 
         # Sum 'Refusionsbeløb' and 'Medfinansieringsbeløb' for each 'Uge', 'CPR nummer' and 'Ydelse.'
         df = df.groupby(['Uge', 'CPR nummer', 'Ydelse'])[['Beregnet udbetalingsbeløb', 'Refusionsbeløb', 'Medfinansieringsbeløb']].sum().reset_index()
-        
+
         # Drop all rows where 'Beregnet udbetalingsbeløb' == 0
         df = df[df['Beregnet udbetalingsbeløb'] != 0]
 
@@ -83,7 +83,7 @@ def handle_files(files, connection):
     except Exception as e:
         logger.error(e)
         return False
-        
+
     if post_data_to_custom_data_connector(filename, file):
         logger.info("Updated Ydelsesrefusion")
         return True
