@@ -12,7 +12,7 @@ from sqlalchemy import text
 from numpy.dtypes import ObjectDType
 
 from database import get_database_connection
-from stfp import get_filelist_and_connection
+from utils.stfp import get_filelist_and_connection
 from custom_data_connector import post_data_to_custom_data_connector
 from utils.utils import format_text
 

@@ -7,6 +7,7 @@ py-healthcheck==1.10.1
 pymssql
 pysftp
 python-dotenv==1.0.1
-requests
+requests==2.31.0 # requests-pkcs12 breaks with requests 2.32.*
+requests-pkcs12
 SQLAlchemy
 zipfile36
