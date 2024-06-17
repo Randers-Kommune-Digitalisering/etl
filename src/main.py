@@ -5,7 +5,7 @@ from prometheus_client import generate_latest
 from utils.logging import set_logging_configuration, APP_RUNNING
 from utils.config import DEBUG, PORT, POD_NAME
 from job_endpoints import job_api_bp
-from frontdesk.sqldb import connectToFrontdeskDB
+# from frontdesk.sqldb import connectToFrontdeskDB
 
 
 def create_app():
@@ -20,7 +20,7 @@ def create_app():
 
 set_logging_configuration()
 app = create_app()
-connectToFrontdeskDB()
+# connectToFrontdeskDB()
 
 
 if __name__ == "__main__":  # pragma: no cover
