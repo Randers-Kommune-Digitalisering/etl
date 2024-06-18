@@ -20,7 +20,7 @@ class APIClient:
         self.refresh_token = None
         self.token_expiry = None
         self.refresh_token_expiry = None
-        self.cert_path = None
+        self.cert_data = None
 
         if cert_base64:
             self.cert_data = base64.b64decode(cert_base64)
@@ -89,7 +89,7 @@ class APIClient:
             if not isinstance(kwargs['path'], str) and not kwargs['path'] is None:
                 raise ValueError('Path must be a string')
 
-        if self.cert_path:
+        if self.cert_data:
             import requests_pkcs12 as requests
             kwargs['pkcs12_data'] = self.cert_data
             kwargs['pkcs12_password'] = self.password
@@ -112,6 +112,8 @@ class APIClient:
             method = getattr(requests, kwargs['method'])
         else:
             method = requests.post
+
+        kwargs.pop('method', None)
 
         if 'json' in kwargs:
             kwargs['headers']['Content-Type'] = 'application/json'
