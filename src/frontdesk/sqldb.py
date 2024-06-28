@@ -17,16 +17,17 @@ def connectToFrontdeskDB():
     # logger.info(f'Kolonner i Ticket: {rows}')
 
     # Hente alle data ned lokalt til udvikling 
-    tables=["Operation","QueueLocation","Registration","Reservation","ResourceAvailability","ResourceReserved","Ticket"]
+    # tables=["Operation","QueueLocation","Registration","Reservation","ResourceAvailability","ResourceReserved","Ticket"]
+    tables=["Operation"]
     for table in tables:
         cursor.execute(f"SELECT * FROM {table}")
         rows = cursor.fetchall()
         logger.info(cursor.description)
         columns = [desc[0] for desc in cursor.description]
         df = pd.DataFrame(rows, columns=columns)
-        df.to_csv(f"src/frontdesk/data/{table}.csv", index=False)
+        #df.to_csv(f"src/frontdesk/data/{table}.csv", index=False)
 
-    return conn, rows
+    return conn, df
 
 
 
