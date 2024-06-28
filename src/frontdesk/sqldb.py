@@ -5,6 +5,7 @@ from utils.config import FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_HOST
 
 logger = logging.getLogger(__name__)
 
+
 def connectToFrontdeskDB():
     conn = pymssql.connect(FRONTDESK_DB_HOST, FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_DATABASE)
     cursor = conn.cursor()
