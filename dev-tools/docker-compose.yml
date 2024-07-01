@@ -16,9 +16,9 @@ services:
       - "1880:1880"
     environment:
       REMOTE_IN_PATH: CustomData
-      REMOTE_IN_FAILED_PATH: CustomData/Failed
-      REMOTE_IN_IMPORTED_PATH: CustomData/Archived
-      REMOTE_OUT_PATH: CustomData/Uddata
+      REMOTE_IN_FAILED_PATH: CustomData
+      REMOTE_IN_IMPORTED_PATH: CustomData
+      REMOTE_OUT_PATH: CustomData
       FTP_USER: demo
       FTP_PASS: pass
       FTP_PORT: 22
@@ -31,8 +31,8 @@ services:
     image: atmoz/sftp:latest
     restart: always
     command: demo:pass:::CustomData
-    volumes:
-        - ./CustomData/:/home/demo/CustomData/
+    # volumes:
+    #     - ./CustomData/:/home/demo/CustomData/
     networks:
       - dev
   
