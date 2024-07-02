@@ -31,9 +31,8 @@ class SFTPClient:
         private_key_file.seek(0)
         return paramiko.RSAKey.from_private_key(private_key_file, password=key_pass)
 
-
     def get_connection(self):
-        try:      
+        try:
             # Supress warning about trusting all host keys - bad practice!
             warnings.filterwarnings('ignore', '.*Failed to load HostKeys.*')
             return pysftp.Connection(host=self.host, username=self.username, password=self.password, private_key=self.key, cnopts=self.cnopts)
