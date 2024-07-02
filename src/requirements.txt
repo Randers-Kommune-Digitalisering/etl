@@ -1,5 +1,13 @@
 Flask==3.0.3
-py-healthcheck==1.10.1
+mariadb
+pandas
 prometheus-client==0.20.0
+psycopg2
+py-healthcheck==1.10.1
+pymssql
+pysftp
 python-dotenv==1.0.1
-# psycopg2==2.9.9 # Package for database
+requests==2.31.0 # requests-pkcs12 breaks with requests 2.32.*
+requests-pkcs12
+SQLAlchemy
+zipfile36
