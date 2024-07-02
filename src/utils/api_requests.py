@@ -102,7 +102,9 @@ class APIClient:
             url = self.base_url
 
         if 'headers' in kwargs:
-            kwargs['headers'] = kwargs['headers'].update(self._authenticate())
+            if not isinstance(kwargs['headers'], dict):
+                raise ValueError('Headers must be a dictionary')
+            kwargs['headers'] = kwargs['headers'] | self._authenticate()
         else:
             kwargs['headers'] = self._authenticate()
 
