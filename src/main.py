@@ -7,7 +7,7 @@ import logging
 from utils.logging import set_logging_configuration, APP_RUNNING
 from utils.config import DEBUG, PORT, POD_NAME
 from job_endpoints import job_api_bp
-from frontdesk.sqldb import connectToFrontdeskDB
+from jobs.frontdesk_borgerservice import connectToFrontdeskDB
 
 import custom_data_connector as cdc
 
@@ -30,11 +30,11 @@ conn, df = connectToFrontdeskDB()
 output = io.BytesIO()
 df.to_csv(output, index=False)  # Write the DataFrame to a buffer
 output.seek(0)  # Reset the buffer position to the start
-memory_view = memoryview(output.getvalue())  # Create a memory view of the buffer
+# memory_view = memoryview(output.getvalue())  # Create a memory view of the buffer
 # logger.info(df.head())
 # logger.info(output)
 
-cdc.post_data_to_custom_data_connector("Operations.csv", memory_view)  # Post the buffer to the custom data connector
+cdc.post_data_to_custom_data_connector("Operations.csv", output)  # Post the buffer to the custom data connector
 
 
 if __name__ == "__main__":  # pragma: no cover
