@@ -1,3 +1,4 @@
+# uddannelsesstatistik.dk API documentation: https://api.uddannelsesstatistik.dk/
 import io
 import logging
 import datetime

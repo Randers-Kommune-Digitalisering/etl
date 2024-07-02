@@ -1,6 +1,5 @@
 # Ydelsesrefusion fra serviceplatformen
 import os
-import warnings
 import io
 import fnmatch
 import datetime
@@ -9,17 +8,18 @@ import pandas as pd
 
 from datetime import timedelta
 
-from utils.config import SERVICEPLATFORM_SFTP_REMOTE_DIR
-from utils.stfp import get_filelist_and_connection
+from utils.config import SERVICEPLATFORM_SFTP_REMOTE_DIR, SERVICEPLATFORM_SFTP_HOST, SERVICEPLATFORM_SFTP_USER, SERVICEPLATFORM_SSH_KEY_BASE64, SERVICEPLATFORM_SSH_KEY_PASS
+from utils.stfp import SFTPClient
 from custom_data_connector import post_data_to_custom_data_connector
 
 
 logger = logging.getLogger(__name__)
-warnings.filterwarnings('ignore', '.*Failed to load HostKeys.*')
 
 
 def job():
-    filelist, conn = get_filelist_and_connection('SERVICEPLATFORM')
+    sftp_client = SFTPClient(SERVICEPLATFORM_SFTP_HOST, SERVICEPLATFORM_SFTP_USER, key_base64=SERVICEPLATFORM_SSH_KEY_BASE64, key_pass=SERVICEPLATFORM_SSH_KEY_PASS)
+    conn = sftp_client.get_connection()
+    filelist = [f for f in conn.listdir(SERVICEPLATFORM_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, '*.*')] if conn else None
     if filelist and conn:
         return handle_files(filelist, conn)
     return False

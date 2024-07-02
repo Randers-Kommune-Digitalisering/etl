@@ -4,6 +4,7 @@ import shutil
 import io
 import zipfile
 import logging
+import fnmatch
 import pandas as pd
 
 from enum import Enum
@@ -12,7 +13,8 @@ from sqlalchemy import text
 from numpy.dtypes import ObjectDType
 
 from database import get_database_connection
-from utils.stfp import get_filelist_and_connection
+from utils.config import TRUELINK_SFTP_HOST, TRUELINK_SFTP_USER, TRUELINK_SSH_KEY_BASE64, TRUELINK_SFTP_REMOTE_DIR
+from utils.stfp import SFTPClient
 from custom_data_connector import post_data_to_custom_data_connector
 from utils.utils import format_text
 
@@ -31,7 +33,9 @@ class Types(Enum):
 
 
 def job():
-    filelist, conn = get_filelist_and_connection('truelink')
+    sftp_client = SFTPClient(TRUELINK_SFTP_HOST, TRUELINK_SFTP_USER, key_base64=TRUELINK_SSH_KEY_BASE64)
+    conn = sftp_client.get_connection()
+    filelist = [f for f in conn.listdir(TRUELINK_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, '*.*')] if conn else None
     if filelist and conn:
         return route_files(filelist, conn)
     return False
