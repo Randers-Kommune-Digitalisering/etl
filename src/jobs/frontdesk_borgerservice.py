@@ -1,27 +1,77 @@
 import pymssql
 import pandas as pd
 import logging
+import io
 from prophet import Prophet
 from datetime import datetime
 from utils.config import FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_HOST, FRONTDESK_DB_DATABASE
+from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
 
 def job():
-    workdata = connectToFrontdeskDB()
-    workdata = transformations(workdata)
+    logger.info("Initializing frontdesk borgerservice job")
 
-    workdata_grouped=dailyVisitors(workdata)
-    predictions = prophet(workdata_grouped,'samlet')
+    try:
+        workdata = connectToFrontdeskDB()
+    except Exception as e:
+        logger.error(e)
+        logger.error("Failed to connect to Frontdesk Borgerservice database")
+        return False
+    else:
+        logger.info("Connected to Frontdesk Borgerservice database successfully")
+        workdata = transformations(workdata)
+        workdata_grouped=dailyVisitors(workdata)
 
-    for queue in ['Pas','MitID','Pension','Skat']:
-        workdata_temp = workdata.drop(workdata[workdata.QueuesGrouped != queue].index)
-        workdata_grouped=dailyVisitors(workdata_temp)
-        predictions = pd.concat([predictions,prophet(workdata_grouped,queue)],axis=0)
+        # Forecast på alle køer
+        try:
+            predictions = prophet(workdata_grouped,'samlet')
+        except Exception as e:
+            logger.error(e)
+            logger.error("Failed to forecast all queues")
+        else:
+            logger.info("Forecasted all queues successfully")   
 
-    # save_data(predictions,'FrontdeskBorgerserviceForecasts')
-    workdata = transformationsBeforeUpload(workdata)
-    
+        queues = ['Pas','MitID','Afhent pas/kørekort/sundhedskort',
+                  'Kørekort','Pension','Informationen','Buskort til pensionister',
+                  'Andet','Beboerindskud og boligstøtte','Skat','Flytning og Folkeregister',
+                  'Sundhedskort og lægevalg','Legitimationskort','Sundhedskort og lægevalg',
+                  'Tilflytning fra udlandet','Fritagelse for digitalpost']
+        for queue in queues:
+            workdata_temp = workdata.drop(workdata[workdata.QueuesGrouped != queue].index)
+            workdata_grouped=dailyVisitors(workdata_temp)
+            try:
+                predictions_grouped = prophet(workdata_grouped,queue)
+            except Exception as e:
+                logger.error(e)
+                logger.error(f"Failed to forecast {queue}")
+                continue
+            else:
+                logger.info(f"Forecasted {queue} successfully")
+                predictions = pd.concat([predictions,predictions_grouped],axis=0)
+
+        logger.info(predictions.info())
+        logger.info(predictions.describe())
+
+        # Upload forcasts
+        file = io.BytesIO(predictions.to_csv(index=False, sep=';').encode('utf-8'))
+        filename = "SA" + "FrontdeskBorgerserviceForecasts" + ".csv"
+
+        if post_data_to_custom_data_connector(filename, file):
+            logger.info("Updated Frontdesk Borgerservice forecasts successfully")
+        else:
+            logger.error("Failed to update Frontdesk Borgerservice forecasts")
+       
+        # save_data(predictions,'FrontdeskBorgerserviceForecasts')
+        workdata = transformationsBeforeUpload(workdata)
+        
+        file = io.BytesIO(workdata.to_csv(index=False, sep=';').encode('utf-8'))
+        filename = "SA" + "FrontdeskBorgerservice" + ".csv"
+
+        if post_data_to_custom_data_connector(filename, file):
+            logger.info("Updated Frontdesk Borgerservice data successfully")
+        else:
+            logger.error("Failed to update Frontdesk Borgerservice data")   
 
 def connectToFrontdeskDB():
     conn = pymssql.connect(FRONTDESK_DB_HOST, FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_DATABASE)
@@ -31,7 +81,7 @@ def connectToFrontdeskDB():
     for table in tables:
         cursor.execute(f"SELECT * FROM {table}")
         rows = cursor.fetchall()
-        logger.info(cursor.description)
+        # logger.info(cursor.description)
         columns = [desc[0] for desc in cursor.description]
         df = pd.DataFrame(rows, columns=columns)
 
@@ -63,12 +113,12 @@ def groupQueues(row):
     else:
         return row['QueueName']
 
+
 def transformations(data):
     # Drop columns
     data = data.drop(columns=['MunicipalityID','QueueId','QueueCategoryId','State','StateId','CounterId','EmployeeId','DelayedUntil','DelayedFrom','IsEmployeeAnonymized','EmployeeInitials'])
     
     # Transform data types  
-
     data['CreatedAt'] = pd.to_datetime(data['CreatedAt']).dt.tz_localize(None)
     data['CalledAt'] = pd.to_datetime(data['CalledAt']).dt.tz_localize(None)
     data['EndedAt'] = pd.to_datetime(data['EndedAt']).dt.tz_localize(None)
@@ -77,7 +127,6 @@ def transformations(data):
 
     # Dropper rækker
     # Data ikke fra borgerservice
-    
     data.drop(data[data.CounterName.isin(['Jobcenter','Ydelseskontoret','Integration'])].index, inplace=True)
     
     # data ældre end to år eller før 1/1/2023
@@ -100,11 +149,10 @@ def transformations(data):
     # data['VentetidMinutterDecimal'] = (data['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
     data['VentetidMinutterDecimal'] = (data['VentetidMinutter'].dt.total_seconds()/60).round(2)
                   
-
     return data
 
 def transformationsBeforeUpload(data):
-    
+    # Til evt. senere brug
     return data
 
 def dailyVisitors(data):
