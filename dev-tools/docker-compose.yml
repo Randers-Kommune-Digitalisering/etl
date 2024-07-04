@@ -5,7 +5,6 @@
 # Kør: docker-compose up
 # Sæt environment variabel 'CUSTOM_DATA_CONNECTOR_HOST' til 'localhost:1880'
 
-version: "3.9"
 name: elt-dev-tools
 services:
   custom-data-connector:
