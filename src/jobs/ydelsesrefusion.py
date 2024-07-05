@@ -50,7 +50,7 @@ def handle_files(files, connection):
         for filename in files:
             with connection.open(os.path.join(SERVICEPLATFORM_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
                 # Read needed columns from csv
-                needed_cols = ['Uge', 'CPR nummer', 'Ydelse', 'Finansiering Kommunenavn', 'Beregnet udbetalingsbeløb', 'Refusionssats', 'Refusionsbeløb', 'Medfinansieringssats', 'Medfinansieringsbeløb' ]
+                needed_cols = ['Uge', 'CPR nummer', 'Ydelse', 'Finansiering Kommunenavn', 'Beregnet udbetalingsbeløb', 'Refusionssats', 'Refusionsbeløb', 'Medfinansieringssats', 'Medfinansieringsbeløb']
                 df = pd.read_csv(f, sep=";", header=0, decimal=",", na_filter=False, parse_dates=['Uge'], date_format='%Y-%m-%d', usecols=needed_cols)
 
                 # Remove rows where 'Ydelse' == 'Fleksbidrag fra staten' TODO: Check if this is correct
@@ -71,7 +71,7 @@ def handle_files(files, connection):
         df = df[df['Beregnet udbetalingsbeløb'] != 0]
         
         # Data på individniveau
-        df_alt = df.copy()  
+        df_alt = df.copy()
 
         # Grupperer data
         df = df.groupby(['Uge', 'Ydelse', 'Finansiering Kommunenavn']).agg(Antal=('CPR nummer', 'count'), Total=('Beregnet udbetalingsbeløb', 'sum'), Refusion=('Refusionsbeløb', 'sum'), Medfinansiering=('Medfinansieringsbeløb', 'sum')).reset_index()
