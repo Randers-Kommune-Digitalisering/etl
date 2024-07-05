@@ -37,7 +37,7 @@ def handle_files(files, connection):
         max_date = date - timedelta(days=1)
         min_date = datetime.date(date.year - 2, (date.month % 12) + 1, date.day)
 
-        logger.info(f'Data peridoe: {min_date} - {max_date}')
+        logger.info(f'Data periode: {min_date} - {max_date}')
 
         # Filter files based on min date
         files = [f for f in files if datetime.date(int(f[-14:-10]), int(f[-9:-7]), 1) >= min_date]
@@ -50,7 +50,7 @@ def handle_files(files, connection):
         for filename in files:
             with connection.open(os.path.join(SERVICEPLATFORM_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
                 # Read needed columns from csv
-                needed_cols = ['Uge', 'CPR nummer', 'Ydelse', 'Beregnet udbetalingsbeløb', 'Refusionssats', 'Refusionsbeløb', 'Medfinansieringssats', 'Medfinansieringsbeløb']
+                needed_cols = ['Uge', 'CPR nummer', 'Ydelse', 'Finansiering Kommunenavn', 'Beregnet udbetalingsbeløb', 'Refusionssats', 'Refusionsbeløb', 'Medfinansieringssats', 'Medfinansieringsbeløb' ]
                 df = pd.read_csv(f, sep=";", header=0, decimal=",", na_filter=False, parse_dates=['Uge'], date_format='%Y-%m-%d', usecols=needed_cols)
 
                 # Remove rows where 'Ydelse' == 'Fleksbidrag fra staten' TODO: Check if this is correct
@@ -65,12 +65,16 @@ def handle_files(files, connection):
         df = pd.concat(df_list, ignore_index=True)
 
         # Sum 'Refusionsbeløb' and 'Medfinansieringsbeløb' for each 'Uge', 'CPR nummer' and 'Ydelse.'
-        df = df.groupby(['Uge', 'CPR nummer', 'Ydelse'])[['Beregnet udbetalingsbeløb', 'Refusionsbeløb', 'Medfinansieringsbeløb']].sum().reset_index()
+        df = df.groupby(['Uge', 'CPR nummer', 'Ydelse', 'Finansiering Kommunenavn'])[['Beregnet udbetalingsbeløb', 'Refusionsbeløb', 'Medfinansieringsbeløb']].sum().reset_index()
 
         # Drop all rows where 'Beregnet udbetalingsbeløb' == 0
         df = df[df['Beregnet udbetalingsbeløb'] != 0]
+        
+        # Data på individniveau
+        df_alt = df.copy()  
 
-        df = df.groupby(['Uge', 'Ydelse']).agg(Antal=('CPR nummer', 'count'), Total=('Beregnet udbetalingsbeløb', 'sum'), Refusion=('Refusionsbeløb', 'sum'), Medfinansiering=('Medfinansieringsbeløb', 'sum')).reset_index()
+        # Grupperer data
+        df = df.groupby(['Uge', 'Ydelse', 'Finansiering Kommunenavn']).agg(Antal=('CPR nummer', 'count'), Total=('Beregnet udbetalingsbeløb', 'sum'), Refusion=('Refusionsbeløb', 'sum'), Medfinansiering=('Medfinansieringsbeløb', 'sum')).reset_index()
 
         # Round to 2 decimal places
         colums = ['Total', 'Refusion', 'Medfinansiering']
@@ -80,11 +84,19 @@ def handle_files(files, connection):
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "Ydelsesrefusion" + ".csv"
 
+        # Round to 2 decimal places
+        colums_alt = ['Beregnet udbetalingsbeløb', 'Refusionsbeløb', 'Medfinansieringsbeløb']
+        df_alt[colums] = df_alt[colums_alt].round(2)
+
+        # Convert to csv, set filename and post to custom data connector
+        file_alt = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
+        filename_alt = "SA" + "YdelsesrefusionIndivid" + ".csv"
+
     except Exception as e:
         logger.error(e)
         return False
 
-    if post_data_to_custom_data_connector(filename, file):
+    if post_data_to_custom_data_connector(filename, file) and post_data_to_custom_data_connector(filename_alt, file_alt):
         logger.info("Updated Ydelsesrefusion")
         return True
     else:
