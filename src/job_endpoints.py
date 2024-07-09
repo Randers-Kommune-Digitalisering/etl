@@ -13,9 +13,10 @@ job_api_bp = Blueprint('job_api', __name__)
 def get_job(job_name):
     try:
         module_name = f'jobs.{job_name.replace("-", "_")}'
-        print(module_name)
+        logger.info(module_name)
         module = importlib.import_module(module_name)
         job = getattr(module, 'job')
+        logger.info(module_name)
         return job
     except (ImportError, AttributeError):
         return None
