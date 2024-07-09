@@ -71,7 +71,7 @@ def handle_files(files, connection):
         df = df[df['Beregnet udbetalingsbeløb'] != 0]
 
         # Set empty values in 'Finansiering Kommunenavn' to '-'
-        df['Finansiering Kommunenavn'] = df['Finansiering Kommunenavn'].replace('', '-') 
+        df['Finansiering Kommunenavn'] = df['Finansiering Kommunenavn'].replace('', '-')
 
         # Data på individniveau
         df_alt = df.copy()
