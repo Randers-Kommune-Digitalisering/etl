@@ -1,4 +1,4 @@
-FROM python:3.10-alpine
+FROM python:3.10-slim
 
 # Set dir and user
 ENV GROUP_NAME=app
@@ -12,8 +12,7 @@ RUN addgroup --gid $GROUP_ID $GROUP_NAME && \
     adduser $USER_ID -u $USER_ID -D -G $GROUP_NAME -h $HOME
 
 # Install packages
-RUN apk update
-RUN apk add musl-dev gcc libpq-dev mariadb-connector-c-dev postgresql-dev python3-dev
+RUN apt-get update && apt-get install --yes --no-install-recommends build-essential libmariadb-dev libpq-dev
 
 # Copy files and set working dir
 COPY . $HOME

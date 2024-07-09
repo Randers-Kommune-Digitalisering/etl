@@ -19,9 +19,9 @@ services:
     #volumes:
     #    - ./<local dir>:<container dir full path> E.g. /mydir/myfiles
 
-    depends_on: 
-      db:
-        condition: service_healthy
+    # depends_on: 
+      # db:
+        # condition: service_healthy
 
   # db:
   #   image: postgres:16.1
