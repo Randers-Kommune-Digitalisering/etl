@@ -12,7 +12,7 @@ job_api_bp = Blueprint('job_api', __name__)
 
 def get_job(job_name):
     try:
-        module_name = f'jobs.{job_name}'
+        module_name = f'jobs.{job_name.replace("-", "_")}'
         module = importlib.import_module(module_name)
         job = getattr(module, 'job')
         return job
@@ -21,7 +21,7 @@ def get_job(job_name):
         return None
 
 
-# endpoints are module names in jobs
+# endpoints are module names in jobs but with dashes instead of underscores. E.g. purchase_data.py -> purchase-data
 @job_api_bp.route('/jobs/<job_name>', methods=['POST'])
 def start_job(job_name):
     try:
