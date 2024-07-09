@@ -16,7 +16,8 @@ def get_job(job_name):
         module = importlib.import_module(module_name)
         job = getattr(module, 'job')
         return job
-    except (ImportError, AttributeError):
+    except (ImportError, AttributeError) as e:
+        logger.error(e)
         return None
 
 

@@ -31,8 +31,7 @@ def post_data_to_custom_data_connector(filename, file):
 
     encoded_filename = urllib.parse.quote(filename)
     headers = {'overwrite': 'true'}
-    logger.info(encoded_filename)
-    logger.info(file)
+
     multipart_form_data = {'file': (encoded_filename, file, 'text/csv')}
 
     try:
