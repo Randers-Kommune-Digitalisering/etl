@@ -69,7 +69,10 @@ def handle_files(files, connection):
 
         # Drop all rows where 'Beregnet udbetalingsbeløb' == 0
         df = df[df['Beregnet udbetalingsbeløb'] != 0]
-        
+
+        # Set empty values in 'Finansiering Kommunenavn' to '-'
+        df['Finansiering Kommunenavn'] = df['Finansiering Kommunenavn'].replace('', '-') 
+
         # Data på individniveau
         df_alt = df.copy()
 
@@ -89,7 +92,7 @@ def handle_files(files, connection):
         df_alt[colums] = df_alt[colums_alt].round(2)
 
         # Convert to csv, set filename and post to custom data connector
-        file_alt = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
+        file_alt = io.BytesIO(df_alt.to_csv(index=False, sep=';').encode('utf-8'))
         filename_alt = "SA" + "YdelsesrefusionIndivid" + ".csv"
 
     except Exception as e:

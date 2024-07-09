@@ -12,17 +12,15 @@ job_api_bp = Blueprint('job_api', __name__)
 
 def get_job(job_name):
     try:
-        module_name = f'jobs.{job_name.replace("-", "_")}'
-        logger.info(module_name)
+        module_name = f'jobs.{job_name}'
         module = importlib.import_module(module_name)
         job = getattr(module, 'job')
-        logger.info(module_name)
         return job
     except (ImportError, AttributeError):
         return None
 
 
-# endpoints are module names in jobs but with dashes instead of underscores. E.g. purchase_data.py -> purchase-data
+# endpoints are module names in jobs
 @job_api_bp.route('/jobs/<job_name>', methods=['POST'])
 def start_job(job_name):
     try:

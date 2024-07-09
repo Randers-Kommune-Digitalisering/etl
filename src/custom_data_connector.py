@@ -16,6 +16,7 @@ def post_data_to_custom_data_connector(filename, file):
         return False
 
     if isinstance(file, io.BytesIO):
+        file.seek(0)
         file = file.getbuffer()
     if isinstance(file, io.BufferedReader):
         file = file.read()
