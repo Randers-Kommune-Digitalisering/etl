@@ -79,6 +79,9 @@ def handle_bi_sys(files, connection, prefix):
         f = zip.read(csv_file)
         new_filename = Path(filename).stem.replace(' ', '_')
 
+        if 'test' not in csv_file:
+            new_filename = new_filename.split('_')[0] + 'alle_' + '_'.join(new_filename.split('_')[1:])
+
         ok = post_data_to_custom_data_connector(prefix + new_filename, f)
         status.append(ok)
 
