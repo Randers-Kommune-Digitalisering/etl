@@ -76,19 +76,41 @@ def handle_bi_sys(files, connection, prefix):
 
         # Assume just ONE csv file
         csv_file = [f for f in zip.namelist() if f.endswith(('.csv'))][0]
-        f = zip.read(csv_file)
-        new_filename = Path(filename).stem.replace(' ', '_')
+        if 'test' in csv_file:
+            with zip.open(csv_file, 'r') as f:
+                all_lines = f.readlines()
 
-        if 'test' not in csv_file:
-            new_filename = new_filename.split('_')[0] + 'alle_' + '_'.join(new_filename.split('_')[1:])
+            for i in range(len(all_lines)):
+                line = all_lines[i].decode('cp1252')
 
-        ok = post_data_to_custom_data_connector(prefix + new_filename, f)
-        status.append(ok)
+                # Strips leading equal signs from all lines
+                if (line[0] == '='):
+                    line = line[1:]
+                line = line.replace(';=', ';')
+                line = line.replace('"', '')
 
-        if ok:
-            logger.info(f'Updated {prefix + new_filename}')
+                # Adds 'n/a' to empty columns in first row - assumes empty columns should be strings
+                if i == 1:
+                    first_line_arr = line.split(';')
+                    line = ';'.join(['"n/a"' if not e.strip() else e for e in first_line_arr]) + '\n'
+
+                all_lines[i] = line.strip()
+
+            with io.BytesIO() as outfile:
+                encoded_outfile = io.TextIOWrapper(outfile, 'utf-8', newline='')
+                encoded_outfile.write('\n'.join(all_lines))
+
+                new_filename = Path(filename).stem.replace(' ', '_')
+
+                ok = post_data_to_custom_data_connector(prefix + new_filename, outfile.getbuffer())
+                status.append(ok)
+
+                if ok:
+                    logger.info(f'Updated {prefix + new_filename}')
+                else:
+                    logger.error(f'Failed to update {prefix + new_filename}')
         else:
-            logger.error(f'Failed to update {prefix + new_filename}')
+            logger.info(f'File {csv_file} is old format, skipping')
 
     return all(status)
 
