@@ -22,6 +22,8 @@ def post_data_to_custom_data_connector(filename, file):
         file = file.read()
     elif isinstance(file, memoryview):
         pass
+    elif isinstance(file, bytes):
+        pass
     else:
         logger.error(f"File should be either io.BytesIO, io.BufferedReader, or memeoryview, but was {type(file)}")
         return False
