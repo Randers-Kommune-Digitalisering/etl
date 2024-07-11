@@ -101,8 +101,6 @@ def handle_files(files, connection):
         file_alt = io.BytesIO(df_alt.to_csv(index=False, sep=';').encode('utf-8'))
         filename_alt = "SA" + "YdelsesrefusionIndivid" + ".csv"
 
-        logger.info(df_alt.head())
-
     except Exception as e:
         logger.error(e)
         return False
