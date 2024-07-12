@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 # loads .env file, will not overide already set enviroment variables (will do nothing when testing, building and deploying)
 load_dotenv()
 
-
 DEBUG = os.getenv('DEBUG', 'False') in ['True', 'true']
 PORT = os.getenv('PORT', '8080')
 POD_NAME = os.getenv('POD_NAME', 'Pod name not set')
@@ -34,6 +33,7 @@ FRONTDESK_DB_HOST = os.environ['FRONTDESK_DB_HOST'].rstrip()
 FRONTDESK_DB_PORT = None
 FRONTDESK_DB_DATABASE = os.environ['FRONTDESK_DB_DATABASE'].rstrip()
 
+DST_HOST_DATA = os.environ['DST_HOST_DATA'].rstrip()
 
 UDDANNELSESSTATISTIK_URL = os.environ['UDDANNELSESSTATISTIK_URL'].rstrip()
 UDDANNELSESSTATISTIK_API_KEY = os.environ['UDDANNELSESSTATISTIK_API_KEY'].rstrip()
