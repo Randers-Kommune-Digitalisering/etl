@@ -1,4 +1,5 @@
 Flask==3.0.3
+lxml
 mariadb
 numpy<2
 pandas
