@@ -1,7 +1,11 @@
+import logging
 import pandas as pd
 
 from io import StringIO
 from requests import Session
+
+
+logger = logging.getLogger(__name__)
 
 
 class LogivaSignflow:
@@ -12,7 +16,7 @@ class LogivaSignflow:
 
     def get_it_department_authorizations_df(self):
         with Session() as session:
-            try:    
+            try:
                 # login
                 endpoint = f'{self.base_url}/usr/auth/basic'
                 res = session.get(endpoint)
@@ -33,7 +37,7 @@ class LogivaSignflow:
                 res.raise_for_status()
                 
                 # parse csv to dataframe
-                colnames=['Name', 'CPR', 'Assigned Login', 'DQ-number', 'From Date', 'LOS', 'Action', 'Creation time', 'Case Number', 'los1', 'los2', 'los3', 'los4', 'los5', 'los6', 'los7', 'los8', 'los9', 'manager email'] 
+                colnames = ['Name', 'CPR', 'Assigned Login', 'DQ-number', 'From Date', 'LOS', 'Action', 'Creation time', 'Case Number', 'los1', 'los2', 'los3', 'los4', 'los5', 'los6', 'los7', 'los8', 'los9', 'manager email']
                 df = pd.read_csv(StringIO(res.content.decode('cp1252')), sep='\t', names=colnames, header=None, index_col=False)
 
                 # logout
@@ -43,5 +47,5 @@ class LogivaSignflow:
                 return df
 
             except Exception as e:
+                logger.error(e)
                 return None
-        
