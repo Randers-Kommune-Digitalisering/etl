@@ -6,7 +6,7 @@ import io
 from prophet import Prophet
 from datetime import datetime
 
-from utils.config import FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_HOST, FRONTDESK_DB_DATABASE
+from config.config import FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_HOST, FRONTDESK_DB_DATABASE
 from custom_data_connector import post_data_to_custom_data_connector
 
 logging.getLogger("prophet.plot").disabled = True

@@ -4,7 +4,7 @@ from prometheus_client import generate_latest
 import logging
 
 from utils.logging import set_logging_configuration, APP_RUNNING
-from utils.config import DEBUG, PORT, POD_NAME
+from config.config import DEBUG, PORT, POD_NAME
 from job_endpoints import job_api_bp
 
 logger = logging.getLogger(__name__)

@@ -1,7 +1,7 @@
 import sqlalchemy
 import logging
 
-import utils.config
+import config.config
 
 
 logger = logging.getLogger(__name__)
@@ -10,7 +10,7 @@ logger = logging.getLogger(__name__)
 def get_database_connection(database):
     database = database.upper()
     if database == 'CLIMATE':
-        port = getattr(utils.config, database + '_DB_PORT')
+        port = getattr(config.config, database + '_DB_PORT')
         databasetype = 'mariadb'
     elif database == 'FRONTDESK':
         port = None
@@ -31,10 +31,10 @@ def get_database_connection(database):
 
     database = database.upper()
 
-    host = getattr(utils.config, database + '_DB_HOST')
-    username = getattr(utils.config, database + '_DB_USER')
-    password = getattr(utils.config, database + '_DB_PASS')
-    db = getattr(utils.config, database + '_DB_DATABASE')
+    host = getattr(config.config, database + '_DB_HOST')
+    username = getattr(config.config, database + '_DB_USER')
+    password = getattr(config.config, database + '_DB_PASS')
+    db = getattr(config.config, database + '_DB_DATABASE')
 
     if port:
         host = host + ':' + port

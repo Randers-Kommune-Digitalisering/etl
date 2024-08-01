@@ -4,7 +4,7 @@ import logging
 import datetime
 import pandas as pd
 
-from utils.config import UDDANNELSESSTATISTIK_URL, UDDANNELSESSTATISTIK_API_KEY
+from config.config import UDDANNELSESSTATISTIK_URL, UDDANNELSESSTATISTIK_API_KEY
 from utils.api_requests import APIClient
 from custom_data_connector import post_data_to_custom_data_connector
 
@@ -58,7 +58,7 @@ def get_well_being_data():
         }
 
         data = udddannels_stattistik_client.make_request(json=payload)
-        
+
         if data:
             expanded_data = []
             for key_0 in list(data):

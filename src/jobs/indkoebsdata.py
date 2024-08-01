@@ -13,7 +13,7 @@ from sqlalchemy import text
 from numpy.dtypes import ObjectDType
 
 from database import get_database_connection
-from utils.config import TRUELINK_SFTP_HOST, TRUELINK_SFTP_USER, TRUELINK_SSH_KEY_BASE64, TRUELINK_SFTP_REMOTE_DIR
+from config.config import TRUELINK_SFTP_HOST, TRUELINK_SFTP_USER, TRUELINK_SSH_KEY_BASE64, TRUELINK_SFTP_REMOTE_DIR
 from utils.stfp import SFTPClient
 from custom_data_connector import post_data_to_custom_data_connector
 from utils.utils import format_text
