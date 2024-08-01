@@ -122,4 +122,10 @@ class APIClient:
 
         response = method(url, **kwargs)
         response.raise_for_status()
-        return response.json()
+
+        if 'application/json' in response.headers.get('Content-Type', ''):
+            return response.json()
+        else:
+            if not response.content:
+                return b' '
+            return response.content

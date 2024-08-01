@@ -58,6 +58,7 @@ def get_well_being_data():
         }
 
         data = udddannels_stattistik_client.make_request(json=payload)
+        
         if data:
             expanded_data = []
             for key_0 in list(data):
