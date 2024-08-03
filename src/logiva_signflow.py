@@ -8,7 +8,7 @@ from requests import Session
 logger = logging.getLogger(__name__)
 
 
-class LogivaSignflow:
+class LogivaSignflowClient:
     def __init__(self, base_url, username=None, password=None):
         self.base_url = base_url.rstrip('/')
         self.username = username

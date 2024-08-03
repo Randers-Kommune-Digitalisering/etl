@@ -79,6 +79,8 @@ class APIClient:
                     self.refresh_token_expiry = now + data['refresh_expires_in']
 
                 return {'Authorization': f'Bearer {self.access_token}'}
+            elif self.username and self.password:
+                return {'Authorization': 'Basic ' + base64.b64encode(str.encode(f'{self.username}:{self.password}')).decode()}
             else:
                 return {}
         except Exception as e:
@@ -111,7 +113,7 @@ class APIClient:
         if not any(ele in kwargs for ele in ['method', 'json', 'data', 'files']):
             method = requests.get
         elif 'method' in kwargs:
-            method = getattr(requests, kwargs['method'])
+            method = getattr(requests, kwargs['method'].lower())
         else:
             method = requests.post
 

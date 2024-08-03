@@ -165,4 +165,8 @@ cython_debug/
 **/*.csv
 !src/config/*.csv
 
+# ignore all xlsx files
+*.xlsx
+**/*.xlsx
+
 src/utils/certs/*

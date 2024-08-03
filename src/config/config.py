@@ -36,10 +36,17 @@ FRONTDESK_DB_HOST = os.environ['FRONTDESK_DB_HOST'].rstrip()
 FRONTDESK_DB_PORT = None
 FRONTDESK_DB_DATABASE = os.environ['FRONTDESK_DB_DATABASE'].rstrip()
 
-
 UDDANNELSESSTATISTIK_URL = os.environ['UDDANNELSESSTATISTIK_URL'].rstrip()
 UDDANNELSESSTATISTIK_API_KEY = os.environ['UDDANNELSESSTATISTIK_API_KEY'].rstrip()
 
 CUSTOM_DATA_CONNECTOR_HOST = os.environ['CUSTOM_DATA_CONNECTOR_HOST'].rstrip()
 
-SD_DELTA_EXCLUDED_DEPARTMENTS_FILE_PATH = os.path.join(pathlib.Path(__file__).parent.resolve(), 'sd_delta_excluded_departments.csv')
+SD_URL = os.environ['SD_URL'].rstrip()
+SD_USER = os.environ['SD_USER'].rstrip()
+SD_PASS = os.environ['SD_PASS'].rstrip()
+
+LOGIVA_URL = os.environ['LOGIVA_URL'].rstrip()
+LOGIVA_USER = os.environ['LOGIVA_USER'].rstrip()
+LOGIVA_PASS = os.environ['LOGIVA_PASS'].rstrip()
+
+SD_DELTA_EXCLUDED_DEPARTMENTS_FILE_PATH = os.path.join(pathlib.Path(__file__).parent.resolve(), 'sd_delta_excluded_units.csv')
