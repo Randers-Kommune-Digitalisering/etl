@@ -125,7 +125,7 @@ def groupQueues(row):
 
 def transformations(data):
     # Drop columns
-    data = data.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'State', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
+    data = data.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
     
     # Transform data types
     data['CreatedAt'] = pd.to_datetime(data['CreatedAt']).dt.tz_localize(None)
@@ -156,7 +156,10 @@ def transformations(data):
     # AggregatedWaitingTime giver ikke rigtig mening
     # data['VentetidMinutterDecimal'] = (data['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
     data['VentetidMinutterDecimal'] = (data['VentetidMinutter'].dt.total_seconds() / 60).round(2)
-                  
+
+    # Dropper observationer med State = Discarded              
+    data = data[data['State'] != "Discarded"]
+
     return data
 
 
