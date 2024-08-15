@@ -27,6 +27,7 @@ def job():
         logger.info("Connected to Frontdesk Borgerservice database successfully")
         workdata = transformations(workdatasets)
         workdata_grouped = dailyVisitors(workdata)
+        logger.info("Data transformed successfully")
 
         # Forecast på alle køer
         try:
@@ -128,14 +129,17 @@ def transformations(input_data):
     operation = input_data['Operation']
     ticket = input_data['Ticket'] 
     registration = input_data['Registration']
+    logger.info("1")
 
     # Dropper rækker
     # Dropper betjeninger der ikke er afsluttet
     operation = operation[operation['State'] == "Ended"]
-    
+    logger.info("2")
+
     # Dropper obervationer der ikke fra borgerservice
     operation.drop(operation[operation.CounterName.isin(['Jobcenter', 'Ydelseskontoret', 'Integration'])].index, inplace=True)
-    
+    logger.info("3")
+
     # Dropper oberservation ældre end to år eller før 1/1/2023
     dateTwoYearsBefore = datetime(datetime.now().year - 2, datetime.now().month, datetime.now().day)
     operation.drop(operation[(operation.CreatedAt < datetime(2023, 1, 1)) | (operation.CreatedAt < dateTwoYearsBefore)].index, inplace=True)
