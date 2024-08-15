@@ -2,6 +2,7 @@ import pymssql
 import pandas as pd
 import logging
 import io
+import numpy as np
 
 from prophet import Prophet
 from datetime import datetime
@@ -17,14 +18,14 @@ def job():
     logger.info("Initializing frontdesk borgerservice job")
 
     try:
-        workdata = connectToFrontdeskDB()
+        workdatasets = connectToFrontdeskDB()
     except Exception as e:
         logger.error(e)
         logger.error("Failed to connect to Frontdesk Borgerservice database")
         return False
     else:
         logger.info("Connected to Frontdesk Borgerservice database successfully")
-        workdata = transformations(workdata)
+        workdata = transformations(workdatasets)
         workdata_grouped = dailyVisitors(workdata)
 
         # Forecast på alle køer
@@ -85,16 +86,15 @@ def connectToFrontdeskDB():
     conn = pymssql.connect(FRONTDESK_DB_HOST, FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_DATABASE)
     cursor = conn.cursor()
 
-    tables = ["Operation"]
-    for table in tables:
+    table_names = ["Operation", "Registration", "Ticket"]
+    tables = {}
+    for table in table_names:
         cursor.execute(f"SELECT * FROM {table}")
         rows = cursor.fetchall()
-        # logger.info(cursor.description)
         columns = [desc[0] for desc in cursor.description]
-        df = pd.DataFrame(rows, columns=columns)
-
-    return df
-
+        tables[table] = pd.DataFrame(rows, columns=columns)
+    
+    return tables
 
 def groupQueues(row):
     if row['QueueName'] in ['Afhent pas/kørekort/sundhedskort ']:
@@ -123,57 +123,78 @@ def groupQueues(row):
         return row['QueueName']
 
 
-def transformations(data):
-    # Drop columns
-    data = data.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
-    
-    # Transform data types
-    data['CreatedAt'] = pd.to_datetime(data['CreatedAt']).dt.tz_localize(None)
-    data['CalledAt'] = pd.to_datetime(data['CalledAt']).dt.tz_localize(None)
-    data['EndedAt'] = pd.to_datetime(data['EndedAt']).dt.tz_localize(None)
-    data['LastAggregatedDataUpdateTime'] = pd.to_datetime(data['LastAggregatedDataUpdateTime']).dt.tz_localize(None)
+def transformations(input_data):
+    # Opslitter på enkelte dataframes
+    operation = input_data['Operation']
+    ticket = input_data['Ticket'] 
+    registration = input_data['Registration']
 
     # Dropper rækker
-    # Data ikke fra borgerservice
-    data.drop(data[data.CounterName.isin(['Jobcenter', 'Ydelseskontoret', 'Integration'])].index, inplace=True)
+    # Dropper betjeninger der ikke er afsluttet
+    operation = operation[operation['State'] == "Ended"]
     
-    # data ældre end to år eller før 1/1/2023
+    # Dropper obervationer der ikke fra borgerservice
+    operation.drop(operation[operation.CounterName.isin(['Jobcenter', 'Ydelseskontoret', 'Integration'])].index, inplace=True)
+    
+    # Dropper oberservation ældre end to år eller før 1/1/2023
     dateTwoYearsBefore = datetime(datetime.now().year - 2, datetime.now().month, datetime.now().day)
-    data.drop(data[(data.CreatedAt < datetime(2023, 1, 1)) | (data.CreatedAt < dateTwoYearsBefore)].index, inplace=True)
+    operation.drop(operation[(operation.CreatedAt < datetime(2023, 1, 1)) | (operation.CreatedAt < dateTwoYearsBefore)].index, inplace=True)
 
-    data['dato'] = data['CreatedAt'].dt.date
-    data['ugenr'] = data['CreatedAt'].dt.isocalendar().week
-    data['år'] = data['CreatedAt'].dt.year
+    operation['dato'] = operation['CreatedAt'].dt.date
+    operation['ugenr'] = operation['CreatedAt'].dt.isocalendar().week
+    operation['år'] = operation['CreatedAt'].dt.year
+
+    # Beriger operation-data
+    # Tilføjer tickettype til operation
+    ticket = ticket[['Id','Tickettype']]
+
+    operation=pd.merge(operation, ticket, left_on='TicketId', right_on='Id', how='left', indicator=True)
+    operation.drop(columns=['_merge'], inplace=True)
+    operation.drop(columns=['Id_y'], inplace=True)
+    operation.rename(columns={'Id_x':'Id'}, inplace=True)
+
+    # Identificerer og tilføjer underbetjeninger fra registration
+    registration = registration[['OperationId','QueueName','QueueCategoryName']]
+
+    operation=pd.merge(operation, registration, left_on='Id', right_on='OperationId', how='left', indicator=True)
+    operation.drop(columns=['_merge'], inplace=True)
+
+    operation['registreringNr']=operation.groupby('Id').cumcount()+1  # row_number for each Id
+    operation['antalRegistreringer']=operation.groupby('Id')['registreringNr'].transform('max') # max row_number for each Id
+    operation['Tickettype'] = np.where(operation['registreringNr'] > 1, 'Underbetjening', operation['Tickettype']) # if row_number > 1 then Underbetjening
+
+    # Drop columns
+    operation = operation.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
+    
+    # Transform data types
+    operation['CreatedAt'] = pd.to_datetime(operation['CreatedAt']).dt.tz_localize(None)
+    operation['CalledAt'] = pd.to_datetime(operation['CalledAt']).dt.tz_localize(None)
+    operation['EndedAt'] = pd.to_datetime(operation['EndedAt']).dt.tz_localize(None)
+    operation['LastAggregatedDataUpdateTime'] = pd.to_datetime(operation['LastAggregatedDataUpdateTime']).dt.tz_localize(None)
 
     # Gruppering af køer
-    data['QueuesGrouped'] = data.apply(groupQueues, axis=1)
+    operation['QueuesGrouped'] = operation.apply(groupQueues, axis=1)
 
     # Justering af tidsvariable
-    data['BehandlingstidMinutter'] = data['EndedAt'] - data['CalledAt']
-    data['BehandlingstidMinutterDecimal'] = (data['AggregatedProcessingTime'] / (10**7 * 60)).round(2)
-    data['VentetidMinutter'] = data['CalledAt'] - data['CreatedAt']
+    operation['BehandlingstidMinutter'] = operation['EndedAt'] - operation['CalledAt']
+    operation['BehandlingstidMinutterDecimal'] = (operation['AggregatedProcessingTime'] / (10**7 * 60)).round(2)
+    operation['VentetidMinutter'] = operation['CalledAt'] - operation['CreatedAt']
 
     # AggregatedWaitingTime giver ikke rigtig mening
-    # data['VentetidMinutterDecimal'] = (data['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
-    data['VentetidMinutterDecimal'] = (data['VentetidMinutter'].dt.total_seconds() / 60).round(2)
+    # operation['VentetidMinutterDecimal'] = (operation['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
+    operation['VentetidMinutterDecimal'] = (operation['VentetidMinutter'].dt.total_seconds() / 60).round(2)
 
-    # Dropper observationer med State = Discarded              
-    data = data[data['State'] != "Discarded"]
-
-    return data
-
+    return operation
 
 def transformationsBeforeUpload(data):
     # Til evt. senere brug
     return data
-
 
 def dailyVisitors(data):
     data = data.groupby(['dato']).size().reset_index()
     data.columns = ['dato', 'antal']
     
     return data
-
 
 def prophet(data, forecastModel):
 
