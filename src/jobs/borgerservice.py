@@ -141,6 +141,11 @@ def transformations(input_data):
     logger.info("3")
 
     # Dropper oberservation ældre end to år eller før 1/1/2023
+    operation['CreatedAt'] = pd.to_datetime(operation['CreatedAt']).dt.tz_localize(None)
+    operation['CalledAt'] = pd.to_datetime(operation['CalledAt']).dt.tz_localize(None)
+    operation['EndedAt'] = pd.to_datetime(operation['EndedAt']).dt.tz_localize(None)
+    operation['LastAggregatedDataUpdateTime'] = pd.to_datetime(operation['LastAggregatedDataUpdateTime']).dt.tz_localize(None)
+
     dateTwoYearsBefore = datetime(datetime.now().year - 2, datetime.now().month, datetime.now().day)
     operation.drop(operation[(operation.CreatedAt < datetime(2023, 1, 1)) | (operation.CreatedAt < dateTwoYearsBefore)].index, inplace=True)
 
@@ -173,11 +178,7 @@ def transformations(input_data):
     # Drop columns
     operation = operation.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
     
-    # Transform data types
-    operation['CreatedAt'] = pd.to_datetime(operation['CreatedAt']).dt.tz_localize(None)
-    operation['CalledAt'] = pd.to_datetime(operation['CalledAt']).dt.tz_localize(None)
-    operation['EndedAt'] = pd.to_datetime(operation['EndedAt']).dt.tz_localize(None)
-    operation['LastAggregatedDataUpdateTime'] = pd.to_datetime(operation['LastAggregatedDataUpdateTime']).dt.tz_localize(None)
+
     logger.info("7")
 
     # Gruppering af køer
