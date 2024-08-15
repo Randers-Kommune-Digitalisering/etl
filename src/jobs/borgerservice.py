@@ -147,6 +147,7 @@ def transformations(input_data):
     operation['dato'] = operation['CreatedAt'].dt.date
     operation['ugenr'] = operation['CreatedAt'].dt.isocalendar().week
     operation['år'] = operation['CreatedAt'].dt.year
+    logger.info("4")
 
     # Beriger operation-data
     # Tilføjer tickettype til operation
@@ -156,6 +157,7 @@ def transformations(input_data):
     operation.drop(columns=['_merge'], inplace=True)
     operation.drop(columns=['Id_y'], inplace=True)
     operation.rename(columns={'Id_x':'Id'}, inplace=True)
+    logger.info("5")
 
     # Identificerer og tilføjer underbetjeninger fra registration
     registration = registration[['OperationId','QueueName','QueueCategoryName']]
@@ -166,6 +168,7 @@ def transformations(input_data):
     operation['registreringNr']=operation.groupby('Id').cumcount()+1  # row_number for each Id
     operation['antalRegistreringer']=operation.groupby('Id')['registreringNr'].transform('max') # max row_number for each Id
     operation['Tickettype'] = np.where(operation['registreringNr'] > 1, 'Underbetjening', operation['Tickettype']) # if row_number > 1 then Underbetjening
+    logger.info("6")
 
     # Drop columns
     operation = operation.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
@@ -175,18 +178,22 @@ def transformations(input_data):
     operation['CalledAt'] = pd.to_datetime(operation['CalledAt']).dt.tz_localize(None)
     operation['EndedAt'] = pd.to_datetime(operation['EndedAt']).dt.tz_localize(None)
     operation['LastAggregatedDataUpdateTime'] = pd.to_datetime(operation['LastAggregatedDataUpdateTime']).dt.tz_localize(None)
+    logger.info("7")
 
     # Gruppering af køer
     operation['QueuesGrouped'] = operation.apply(groupQueues, axis=1)
+    logger.info("8")
 
     # Justering af tidsvariable
     operation['BehandlingstidMinutter'] = operation['EndedAt'] - operation['CalledAt']
     operation['BehandlingstidMinutterDecimal'] = (operation['AggregatedProcessingTime'] / (10**7 * 60)).round(2)
     operation['VentetidMinutter'] = operation['CalledAt'] - operation['CreatedAt']
+    logger.info("9")
 
     # AggregatedWaitingTime giver ikke rigtig mening
     # operation['VentetidMinutterDecimal'] = (operation['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
     operation['VentetidMinutterDecimal'] = (operation['VentetidMinutter'].dt.total_seconds() / 60).round(2)
+    logger.info("10")
 
     return operation
 
