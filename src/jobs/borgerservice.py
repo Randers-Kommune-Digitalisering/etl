@@ -193,6 +193,8 @@ def transformations(input_data):
     # operation['VentetidMinutterDecimal'] = (operation['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
     operation['VentetidMinutterDecimal'] = (operation['VentetidMinutter'].dt.total_seconds() / 60).round(2)
 
+    return operation
+
 def transformationsBeforeUpload(data):
     # Til evt. senere brug
     return data
