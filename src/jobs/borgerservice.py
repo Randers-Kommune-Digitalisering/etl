@@ -156,9 +156,12 @@ def transformations(input_data):
     ticket = ticket[['Id','Tickettype']]
 
     operation=pd.merge(operation, ticket, left_on='TicketId', right_on='Id', how='left', indicator=True)
+    logger.info(operation.columns.tolist())
+
     operation.drop(columns=['_merge'], inplace=True)
     operation.drop(columns=['Id_y'], inplace=True)
     operation.rename(columns={'Id_x':'Id'}, inplace=True)
+    logger.info("1")
 
     # Identificerer og tilføjer underbetjeninger fra registration
     registration = registration[['OperationId','QueueName','QueueCategoryName']]
@@ -172,6 +175,7 @@ def transformations(input_data):
     
     operation.drop(columns=['QueueName_x'], inplace=True)
     operation.rename(columns={'QueueName_y':'QueueName'}, inplace=True)
+    logger.info("2")
 
     # Drop columns
     operation = operation.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
@@ -179,6 +183,7 @@ def transformations(input_data):
     # # Gruppering af køer
     operation['QueuesGrouped'] = operation.apply(groupQueues, axis=1)
 
+    logger.info("3")
     # Justering af tidsvariable
     operation['BehandlingstidMinutter'] = operation['EndedAt'] - operation['CalledAt']
     operation['BehandlingstidMinutterDecimal'] = (operation['AggregatedProcessingTime'] / (10**7 * 60)).round(2)
