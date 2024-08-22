@@ -143,6 +143,10 @@ def groupQueues(row):
         return 'Pension'
     elif row['QueueName'] in ['Resultat af årsopgørelse', 'SKAT', 'Skat']:
         return 'Skat'
+    elif row['QueueName'] in ['Sundhedskort og lægevalg', 'Sundhedskort og lægevalg ']:
+        return 'Sundhedskort og lægevalg'
+    elif row['QueueName'] in ['Andet ', 'Andet']:
+        return 'Andet'
     else:
         return row['QueueName']
 
