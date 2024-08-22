@@ -56,10 +56,11 @@ def job():
             'Sundhedskort og lægevalg': True,
             'Tilflytning fra udlandet': False
         }
-        for queue, forecast in queues:
+
+        for queue in queues:
             workdata_temp = workdata.drop(workdata[workdata.QueuesGrouped != queue].index)
             workdata_grouped = dailyVisitors(workdata_temp)
-            if forecast:
+            if queues[queue]:
                 try:
                     predictions_grouped = prophet(workdata_grouped, queue)
                 except Exception as e:
