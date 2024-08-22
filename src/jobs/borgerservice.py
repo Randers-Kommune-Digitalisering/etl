@@ -38,23 +38,45 @@ def job():
         else:
             logger.info("Forecasted all queues successfully")
 
-        queues = ['Pas', 'MitID', 'Afhent pas/kørekort/sundhedskort',
-                  'Kørekort', 'Pension', 'Informationen', 'Buskort til pensionister',
-                  'Andet', 'Beboerindskud og boligstøtte', 'Skat', 'Flytning og Folkeregister',
-                  'Sundhedskort og lægevalg', 'Legitimationskort', 'Sundhedskort og lægevalg',
-                  'Tilflytning fra udlandet', 'Fritagelse for digitalpost']
-        for queue in queues:
+        queues = {
+            'Afhent pas/kørekort/sundhedskort': True,
+            'Akut': False,
+            'Andet': False,
+            'Beboerindskud og boligstøtte': True,
+            'Brevstemme': False,
+            'Buskort til pensionister': True,
+            'Den Boligsociale Enhed': False,
+            'Flytning og Folkeregister': True,
+            'Kørekort': True,
+            'Legitimationskort': True,
+            'MitID': True,
+            'Pas': True,
+            'Pension': True,
+            'Skat': True,
+            'Sundhedskort og lægevalg': True,
+            'Tilflytning fra udlandet': False
+        }
+        for queue, forecast in queues:
             workdata_temp = workdata.drop(workdata[workdata.QueuesGrouped != queue].index)
             workdata_grouped = dailyVisitors(workdata_temp)
-            try:
-                predictions_grouped = prophet(workdata_grouped, queue)
-            except Exception as e:
-                logger.error(e)
-                logger.error(f"Failed to forecast {queue}")
-                continue
+            if forecast:
+                try:
+                    predictions_grouped = prophet(workdata_grouped, queue)
+                except Exception as e:
+                    logger.error(e)
+                    logger.error(f"Failed to forecast {queue}")
+                    continue
+                else:
+                    logger.info(f"Forecasted {queue} successfully")
+                    predictions = pd.concat([predictions, predictions_grouped], axis=0)
             else:
-                logger.info(f"Forecasted {queue} successfully")
+                workdata_grouped['dato'] = pd.to_datetime(workdata_grouped['dato']).dt.tz_localize(None)
+                predictions_grouped = pd.DataFrame(columns=['dato', 'model', 'antal', 'yhat'])
+                predictions_grouped['dato'] = workdata_grouped['dato']
+                predictions_grouped['model'] = queue
+                predictions_grouped['antal'] = workdata_grouped['antal']
                 predictions = pd.concat([predictions, predictions_grouped], axis=0)
+                logger.info(f"Added {queue} to prediction data without predictions")   
 
         # logger.info(predictions.info())
         # logger.info(predictions.describe())
@@ -161,7 +183,6 @@ def transformations(input_data):
     operation.drop(columns=['_merge'], inplace=True)
     operation.drop(columns=['Id_y'], inplace=True)
     operation.rename(columns={'Id_x':'Id'}, inplace=True)
-    logger.info("1")
 
     # Identificerer og tilføjer underbetjeninger fra registration
     registration = registration[['OperationId','QueueName','QueueCategoryName']]
@@ -175,7 +196,6 @@ def transformations(input_data):
     
     operation.drop(columns=['QueueName_x'], inplace=True)
     operation.rename(columns={'QueueName_y':'QueueName'}, inplace=True)
-    logger.info("2")
 
     # Drop columns
     operation = operation.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
@@ -183,7 +203,6 @@ def transformations(input_data):
     # # Gruppering af køer
     operation['QueuesGrouped'] = operation.apply(groupQueues, axis=1)
 
-    logger.info("3")
     # Justering af tidsvariable
     operation['BehandlingstidMinutter'] = operation['EndedAt'] - operation['CalledAt']
     operation['BehandlingstidMinutterDecimal'] = (operation['AggregatedProcessingTime'] / (10**7 * 60)).round(2)
