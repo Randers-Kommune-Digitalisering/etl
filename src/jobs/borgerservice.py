@@ -77,7 +77,7 @@ def job():
                 predictions_grouped['model'] = queue
                 predictions_grouped['antal'] = workdata_grouped['antal']
                 predictions = pd.concat([predictions, predictions_grouped], axis=0)
-                logger.info(f"Added {queue} to prediction data without predictions")   
+                logger.info(f"Added {queue} to prediction data without predictions")
 
         # logger.info(predictions.info())
         # logger.info(predictions.describe())
@@ -91,10 +91,10 @@ def job():
         else:
             logger.error("Failed to update Frontdesk Borgerservice forecasts")
             return False
-       
+
         # save_data(predictions,'FrontdeskBorgerserviceForecasts')
         workdata = transformationsBeforeUpload(workdata)
-        
+
         file = io.BytesIO(workdata.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "FrontdeskBorgerservice" + ".csv"
 
@@ -117,8 +117,9 @@ def connectToFrontdeskDB():
         rows = cursor.fetchall()
         columns = [desc[0] for desc in cursor.description]
         tables[table] = pd.DataFrame(rows, columns=columns)
-    
+
     return tables
+
 
 def groupQueues(row):
     if row['QueueName'] in ['Afhent pas/kørekort/sundhedskort ']:
@@ -152,9 +153,9 @@ def groupQueues(row):
 
 
 def transformations(input_data):
-# Opslitter på enkelte dataframes
+    # Opslitter på enkelte dataframes
     operation = input_data['Operation']
-    ticket = input_data['Ticket'] 
+    ticket = input_data['Ticket']
     registration = input_data['Registration']
 
     # Dropper rækker
@@ -180,31 +181,31 @@ def transformations(input_data):
 
     # Beriger operation-data
     # Tilføjer tickettype til operation
-    ticket = ticket[['Id','Tickettype']]
+    ticket = ticket[['Id', 'Tickettype']]
 
-    operation=pd.merge(operation, ticket, left_on='TicketId', right_on='Id', how='left', indicator=True)
+    operation = pd.merge(operation, ticket, left_on='TicketId', right_on='Id', how='left', indicator=True)
     logger.info(operation.columns.tolist())
 
     operation.drop(columns=['_merge'], inplace=True)
     operation.drop(columns=['Id_y'], inplace=True)
-    operation.rename(columns={'Id_x':'Id'}, inplace=True)
+    operation.rename(columns={'Id_x': 'Id'}, inplace=True)
 
     # Identificerer og tilføjer underbetjeninger fra registration
-    registration = registration[['OperationId','QueueName','QueueCategoryName']]
+    registration = registration[['OperationId', 'QueueName', 'QueueCategoryName']]
 
-    operation=pd.merge(operation, registration, left_on='Id', right_on='OperationId', how='left', indicator=True)
+    operation = pd.merge(operation, registration, left_on='Id', right_on='OperationId', how='left', indicator=True)
     operation.drop(columns=['_merge'], inplace=True)
 
-    operation['registreringNr']=operation.groupby('Id').cumcount()+1  # row_number for each Id
-    operation['antalRegistreringer']=operation.groupby('Id')['registreringNr'].transform('max') # max row_number for each Id
-    operation['Tickettype'] = np.where(operation['registreringNr'] > 1, 'Underbetjening', operation['Tickettype']) # if row_number > 1 then Underbetjening
-    
+    operation['registreringNr'] = operation.groupby('Id').cumcount() + 1  # row_number for each Id
+    operation['antalRegistreringer'] = operation.groupby('Id')['registreringNr'].transform('max')  # max row_number for each Id
+    operation['Tickettype'] = np.where(operation['registreringNr'] > 1, 'Underbetjening', operation['Tickettype'])  # if row_number > 1 then Underbetjening
+
     operation.drop(columns=['QueueName_x'], inplace=True)
-    operation.rename(columns={'QueueName_y':'QueueName'}, inplace=True)
+    operation.rename(columns={'QueueName_y': 'QueueName'}, inplace=True)
 
     # Drop columns
     operation = operation.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
-    
+
     # # Gruppering af køer
     operation['QueuesGrouped'] = operation.apply(groupQueues, axis=1)
 
@@ -217,19 +218,21 @@ def transformations(input_data):
     # operation['VentetidMinutterDecimal'] = (operation['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
     operation['VentetidMinutterDecimal'] = (operation['VentetidMinutter'].dt.total_seconds() / 60).round(2)
 
-    operation = operation.drop(columns=['CategoryName','OperationId','AggregatedProcessingTime','AggregatedWaitingTime','LastAggregatedDataUpdateTime','State'])
+    operation = operation.drop(columns=['CategoryName', 'OperationId', 'AggregatedProcessingTime', 'AggregatedWaitingTime', 'LastAggregatedDataUpdateTime', 'State'])
 
     return operation
+
 
 def transformationsBeforeUpload(data):
     # Til evt. senere brug
     return data
 
+
 def dailyVisitors(data):
     data = data.groupby(['dato']).size().reset_index()
     data.columns = ['dato', 'antal']
-    
     return data
+
 
 def prophet(data, forecastModel):
 
