@@ -43,3 +43,16 @@ def post_data_to_custom_data_connector(filename, file):
     except Exception as e:
         logger.error(e)
         return False
+
+def read_data_from_custom_data_connector(filename):
+    if filename is None:
+        logger.error('No file or filename provided')
+        return False
+
+    try:
+        file = api_client.make_request(path=f'out/{filename}')
+        logger.info(filename + ' downloaded from custom-data-connector')
+        return file
+    except Exception as e:
+        logger.error(e)
+        return False
