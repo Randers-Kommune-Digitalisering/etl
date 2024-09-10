@@ -65,30 +65,47 @@ def api_request(endpoint):
         'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forventet andel (pct.)': 'Forventet andel (pct.)',
         'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Faktisk andel (pct.)': 'Faktisk andel (pct.)',
         'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forskel mellem forventet og faktisk andel (pct. point)': 'Forskel mellem forventet og faktisk andel (pct. point)',
-        'Placering på benchmarkranglisten': 'BenchmarkRanking'
+        'Placering på benchmarkranglisten': 'Placering på benchmarkranglisten'
     }
 
     df = df.rename(columns=column_rename_map)
 
+    # Convert 'Periode jobindsats' to datetime instead of being a string
+    df['Periode jobindsats'] = df['Periode jobindsats'].apply(convert_to_datetime)
+
+    # Filter columns for the Variables'
     df_filtered = df[[
         'Area', 'Periode jobindsats', 'Ydelsesgrupper', 'Forventet antal',
         'Faktisk antal', 'Forskel mellem forventet og faktisk antal',
         'Forventet andel (pct.)', 'Faktisk andel (pct.)',
         'Forskel mellem forventet og faktisk andel (pct. point)',
-        'BenchmarkRanking'
+        'Placering på benchmarkranglisten'
     ]]
 
     return df_filtered
 
 
 def dynamic_period():
-    current_year = datetime.now().year - 1  # -1 because the data is from the previous year
+    current_year = datetime.now().year - 1  # -1 Because the dataset[y30r21] is from the previous year
     previous_year = current_year - 1
     period = [
         f"{previous_year}QMAT02", f"{previous_year}QMAT04",
         f"{current_year}QMAT02", f"{current_year}QMAT04"
     ]
     return period
+
+
+def convert_to_datetime(period_str):
+    year = int(period_str[:4])
+    quarter = period_str[4:]
+
+    quarter_to_month = {
+        'QMAT02': 4,  # April Q2
+        'QMAT04': 10  # October Q4
+    }
+
+    month = quarter_to_month.get(quarter)
+    return datetime(year, month, 1)
 
 
 def df_to_csv(df, filename):
