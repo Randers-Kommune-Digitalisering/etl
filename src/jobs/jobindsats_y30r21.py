@@ -18,7 +18,7 @@ def job():
         logger.info(tables)
 
         file = io.BytesIO(tables.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "SA" + "Jobindsats" + ".csv"
+        filename = "SA" + "JobindsatsY30R21" + ".csv"
 
         post_data_to_custom_data_connector(filename, file)
 
@@ -78,14 +78,17 @@ def api_request(endpoint):
 
     df = df.rename(columns=column_rename_map)
 
+    # Add the original period string as a new column
+    df['Periode'] = df['Periode jobindsats']
+
     # Convert 'Periode jobindsats' to datetime instead of being a string
     df['Periode jobindsats'] = df['Periode jobindsats'].apply(convert_to_datetime)
 
     # Filter columns for the Variables'
     df_filtered = df[[
-        'Area', 'Periode jobindsats', 'Ydelsesgrupper', 'Forventet antal',
-        'Faktisk antal', 'Forskel mellem forventet og faktisk antal',
-        'Forventet andel (pct.)', 'Faktisk andel (pct.)',
+        'Area', 'Periode', 'Periode jobindsats', 'Ydelsesgrupper',
+        'Forventet antal', 'Faktisk antal', 'Forskel mellem forventet og '
+        'faktisk antal', 'Forventet andel (pct.)', 'Faktisk andel (pct.)',
         'Forskel mellem forventet og faktisk andel (pct. point)',
         'Placering på benchmarkranglisten'
     ]]
@@ -94,7 +97,7 @@ def api_request(endpoint):
 
 
 def dynamic_period():
-    current_year = datetime.now().year - 1  # -1 Because the dataset[y30r21] is from the previous year
+    current_year = datetime.now().year - 1  # -1 Because the dataset[y30r21] is
     previous_year = current_year - 1
     period = [
         f"{previous_year}QMAT02", f"{previous_year}QMAT04",
@@ -114,7 +117,3 @@ def convert_to_datetime(period_str):
 
     month = quarter_to_month.get(quarter)
     return datetime(year, month, 1)
-
-
-def df_to_csv(df, filename):
-    df.to_csv(f"{filename}.csv", index=False)
