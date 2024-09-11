@@ -8,7 +8,6 @@ from utils.config import JOBINDSATS_API_KEY
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
-filename = 'Jobindsats.csv'
 
 
 def job():
@@ -19,6 +18,7 @@ def job():
         logger.info(tables)
 
         file = io.BytesIO(tables.to_csv(index=False, sep=';').encode('utf-8'))
+        filename = "SA" + "Jobindsats" + ".csv"
 
         post_data_to_custom_data_connector(filename, file)
 
@@ -59,12 +59,20 @@ def api_request(endpoint):
         'Area': 'Area',
         'Periode': 'Periode jobindsats',
         'Ydelsesgrupper': 'Ydelsesgrupper',
-        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Forventet antal': 'Forventet antal',
-        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Faktisk antal': 'Faktisk antal',
-        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Forskel mellem forventet og faktisk antal': 'Forskel mellem forventet og faktisk antal',
-        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forventet andel (pct.)': 'Forventet andel (pct.)',
-        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Faktisk andel (pct.)': 'Faktisk andel (pct.)',
-        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forskel mellem forventet og faktisk andel (pct. point)': 'Forskel mellem forventet og faktisk andel (pct. point)',
+        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
+        'Forventet antal': 'Forventet antal',
+        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
+        'Faktisk antal': 'Faktisk antal',
+        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
+        'Forskel mellem forventet og faktisk antal': 'Forskel mellem forventet '
+        'og faktisk antal',
+        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
+        'Forventet andel (pct.)': 'Forventet andel (pct.)',
+        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
+        'Faktisk andel (pct.)': 'Faktisk andel (pct.)',
+        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
+        'Forskel mellem forventet og faktisk andel (pct. point)': 'Forskel '
+        'mellem forventet og faktisk andel (pct. point)',
         'Placering på benchmarkranglisten': 'Placering på benchmarkranglisten'
     }
 
