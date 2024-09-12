@@ -42,7 +42,7 @@ def get_jobindsats_dagpenge():
         
         df["Periode"] = df["Periode"]
 
-        # Rename column name 
+        # Rename column name
         df.rename(columns={"Area": "Område"}, inplace=True)
 
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
@@ -68,7 +68,7 @@ def dynamic_period():
     return period
 
 
-def convert_to_datetime(period_str): ##
+def convert_to_datetime(period_str):  # Convert period string to datetime
     year = int(period_str[:4])
     month = int(period_str[5:])
     return datetime(year, month, 1)

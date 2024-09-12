@@ -44,6 +44,7 @@ def post_data_to_custom_data_connector(filename, file):
         logger.error(e)
         return False
 
+
 def read_data_from_custom_data_connector(filename):
     if filename is None:
         logger.error('No file or filename provided')
