@@ -7,7 +7,7 @@ logger = logging.getLogger(__name__)
 
 
 class APIClient:
-    def __init__(self, base_url, api_key=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None):
+    def __init__(self, base_url, api_key=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None, use_bearer=None):
         self.base_url = base_url
         self.api_key = api_key
         self.realm = realm
@@ -15,6 +15,7 @@ class APIClient:
         self.client_secret = client_secret
         self.username = username
         self.password = password
+        self.use_bearer = use_bearer
 
         self.access_token = None
         self.refresh_token = None
@@ -29,7 +30,10 @@ class APIClient:
         try:
             import requests
             if self.api_key:
-                return {'Authorization': f'Bearer {self.api_key}'}
+                if self.use_bearer:
+                    return {'Authorization': f'Bearer {self.api_key}'}
+                else:
+                    return {'Authorization': f'{self.api_key}'}
             elif self.client_id and self.client_secret:
                 if not self.realm:
                     raise ValueError('Realm is required for client_id and client_secret authentication')
