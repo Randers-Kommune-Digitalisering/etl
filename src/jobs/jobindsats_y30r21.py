@@ -1,103 +1,100 @@
 import io
-import json
 import logging
 from datetime import datetime
 import pandas as pd
-import requests
-from utils.config import JOBINDSATS_API_KEY
+from utils.config import JOBINDSATS_API_KEY, JOBINDSATS_Y30R21_URL
+from utils.api_requests import APIClient
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
+jobindsats_y30r21_client = APIClient(JOBINDSATS_Y30R21_URL, JOBINDSATS_API_KEY)
 
 
 def job():
     logger.info('Starting jobindsats job')
+    return get_jobindats_ydelsesgrupper()
 
+   
+def get_jobindats_ydelsesgrupper():
     try:
-        tables = api_request('https://api.jobindsats.dk/v2/data/y30r21/json')
-        logger.info(tables)
+        period = dynamic_period()
+        payload = {
+            "area": "*",
+            "period": period,
+            "_ygrp_y30r21": [
+                "Ydelsesgrupper i alt",
+                "A-dagpenge mv.",
+                "Sygedagpenge mv.",
+                "Kontanthjælp mv."
+            ]
+        }
+        data = jobindsats_y30r21_client.make_request(json=payload)
+       
 
-        file = io.BytesIO(tables.to_csv(index=False, sep=';').encode('utf-8'))
+        variables = data[0]['Variables']
+        data = data[0]['Data']
+
+        column_names = [var['Label'] for var in variables]
+
+        df = pd.DataFrame(data, columns=column_names)
+
+        # Create a dict to shorten the column names
+        column_rename_map = {
+            'Area': 'Area',
+            'Periode': 'Periode jobindsats',
+            'Ydelsesgrupper': 'Ydelsesgrupper',
+            'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
+            'Forventet antal': 'Forventet antal',
+            'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
+            'Faktisk antal': 'Faktisk antal',
+            'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
+            'Forskel mellem forventet og faktisk antal': 'Forskel mellem forventet '
+            'og faktisk antal',
+            'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
+            'Forventet andel (pct.)': 'Forventet andel (pct.)',
+            'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
+            'Faktisk andel (pct.)': 'Faktisk andel (pct.)',
+            'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
+            'Forskel mellem forventet og faktisk andel (pct. point)': 'Forskel '
+            'mellem forventet og faktisk andel (pct. point)',
+            'Placering på benchmarkranglisten': 'Placering på benchmarkranglisten'
+        }
+
+        df = df.rename(columns=column_rename_map)
+
+        # Add the original period string as a new column
+        df['Periode'] = df['Periode jobindsats']
+
+        # Convert 'Periode jobindsats' to datetime instead of being a string
+        df['Periode jobindsats'] = df['Periode jobindsats'].apply(convert_to_datetime)
+
+        # Filter columns for the Variables'
+        df_filtered = df[[
+            'Area', 'Periode', 'Periode jobindsats', 'Ydelsesgrupper',
+            'Forventet antal', 'Faktisk antal', 'Forskel mellem forventet og '
+            'faktisk antal', 'Forventet andel (pct.)', 'Faktisk andel (pct.)',
+            'Forskel mellem forventet og faktisk andel (pct. point)',
+            'Placering på benchmarkranglisten'
+        ]]
+
+        # Convert to csv, set filename and post to CDC
+        file = io.BytesIO(df_filtered.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "JobindsatsY30R21" + ".csv"
-
-        post_data_to_custom_data_connector(filename, file)
+        
 
     except Exception as e:
-        logger.error(f'Error: {e}')
+        logger.error(f'Error {e}')
         return False
-    else:
+    
+    if post_data_to_custom_data_connector(filename, file):
+        logger.info("Successfully updated JobindsatsY30R21")
         return True
-
-
-def api_request(endpoint):
-    period = dynamic_period()
-    payload = {
-        "area": "*",
-        "period": period,
-        "_ygrp_y30r21": [
-            "Ydelsesgrupper i alt",
-            "A-dagpenge mv.",
-            "Sygedagpenge mv.",
-            "Kontanthjælp mv."
-        ]
-    }
-    headers = {
-        'Authorization': JOBINDSATS_API_KEY,
-    }
-    response = requests.post(endpoint, headers=headers, data=json.dumps(payload))
-    json_data = response.json()
-
-    variables = json_data[0]['Variables']
-    data = json_data[0]['Data']
-
-    column_names = [var['Label'] for var in variables]
-
-    df = pd.DataFrame(data, columns=column_names)
-
-    # Create a dict to shorten the column names
-    column_rename_map = {
-        'Area': 'Area',
-        'Periode': 'Periode jobindsats',
-        'Ydelsesgrupper': 'Ydelsesgrupper',
-        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
-        'Forventet antal': 'Forventet antal',
-        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
-        'Faktisk antal': 'Faktisk antal',
-        'Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: '
-        'Forskel mellem forventet og faktisk antal': 'Forskel mellem forventet '
-        'og faktisk antal',
-        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
-        'Forventet andel (pct.)': 'Forventet andel (pct.)',
-        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
-        'Faktisk andel (pct.)': 'Faktisk andel (pct.)',
-        'Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: '
-        'Forskel mellem forventet og faktisk andel (pct. point)': 'Forskel '
-        'mellem forventet og faktisk andel (pct. point)',
-        'Placering på benchmarkranglisten': 'Placering på benchmarkranglisten'
-    }
-
-    df = df.rename(columns=column_rename_map)
-
-    # Add the original period string as a new column
-    df['Periode'] = df['Periode jobindsats']
-
-    # Convert 'Periode jobindsats' to datetime instead of being a string
-    df['Periode jobindsats'] = df['Periode jobindsats'].apply(convert_to_datetime)
-
-    # Filter columns for the Variables'
-    df_filtered = df[[
-        'Area', 'Periode', 'Periode jobindsats', 'Ydelsesgrupper',
-        'Forventet antal', 'Faktisk antal', 'Forskel mellem forventet og '
-        'faktisk antal', 'Forventet andel (pct.)', 'Faktisk andel (pct.)',
-        'Forskel mellem forventet og faktisk andel (pct. point)',
-        'Placering på benchmarkranglisten'
-    ]]
-
-    return df_filtered
-
+    else:
+        logger.error("Failed to update JobindsatsY30R21")
+        return False
 
 def dynamic_period():
-    current_year = datetime.now().year - 1  # -1 Because the dataset[y30r21] is
+    current_year = datetime.now().year - 1  # -1 Because the dataset[y30r21] is from 2023
     previous_year = current_year - 1
     period = [
         f"{previous_year}QMAT02", f"{previous_year}QMAT04",
