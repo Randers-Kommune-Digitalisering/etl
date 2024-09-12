@@ -1,9 +1,10 @@
 import io
-import pandas as pd
 import logging
 from datetime import datetime
-from utils.config import JOBINDSATS_API_KEY
+
+import pandas as pd
 from utils.api_requests import APIClient
+from utils.config import JOBINDSATS_API_KEY
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
@@ -18,16 +19,16 @@ def get_jobindsats_dagpenge():
             "area": "*",
             "period": period,
             "_kon": [
-                "Køn i alt",
                 "Kvinder",
                 "Mænd"
             ],
-            "_aldera": [
-                "Alder i alt",
-            ],
             "_oprinda": [
                 "Herkomst i alt",
-                "Personer med dansk oprindelse"
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
             ]
         }
         data = jobindsats_client.make_request(json=payload)
@@ -39,7 +40,7 @@ def get_jobindsats_dagpenge():
 
         df = pd.DataFrame(data, columns=column_names)
         df['Periode dagpenge'] = df['Periode'].apply(convert_to_datetime)
-        
+
         df["Periode"] = df["Periode"]
 
         # Rename column name
