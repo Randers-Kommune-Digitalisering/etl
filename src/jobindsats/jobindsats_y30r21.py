@@ -2,19 +2,16 @@ import io
 import logging
 from datetime import datetime
 import pandas as pd
-from utils.config import JOBINDSATS_API_KEY, JOBINDSATS_Y30R21_URL
+from utils.config import JOBINDSATS_API_KEY
 from utils.api_requests import APIClient
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
-jobindsats_y30r21_client = APIClient(JOBINDSATS_Y30R21_URL, JOBINDSATS_API_KEY)
+base_url = "https://api.jobindsats.dk/v2/data/y30r21/json"
+jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 
-def job():
-    logger.info('Starting jobindsats job')
-    return get_jobindats_ydelsesgrupper()
 
-   
 def get_jobindats_ydelsesgrupper():
     try:
         period = dynamic_period()
@@ -28,8 +25,7 @@ def get_jobindats_ydelsesgrupper():
                 "Kontanthjælp mv."
             ]
         }
-        data = jobindsats_y30r21_client.make_request(json=payload)
-       
+        data = jobindsats_client.make_request(json=payload)
 
         variables = data[0]['Variables']
         data = data[0]['Data']
@@ -80,18 +76,18 @@ def get_jobindats_ydelsesgrupper():
         # Convert to csv, set filename and post to CDC
         file = io.BytesIO(df_filtered.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "JobindsatsY30R21" + ".csv"
-        
 
     except Exception as e:
         logger.error(f'Error {e}')
         return False
-    
+
     if post_data_to_custom_data_connector(filename, file):
         logger.info("Successfully updated JobindsatsY30R21")
         return True
     else:
         logger.error("Failed to update JobindsatsY30R21")
         return False
+
 
 def dynamic_period():
     current_year = datetime.now().year - 1  # -1 Because the dataset[y30r21] is from 2023
@@ -114,3 +110,4 @@ def convert_to_datetime(period_str):
 
     month = quarter_to_month.get(quarter)
     return datetime(year, month, 1)
+    
