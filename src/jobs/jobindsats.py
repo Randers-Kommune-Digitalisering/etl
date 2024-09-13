@@ -4,6 +4,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 def job():
     try:
         logger.info('Starting jobindsats ETL jobs!')
