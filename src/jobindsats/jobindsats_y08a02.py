@@ -49,7 +49,6 @@ def get_jobindsats_fleksjob():
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "JobindsatsY08A02" + ".csv"
 
-
         if post_data_to_custom_data_connector(filename, file):
             logger.info("Successfully updated JobindsatsY08A02")
             return True
