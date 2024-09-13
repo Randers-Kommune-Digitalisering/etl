@@ -4,9 +4,12 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-
 def job():
-    logger.info('Starting jobindsats ETL jobs')
-    get_jobindsats_dagpenge()
-    get_jobindats_ydelsesgrupper()
-    return True
+    try:
+        logger.info('Starting jobindsats ETL jobs!')
+        get_jobindsats_dagpenge()
+        get_jobindats_ydelsesgrupper()
+        return True
+    except Exception as e:
+        logger.error(f'An error occurred: {e}')
+        return False

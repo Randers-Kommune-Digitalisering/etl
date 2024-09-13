@@ -23,7 +23,6 @@ def get_jobindsats_dagpenge():
                 "Mænd"
             ],
             "_oprinda": [
-                "Herkomst i alt",
                 "Personer med dansk oprindelse",
                 "Indvandrere fra vestlige lande",
                 "Efterkommere fra vestlige lande",
