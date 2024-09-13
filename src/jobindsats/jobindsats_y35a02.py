@@ -12,7 +12,7 @@ base_url = "https://api.jobindsats.dk/v2/data/y35a02/json"
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 
-def get_jobindsats_sho(): ## sho = Selvforsørgelses- og hjemrejseydelse samt overgangsydelse
+def get_jobindsats_sho():  # sho = Selvforsørgelses- og hjemrejseydelse samt overgangsydelse
     try:
         logger.info("Starting jobindsats Selvforsørgelses- og hjemrejseydelse samt overgangsydelse")
         period = dynamic_period()
