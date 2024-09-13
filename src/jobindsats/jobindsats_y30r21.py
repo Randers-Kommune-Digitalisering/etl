@@ -13,6 +13,7 @@ jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 def get_jobindats_ydelsesgrupper():
     try:
+        logger.info("Starting jobindsats Ydelsesgrupper")
         period = dynamic_period()
         payload = {
             "area": "*",
