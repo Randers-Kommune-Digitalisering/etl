@@ -8,13 +8,13 @@ from utils.config import JOBINDSATS_API_KEY
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
-base_url = "https://api.jobindsats.dk/v2/data/y01a02/json"
+base_url = "https://api.jobindsats.dk/v2/data/y07a02/json"
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 
-def get_jobindsats_dagpenge():
+def get_jobindsats_syg_dagpenge():
     try:
-        logger.info("Starting jobindsats A-Dagpenge")
+        logger.info("Starting jobindsats Sygedagppenge")
         period = dynamic_period()
         payload = {
             "area": "*",
@@ -29,7 +29,14 @@ def get_jobindsats_dagpenge():
                 "Efterkommere fra vestlige lande",
                 "Indvandrere fra ikke-vestlige lande",
                 "Efterkommere fra ikke-vestlige lande"
+            ],
+            "_sagsart": [
+                "Lønmodtagere",
+                "Selvstændige erhvervsdrivende",
+                "Fleksjob",
+                "A-dagpengemodtagere"
             ]
+            
         }
         data = jobindsats_client.make_request(json=payload)
 
@@ -39,7 +46,7 @@ def get_jobindsats_dagpenge():
         column_names = [var['Label'] for var in variables]
 
         df = pd.DataFrame(data, columns=column_names)
-        df['Periode dagpenge'] = df['Periode'].apply(convert_to_datetime)
+        df['Periode sygdagpenge'] = df['Periode'].apply(convert_to_datetime)
 
         df["Periode"] = df["Periode"]
 
@@ -47,10 +54,10 @@ def get_jobindsats_dagpenge():
         df.rename(columns={"Area": "Område"}, inplace=True)
 
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "SA" + "JobindsatsY01A02" + ".csv"
+        filename = "SA" + "JobindsatsY07A02" + ".csv"
 
         if post_data_to_custom_data_connector(filename, file):
-            logger.info("Successfully updated JobindsatsY01A02")
+            logger.info("Successfully updated JobindsatsY07A02")
             return True
         else:
             return False

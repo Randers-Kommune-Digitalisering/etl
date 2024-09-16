@@ -8,13 +8,13 @@ from utils.config import JOBINDSATS_API_KEY
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
-base_url = "https://api.jobindsats.dk/v2/data/y01a02/json"
+base_url = "https://api.jobindsats.dk/v2/data/y08a02/json"
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 
-def get_jobindsats_dagpenge():
+def get_jobindsats_fleksjob():
     try:
-        logger.info("Starting jobindsats A-Dagpenge")
+        logger.info("Starting jobindsats Fleksjob")
         period = dynamic_period()
         payload = {
             "area": "*",
@@ -39,7 +39,7 @@ def get_jobindsats_dagpenge():
         column_names = [var['Label'] for var in variables]
 
         df = pd.DataFrame(data, columns=column_names)
-        df['Periode dagpenge'] = df['Periode'].apply(convert_to_datetime)
+        df['Periode fleksjob'] = df['Periode'].apply(convert_to_datetime)
 
         df["Periode"] = df["Periode"]
 
@@ -47,10 +47,10 @@ def get_jobindsats_dagpenge():
         df.rename(columns={"Area": "Område"}, inplace=True)
 
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "SA" + "JobindsatsY01A02" + ".csv"
+        filename = "SA" + "JobindsatsY08A02" + ".csv"
 
         if post_data_to_custom_data_connector(filename, file):
-            logger.info("Successfully updated JobindsatsY01A02")
+            logger.info("Successfully updated JobindsatsY08A02")
             return True
         else:
             return False

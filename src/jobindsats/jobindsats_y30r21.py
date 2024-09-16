@@ -11,9 +11,9 @@ base_url = "https://api.jobindsats.dk/v2/data/y30r21/json"
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 
-
 def get_jobindats_ydelsesgrupper():
     try:
+        logger.info("Starting jobindsats Ydelsesgrupper")
         period = dynamic_period()
         payload = {
             "area": "*",
@@ -110,4 +110,3 @@ def convert_to_datetime(period_str):
 
     month = quarter_to_month.get(quarter)
     return datetime(year, month, 1)
-    
