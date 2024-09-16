@@ -29,7 +29,14 @@ def get_jobindsats_syg_dagpenge():
                 "Efterkommere fra vestlige lande",
                 "Indvandrere fra ikke-vestlige lande",
                 "Efterkommere fra ikke-vestlige lande"
+            ],
+            "_sagsart": [
+                "Lønmodtagere",
+                "Selvstændige erhvervsdrivende",
+                "Fleksjob",
+                "A-dagpengemodtagere"
             ]
+            
         }
         data = jobindsats_client.make_request(json=payload)
 
