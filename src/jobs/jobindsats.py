@@ -9,6 +9,7 @@ from jobindsats.jobindsats_y36a02 import get_jobindsats_kontanthjælp
 from jobindsats.jobindsats_y38a02 import get_jobindsats_uddannelseshjælp
 from jobindsats.jobindsats_y11a02 import get_jobindsats_ressourceforløb
 from jobindsats.jobindsats_y04a02 import get_jobindsats_revalidering
+from jobindsats.jobindsats_y14d03 import get_jobindsats_ydelse_til_job
 
 import logging
 
@@ -18,6 +19,7 @@ logger = logging.getLogger(__name__)
 def job():
     try:
         logger.info('Starting jobindsats ETL jobs!')
+        get_jobindsats_ydelse_til_job()
         get_jobindsats_revalidering()
         get_jobindsats_ressourceforløb()
         get_jobindsats_uddannelseshjælp()
