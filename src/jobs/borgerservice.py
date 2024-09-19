@@ -170,7 +170,7 @@ def groupQueuesId(row):
     elif row['QueueId'] in [7134, 15537, 7133]:
         return 'Beboerindskud og boligstøtte'
     elif row['QueueId'] in [12684]:
-        return 'Brevstemme'   
+        return 'Brevstemme'
     elif row['QueueId'] in [10827]:
         return "Buskort til pensionister"
     elif row['QueueId'] in [15612, 15548]:
@@ -277,8 +277,8 @@ def transformationsFeedbackData(input_data):
 
     feedback = feedback.drop(columns=['OrganizationId', 'UniqueId'])
 
-    feedback['CreatedAt'] = pd.to_datetime(feedback['CreatedAt'])
-    print(type(feedback['CreatedAt']))
+    feedback['CreatedAt'] = pd.to_datetime(feedback['CreatedAt']).dt.tz_localize(None)
+    feedback['dato'] = feedback['CreatedAt'].dt.date
 
     feedback['QueuesGrouped'] = feedback.apply(groupQueuesId, axis=1)
 
