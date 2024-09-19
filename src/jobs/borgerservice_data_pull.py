@@ -30,7 +30,8 @@ def connectToFrontdeskDBtables():
     conn = pymssql.connect(FRONTDESK_DB_HOST, FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_DATABASE)
     cursor = conn.cursor()
 
-    cursor.execute("SELECT * FROM information_schema.tables")
+    # cursor.execute("SELECT * FROM information_schema.tables")
+    cursor.execute("SELECT * FROM Feedback")
     rows = cursor.fetchall()
     columns = [desc[0] for desc in cursor.description]
     tables = pd.DataFrame(rows, columns=columns)
