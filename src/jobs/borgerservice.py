@@ -27,6 +27,7 @@ def job():
         logger.info("Connected to Frontdesk Borgerservice database successfully")
         workdata = transformations(workdatasets)
         workdata_grouped = dailyVisitors(workdata)
+        feedback = transformationsFeedbackData(workdatasets)
         logger.info("Data transformed successfully")
 
         # Forecast på alle køer
@@ -92,7 +93,18 @@ def job():
             logger.error("Failed to update Frontdesk Borgerservice forecasts")
             return False
 
+        # Upload feedback data
+        file = io.BytesIO(feedback.to_csv(index=False, sep=';').encode('utf-8'))
+        filename = "SA" + "FrontdeskBorgerserviceFeedback" + ".csv"
+
+        if post_data_to_custom_data_connector(filename, file):
+            logger.info("Updated Frontdesk Borgerservice feedback successfully")
+        else:
+            logger.error("Failed to update Frontdesk feedback forecasts")
+            return False
+
         # save_data(predictions,'FrontdeskBorgerserviceForecasts')
+        # Upload main data
         workdata = transformationsBeforeUpload(workdata)
 
         file = io.BytesIO(workdata.to_csv(index=False, sep=';').encode('utf-8'))
@@ -110,7 +122,7 @@ def connectToFrontdeskDB():
     conn = pymssql.connect(FRONTDESK_DB_HOST, FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_DATABASE)
     cursor = conn.cursor()
 
-    table_names = ["Operation", "Registration", "Ticket"]
+    table_names = ["Operation", "Registration", "Ticket", "Feedback"]
     tables = {}
     for table in table_names:
         cursor.execute(f"SELECT * FROM {table}")
@@ -150,6 +162,43 @@ def groupQueues(row):
         return 'Andet'
     else:
         return row['QueueName']
+
+
+def groupQueuesId(row):
+    if row['QueueId'] in [7130]:
+        return 'Afhent pas/kørekort/sundhedskort'
+    elif row['QueueId'] in [7134, 15537, 7133]:
+        return 'Beboerindskud og boligstøtte'
+    elif row['QueueId'] in [12684]:
+        return 'Brevstemme'   
+    elif row['QueueId'] in [10827]:
+        return "Buskort til pensionister"
+    elif row['QueueId'] in [15612, 15548]:
+        return 'Den Boligsociale Enhed'
+    elif row['QueueId'] in [7137, 15534]:
+        return 'Flytning og Folkeregister'
+    elif row['QueueId'] in [7131, 15502, 14893]:
+        return 'Kørekort'
+    elif row['QueueId'] in [15540, 7139]:
+        return 'Legitimationskort'
+    elif row['QueueId'] in [11948, 15532, 13684]:
+        return 'MitID'
+    elif row['QueueId'] in [7129, 15531, 14892]:
+        return 'Pas'
+    elif row['QueueId'] in [7135, 15503, 14836]:
+        return 'Pension'
+    elif row['QueueId'] in [13568, 7136]:
+        return 'Skat'
+    elif row['QueueId'] in [7141, 15535]:
+        return 'Sundhedskort og lægevalg'
+    elif row['QueueId'] in [15536]:
+        return "Tilflytning fra udlandet"
+    elif row['QueueId'] in [15538]:
+        return 'Andet'
+    elif row['QueueId'] in [15654]:
+        return 'Akut'
+    else:
+        return row['QueueId']
 
 
 def transformations(input_data):
@@ -221,6 +270,19 @@ def transformations(input_data):
     operation = operation.drop(columns=['CategoryName', 'OperationId', 'AggregatedProcessingTime', 'AggregatedWaitingTime', 'LastAggregatedDataUpdateTime', 'State'])
 
     return operation
+
+
+def transformationsFeedbackData(input_data):
+    feedback = input_data['Feedback']
+
+    feedback = feedback.drop(columns=['OrganizationId', 'UniqueId'])
+
+    feedback['CreatedAt'] = pd.to_datetime(feedback['CreatedAt'])
+    print(type(feedback['CreatedAt']))
+
+    feedback['QueuesGrouped'] = feedback.apply(groupQueuesId, axis=1)
+
+    return feedback
 
 
 def transformationsBeforeUpload(data):
