@@ -118,7 +118,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 
 </details>
 
-## <d id="rev"></a>1474 Revalidering
+## <a id="rev"></a>1474 Revalidering
 ### Y04A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -136,7 +136,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 |Tekst3                       |Herkomst|
 </details>
 
-## <d id="sel"></a> 1511 Selvforsørgelses- og hjemrejseydelse samt overgangsydelse
+## <a id="sel"></a> 1511 Selvforsørgelses- og hjemrejseydelse samt overgangsydelse
 ### Y35A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -155,7 +155,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 </details>
 
 
-## <d id="syg"></a> 1530 Sygedagpenge
+## <a id="syg"></a> 1530 Sygedagpenge
 ### Y07A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -175,7 +175,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 </details>
 
 
-## <d id="jobaf"></a> 1550 Jobafklaringsforløb
+## <a id="jobaf"></a> 1550 Jobafklaringsforløb
 ### Y12A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -193,7 +193,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 |Tekst3                       |Herkomst|
 </details>
 
-## <d id="res"></a> 1568 Ressourceforløb
+## <a id="res"></a> 1568 Ressourceforløb
 ### Y11A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -212,7 +212,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 
 </details>
 
-## <d id="led"></a> 1586 Ledighedsydelse
+## <a id="led"></a> 1586 Ledighedsydelse
 ### Y09A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -230,7 +230,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 |Tekst3                       |Herkomst|
 </details>
 
-## <d id="fle"></a> 1604 Fleksjob
+## <a id="fle"></a> 1604 Fleksjob
 ### Y08A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
