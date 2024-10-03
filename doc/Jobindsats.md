@@ -24,8 +24,6 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 * [2704 Ydelsesmodtagere med løntimer](#yde)
 
 
-
-
 ## <a id="adag"></a> 1123 A-dagpenge
 ### Y01A02 - Antal personer og fuldtidspersoner
 <details>
@@ -138,7 +136,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 |Tekst3                       |Herkomst|
 </details>
 
-## <d id="sel"></a>1511 Selvforsørgelses- og hjemrejseydelse samt overgangsydelse
+## <d id="sel"></a> 1511 Selvforsørgelses- og hjemrejseydelse samt overgangsydelse
 ### Y35A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -157,7 +155,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 </details>
 
 
-## <d id="syg"></a>1530 Sygedagpenge
+## <d id="syg"></a> 1530 Sygedagpenge
 ### Y07A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -177,7 +175,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 </details>
 
 
-## <d id="jobaf"></a>1550 Jobafklaringsforløb
+## <d id="jobaf"></a> 1550 Jobafklaringsforløb
 ### Y12A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -195,7 +193,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 |Tekst3                       |Herkomst|
 </details>
 
-## <d id="res"></a>1568 Ressourceforløb
+## <d id="res"></a> 1568 Ressourceforløb
 ### Y11A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -214,7 +212,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 
 </details>
 
-## <d id="led"></a>1586 Ledighedsydelse
+## <d id="led"></a> 1586 Ledighedsydelse
 ### Y09A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -232,7 +230,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 |Tekst3                       |Herkomst|
 </details>
 
-## <d id="fle"></a>1604 Fleksjob
+## <d id="fle"></a> 1604 Fleksjob
 ### Y08A02 - Antal personer og fuldtidspersoner
 <details>
 <summary>Vis tabel</summary>
@@ -266,7 +264,7 @@ Dataområderne er opdelt efter enme ("Subject") som angivet fra jobindsats.dk
 |Tekst2                       |Ydelsesgrupper|
 </details>
 
-## <a id="skr"></a>1815 Tidlig indsats og skærpet tilsyn
+## <a id="skr"></a> 1815 Tidlig indsats og skærpet tilsyn
 ### Y30R21 - Forventet og faktisk antal og andel fuldtidspersoner på offentlig forsørgelse
 <details>
 <summary>Vis tabel</summary>
