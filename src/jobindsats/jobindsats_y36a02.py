@@ -1,7 +1,6 @@
 import io
 import logging
 from datetime import datetime
-import requests
 import pandas as pd
 from utils.api_requests import APIClient
 from utils.config import JOBINDSATS_API_KEY
