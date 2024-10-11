@@ -93,4 +93,3 @@ def period_request():
     valid_periods = [p for p in periods if len(p) == 7 and p[4] == 'M' and p[5:].isdigit()]
     latest_period = max(valid_periods)
     return latest_period
-
