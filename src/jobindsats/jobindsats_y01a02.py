@@ -91,5 +91,5 @@ def period_request():
     data = jobindsats_period_client.make_request()
     periods = data[0]['Period']
     valid_periods = [p for p in periods if len(p) == 7 and p[4] == 'M' and p[5:].isdigit()]
-    latest_period = max(valid_periods) 
+    latest_period = max(valid_periods)
     return latest_period
