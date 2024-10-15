@@ -9,12 +9,15 @@ from custom_data_connector import post_data_to_custom_data_connector
 logger = logging.getLogger(__name__)
 base_url = "https://api.jobindsats.dk/v2/data/y30r21/json"
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
+period_url = "https://api.jobindsats.dk/v2/tables/y30r21/json/"
+jobindsats_period_client = APIClient(period_url, JOBINDSATS_API_KEY)
 
 
 def get_jobindats_ydelsesgrupper():
     try:
         logger.info("Starting jobindsats Ydelsesgrupper")
-        period = dynamic_period()
+        latest_period = period_request()
+        period = dynamic_period(latest_period)
         payload = {
             "area": "*",
             "period": period,
@@ -34,7 +37,6 @@ def get_jobindats_ydelsesgrupper():
 
         df = pd.DataFrame(data, columns=column_names)
 
-        # Create a dict to shorten the column names
         column_rename_map = {
             'Area': 'Area',
             'Periode': 'Periode jobindsats',
@@ -58,13 +60,10 @@ def get_jobindats_ydelsesgrupper():
 
         df = df.rename(columns=column_rename_map)
 
-        # Add the original period string as a new column
         df['Periode'] = df['Periode jobindsats']
 
-        # Convert 'Periode jobindsats' to datetime instead of being a string
         df['Periode jobindsats'] = df['Periode jobindsats'].apply(convert_to_datetime)
 
-        # Filter columns for the Variables'
         df_filtered = df[[
             'Area', 'Periode', 'Periode jobindsats', 'Ydelsesgrupper',
             'Forventet antal', 'Faktisk antal', 'Forskel mellem forventet og '
@@ -89,13 +88,22 @@ def get_jobindats_ydelsesgrupper():
         return False
 
 
-def dynamic_period():
-    current_year = datetime.now().year - 1  # -1 Because the dataset[y30r21] is from 2023
-    previous_year = current_year - 1
-    period = [
-        f"{previous_year}QMAT02", f"{previous_year}QMAT04",
-        f"{current_year}QMAT02", f"{current_year}QMAT04"
-    ]
+def dynamic_period(latest_period):
+    year_2024 = int(latest_period[:4])
+    current_month = int(latest_period[8:])
+    year_2023 = year_2024 - 1
+    year_2022 = year_2023 - 1
+    period = []
+
+    for month in range(1, 13):
+        period.append(f"{year_2023}QMAT{month:02d}")
+
+    for month in range(1, current_month + 1):
+        period.append(f"{year_2024}QMAT{month:02d}")
+
+    for month in range(1, 13):
+        period.append(f"{year_2022}QMAT{month:02d}")
+
     return period
 
 
@@ -110,3 +118,11 @@ def convert_to_datetime(period_str):
 
     month = quarter_to_month.get(quarter)
     return datetime(year, month, 1)
+
+
+def period_request():
+    data = jobindsats_period_client.make_request()
+    periods = data[0]['Period']
+    valid_periods = [p for p in periods if len(p) == 10 and p[4:8] == 'QMAT' and p[8:].isdigit()]
+    latest_period = max(valid_periods)
+    return latest_period
