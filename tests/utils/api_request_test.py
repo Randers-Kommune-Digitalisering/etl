@@ -3,9 +3,11 @@ import base64
 from unittest.mock import MagicMock, patch
 from utils.api_requests import APIClient
 
+
 @pytest.fixture
 def api_client():
     return APIClient('http://testurl.com')
+
 
 @pytest.fixture
 def cert_base64():

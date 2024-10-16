@@ -19,6 +19,7 @@ def test_disable_endpoint_logs():
         serving.WSGIRequestHandler.log_request(mock_request)
         original_log_request.assert_called_once_with(mock_request)
 
+
 @patch('logging.basicConfig')
 @patch('utils.logging.disable_endpoint_logs')
 def test_set_logging_configuration(mock_disable_endpoint_logs, mock_basicConfig):
