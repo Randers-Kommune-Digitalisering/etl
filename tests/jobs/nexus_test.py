@@ -1,6 +1,7 @@
 from unittest.mock import patch, MagicMock
 from jobs.nexus import job
 
+
 def test_job():
     with patch('jobs.nexus.logger', new=MagicMock()) as mock_logger, \
          patch('jobs.nexus.read_data_from_custom_data_connector', new=MagicMock()) as mock_read_data:
