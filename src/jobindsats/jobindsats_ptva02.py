@@ -10,12 +10,15 @@ from custom_data_connector import post_data_to_custom_data_connector
 logger = logging.getLogger(__name__)
 base_url = "https://api.jobindsats.dk/v2/data/ptv_a02/json"
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
+period_url = "https://api.jobindsats.dk/v2/tables/ptv_a02/json/"
+jobindsats_period_client = APIClient(period_url, JOBINDSATS_API_KEY)
 
 
 def get_jobindsats_alle_ydelser():
     try:
         logger.info("Starting jobindsats Offentligt forsørgede")
-        period = dynamic_period()
+        latest_period = period_request()
+        period = dynamic_period(latest_period)
         payload = {
             "area": "*",
             "period": period,
@@ -43,7 +46,6 @@ def get_jobindsats_alle_ydelser():
 
         df["Periode"] = df["Periode"]
 
-        # Rename column name
         df.rename(columns={"Area": "Område"}, inplace=True)
 
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
@@ -60,16 +62,34 @@ def get_jobindsats_alle_ydelser():
         return False
 
 
-def dynamic_period():
-    current_year = datetime.now().year - 1
-    previous_year = current_year - 1
-    period = [
-        f"{previous_year}Y01", f"{current_year}Y01"
-    ]
+def dynamic_period(latest_period):
+    year_2024 = int(latest_period[:4])
+    current_month = int(latest_period[5:])
+    year_2023 = year_2024 - 1
+    year_2022 = year_2023 - 1
+    period = []
+
+    for month in range(1, 13):
+        period.append(f"{year_2023}M{month:02d}")
+
+    for month in range(1, current_month + 1):
+        period.append(f"{year_2024}M{month:02d}")
+
+    for month in range(1, 13):
+        period.append(f"{year_2022}M{month:02d}")
+
     return period
 
 
-def convert_to_datetime(period_str):  # Convert period string to datetime
+def convert_to_datetime(period_str):
     year = int(period_str[:4])
     month = int(period_str[5:])
     return datetime(year, month, 1)
+
+
+def period_request():
+    data = jobindsats_period_client.make_request()
+    periods = data[0]['Period']
+    valid_periods = [p for p in periods if len(p) == 7 and p[4] == 'M' and p[5:].isdigit()]
+    latest_period = max(valid_periods)
+    return latest_period
