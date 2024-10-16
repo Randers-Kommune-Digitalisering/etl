@@ -4,6 +4,7 @@ from unittest.mock import patch, Mock
 from werkzeug import serving
 from utils.logging import disable_endpoint_logs, set_logging_configuration
 
+
 def test_disable_endpoint_logs():
     original_log_request = Mock()
     with patch.object(serving.WSGIRequestHandler, 'log_request', new=original_log_request):

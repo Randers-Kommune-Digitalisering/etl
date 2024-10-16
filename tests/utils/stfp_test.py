@@ -12,6 +12,7 @@ def test_get_connection_success(mock_connection):
     assert result is not None
     mock_connection.assert_called_once_with(host='host', username='user', password='pass', private_key=None, cnopts=client.cnopts)
 
+
 @patch('pysftp.Connection')
 def test_get_connection_exception(mock_connection):
 
