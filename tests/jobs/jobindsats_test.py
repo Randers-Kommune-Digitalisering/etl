@@ -1,8 +1,9 @@
+import pytest
 from unittest.mock import patch, MagicMock
 from jobs.jobindsats import job
 
-
-def test_job_success():
+@pytest.fixture
+def mock_dependencies():
     with patch('jobs.jobindsats.logger', new=MagicMock()) as mock_logger, \
          patch('jobs.jobindsats.get_jobindsats_alle_ydelser', new=MagicMock()) as mock_alle_ydelser, \
          patch('jobs.jobindsats.get_jobindsats_tilbud_samtaler', new=MagicMock()) as mock_tilbud_samtaler, \
@@ -20,35 +21,55 @@ def test_job_success():
          patch('jobs.jobindsats.get_jobindsats_syg_dagpenge', new=MagicMock()) as mock_syg_dagpenge, \
          patch('jobs.jobindsats.get_jobindsats_dagpenge', new=MagicMock()) as mock_dagpenge, \
          patch('jobs.jobindsats.get_jobindats_ydelsesgrupper', new=MagicMock()) as mock_ydelsesgrupper:
-
-        result = job()
-
-        assert result
-        mock_logger.info.assert_called_once_with('Starting jobindsats ETL jobs!')
-        mock_alle_ydelser.assert_called_once()
-        mock_tilbud_samtaler.assert_called_once()
-        mock_ydelsesmodtagere_loentimer.assert_called_once()
-        mock_tilbagetraekningsydelser.assert_called_once()
-        mock_ydelse_til_job.assert_called_once()
-        mock_revalidering.assert_called_once()
-        mock_ressourceforløb.assert_called_once()
-        mock_uddannelseshjælp.assert_called_once()
-        mock_kontanthjælp.assert_called_once()
-        mock_sho.assert_called_once()
-        mock_jobafklaringsforløb.assert_called_once()
-        mock_ledighedsydelse.assert_called_once()
-        mock_fleksjob.assert_called_once()
-        mock_syg_dagpenge.assert_called_once()
-        mock_dagpenge.assert_called_once()
-        mock_ydelsesgrupper.assert_called_once()
+        yield {
+            'mock_logger': mock_logger,
+            'mock_alle_ydelser': mock_alle_ydelser,
+            'mock_tilbud_samtaler': mock_tilbud_samtaler,
+            'mock_ydelsesmodtagere_loentimer': mock_ydelsesmodtagere_loentimer,
+            'mock_tilbagetraekningsydelser': mock_tilbagetraekningsydelser,
+            'mock_ydelse_til_job': mock_ydelse_til_job,
+            'mock_revalidering': mock_revalidering,
+            'mock_ressourceforløb': mock_ressourceforløb,
+            'mock_uddannelseshjælp': mock_uddannelseshjælp,
+            'mock_kontanthjælp': mock_kontanthjælp,
+            'mock_sho': mock_sho,
+            'mock_jobafklaringsforløb': mock_jobafklaringsforløb,
+            'mock_ledighedsydelse': mock_ledighedsydelse,
+            'mock_fleksjob': mock_fleksjob,
+            'mock_syg_dagpenge': mock_syg_dagpenge,
+            'mock_dagpenge': mock_dagpenge,
+            'mock_ydelsesgrupper': mock_ydelsesgrupper
+        }
 
 
-def test_job_exception():
-    with patch('jobs.jobindsats.logger', new=MagicMock()) as mock_logger, \
-         patch('jobs.jobindsats.get_jobindsats_alle_ydelser', new=MagicMock(side_effect=Exception('Test exception'))):
+def test_job_success(mock_dependencies):
+    result = job()
 
-        result = job()
+    assert result
+    mock_dependencies['mock_logger'].info.assert_any_call('Starting jobindsats ETL jobs!')
+    mock_dependencies['mock_alle_ydelser'].assert_called_once()
+    mock_dependencies['mock_tilbud_samtaler'].assert_called_once()
+    mock_dependencies['mock_ydelsesmodtagere_loentimer'].assert_called_once()
+    mock_dependencies['mock_tilbagetraekningsydelser'].assert_called_once()
+    mock_dependencies['mock_ydelse_til_job'].assert_called_once()
+    mock_dependencies['mock_revalidering'].assert_called_once()
+    mock_dependencies['mock_ressourceforløb'].assert_called_once()
+    mock_dependencies['mock_uddannelseshjælp'].assert_called_once()
+    mock_dependencies['mock_kontanthjælp'].assert_called_once()
+    mock_dependencies['mock_sho'].assert_called_once()
+    mock_dependencies['mock_jobafklaringsforløb'].assert_called_once()
+    mock_dependencies['mock_ledighedsydelse'].assert_called_once()
+    mock_dependencies['mock_fleksjob'].assert_called_once()
+    mock_dependencies['mock_syg_dagpenge'].assert_called_once()
+    mock_dependencies['mock_dagpenge'].assert_called_once()
+    mock_dependencies['mock_ydelsesgrupper'].assert_called_once()
 
-        assert not result
-        mock_logger.info.assert_called_once_with('Starting jobindsats ETL jobs!')
-        mock_logger.error.assert_called_once_with('An error occurred: Test exception')
+
+def test_job_exception(mock_dependencies):
+    mock_dependencies['mock_alle_ydelser'].side_effect = Exception('Test exception')
+
+    result = job()
+
+    assert not result
+    mock_dependencies['mock_logger'].info.assert_called_once_with('Starting jobindsats ETL jobs!')
+    mock_dependencies['mock_logger'].error.assert_called_once_with('An error occurred: Test exception')
