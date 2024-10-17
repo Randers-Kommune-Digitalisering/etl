@@ -9,6 +9,7 @@ from jobindsats.jobindsats_y36a02 import (
     period_request
 )
 
+
 @pytest.fixture
 def mock_dependencies():
     with patch('jobindsats.jobindsats_y36a02.logger') as mock_logger, \
