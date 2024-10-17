@@ -71,13 +71,13 @@ def test_get_jobindsats_revalidering_exception(mock_dependencies):
 
 
 def test_dynamic_period():
-    latest_peirod = '2024M05'
+    latest_period = '2024M05'
     expected_period = [
         '2023M01', '2023M02', '2023M03', '2023M04', '2023M05', '2023M06', '2023M07', '2023M08', '2023M09', '2023M10', '2023M11', '2023M12',
         '2024M01', '2024M02', '2024M03', '2024M04', '2024M05',
         '2022M01', '2022M02', '2022M03', '2022M04', '2022M05', '2022M06', '2022M07', '2022M08', '2022M09', '2022M10', '2022M11', '2022M12'
     ]
-    result = dynamic_period(latest_peirod)
+    result = dynamic_period(latest_period)
     assert result == expected_period
 
 
