@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import patch, MagicMock
 from jobs.jobindsats import job
 
+
 @pytest.fixture
 def mock_dependencies():
     with patch('jobs.jobindsats.logger', new=MagicMock()) as mock_logger, \
