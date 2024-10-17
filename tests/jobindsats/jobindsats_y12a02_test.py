@@ -1,6 +1,5 @@
 import pytest
 from unittest.mock import patch
-from datetime import datetime
 
 from jobindsats.jobindsats_y12a02 import (
     get_jobindsats_jobafklaringsforløb
