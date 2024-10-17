@@ -1,11 +1,10 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 from datetime import datetime
 
 from jobindsats.jobindsats_y35a02 import (
     get_jobindsats_sho,
     dynamic_period,
-    convert_to_datetime,
-    period_request
+    convert_to_datetime
 )
 
 
