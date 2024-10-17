@@ -65,4 +65,3 @@ def test_get_jobindsats_jobafklaringsforløb_exception(mock_dependencies):
     mock_dependencies['mock_logger'].error.assert_called_once_with('Error Test exception')
     mock_dependencies['mock_post_data'].assert_not_called()
     mock_dependencies['mock_client_request'].assert_not_called()
-
