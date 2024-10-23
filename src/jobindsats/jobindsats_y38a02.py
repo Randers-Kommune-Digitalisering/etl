@@ -72,18 +72,10 @@ def get_jobindsats_uddannelseshjælp():
 def dynamic_period(latest_period):
     year_2024 = int(latest_period[:4])
     current_month = int(latest_period[5:])
-    year_2023 = year_2024 - 1
-    year_2022 = year_2023 - 1
     period = []
-
-    for month in range(1, 13):
-        period.append(f"{year_2023}M{month:02d}")
 
     for month in range(1, current_month + 1):
         period.append(f"{year_2024}M{month:02d}")
-
-    for month in range(1, 13):
-        period.append(f"{year_2022}M{month:02d}")
 
     return period
 
