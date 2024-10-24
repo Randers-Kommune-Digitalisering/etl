@@ -1,7 +1,7 @@
 # Data i Custom Data i KMD Insight
 
 * [BSBetaling2401](#aaa)
-- [BSDUBU](#L8LWL7)
+- [BSDUBU](#aaaa)
 - [BSData](#YS522C)
 - [BSFlyttet](#SJ330U)
 - [BSNotinlist](#CNP2OO)
@@ -76,7 +76,7 @@
 | Tekst3        | Sag status       |
 </details>
 
-## <a id="L8LWL7"> BSDUBU</a>
+## <a id="aaaa"> BSDUBU</a>
 <details>
 <summary>Vis tabel</summary>
 
