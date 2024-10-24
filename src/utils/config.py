@@ -1,10 +1,8 @@
 import os
 from dotenv import load_dotenv
 
-
 # loads .env file, will not overide already set enviroment variables (will do nothing when testing, building and deploying)
 load_dotenv()
-
 
 DEBUG = os.getenv('DEBUG', 'False') in ['True', 'true']
 PORT = os.getenv('PORT', '8080')
@@ -38,5 +36,9 @@ UDDANNELSESSTATISTIK_URL = os.environ['UDDANNELSESSTATISTIK_URL'].rstrip()
 UDDANNELSESSTATISTIK_API_KEY = os.environ['UDDANNELSESSTATISTIK_API_KEY'].rstrip()
 
 CUSTOM_DATA_CONNECTOR_HOST = os.environ['CUSTOM_DATA_CONNECTOR_HOST'].rstrip()
+CUSTOMDATA_SFTP_REMOTE_DIR = 'CustomData/Archived'
+CUSTOMDATA_SFTP_HOST = os.environ['CUSTOMDATA_SFTP_HOST'].rstrip()
+CUSTOMDATA_SFTP_USER = os.environ['CUSTOMDATA_SFTP_USER'].rstrip()
+CUSTOMDATA_SFTP_PASSWORD = os.environ['CUSTOMDATA_SFTP_PASSWORD'].rstrip()
 
 JOBINDSATS_API_KEY = os.environ['JOBINDSATS_API_KEY'].rstrip()
