@@ -1,5 +1,6 @@
-## Data i Custom Data i KMD Insight
-- [BSBetaling2401](#773SO8)
+# Data i Custom Data i KMD Insight
+
+* [BSBetaling2401](#aaa)
 - [BSDUBU](#L8LWL7)
 - [BSData](#YS522C)
 - [BSFlyttet](#SJ330U)
@@ -57,7 +58,8 @@
 - [ØKy30r21](#99E3UH)
 - [ØKy36a02](#0Y7HEE)
 
-## <a id="773SO8">BSBetaling2401</a>
+## <a id="aaa"> BSBetaling2401 </a>
+
 <details>
 <summary>Vis tabel</summary>
 
