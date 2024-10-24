@@ -51,11 +51,11 @@ def write_markdown(df, file, head, body):
     hook = id_generator()
     head.write(f"- [{file}](#{hook})\n")
 
-    body.write(f"## <a id=\"{hook}\"> {file}</a> <a id=\"top\"> :arrow_heading_up: </a>\n")
+    body.write(f"## <a id=\"{hook}\"> {file}</a> \n")
     body.write("<details>\n<summary>Vis tabel</summary>\n\n")
     df.to_markdown(buf=body, index=False)
-    body.write("\n</details>\n\n")
-
+    body.write("\n</details>\n[:arrow_heading_up:](#top) </a>\n\n")
+    
     return body, head
 
 
