@@ -51,7 +51,7 @@ def write_markdown(df, file, head, body):
     hook = id_generator()
     head.write(f"- [{file}](#{hook})\n")
 
-    body.write(f"## <a id=\"{hook}\"> {file}</a>\n")
+    body.write(f"## <a id=\"{hook}\"> {file}</a> <a id=\"top\"> :arrow_heading_up: </a>\n")
     body.write("<details>\n<summary>Vis tabel</summary>\n\n")
     df.to_markdown(buf=body, index=False)
     body.write("\n</details>\n\n")
@@ -61,7 +61,7 @@ def write_markdown(df, file, head, body):
 
 def gen_documentation():
     f = codecs.open("../doc/Data_i_Custom_Data.md", "w", "utf-8")
-    f.write("## Data i Custom Data i KMD Insight\n")
+    f.write("## <a id=\"top\">Data i Custom Data i KMD Insight</a>\n")
 
     body, head = download_data(f)
     print(head.getvalue(), file=f)

@@ -1,63 +1,63 @@
-## Data i Custom Data i KMD Insight
-- [BSBetaling2401](#ydkhlaob)
-- [BSDUBU](#alpqsyat)
-- [BSData](#wvvocupn)
-- [BSFlyttet](#vggvfxze)
-- [BSNotinlist](#aczwhlcz)
-- [BSRisikovurdering2410](#pqxxcpyj)
-- [BSTestdata](#xmiabkus)
-- [BSelevtrivsel-4til9klasse](#nphewatg)
-- [HRTestdata](#nniyofae)
-- [ITTestdata](#oszcvurq)
-- [SAFrontdeskBorgerservice](#yrkgnhaz)
-- [SAFrontdeskBorgerserviceFeedback](#rgjnqfzs)
-- [SAFrontdeskBorgerserviceForecasts](#gfihnkdp)
-- [SAFrontdeskBorgerservice_old](#lsdcllcb)
-- [SAJobindsats](#efhiivap)
-- [SAJobindsatsOTIJ01](#cqnnxzbm)
-- [SAJobindsatsPTVA02](#vdyjfion)
-- [SAJobindsatsPTVC01](#aejvdhxi)
-- [SAJobindsatsY01A02](#rixgkeii)
-- [SAJobindsatsY04A02](#lahhhfwk)
-- [SAJobindsatsY07A02](#ugrphciy)
-- [SAJobindsatsY08A02](#tpexxgoq)
-- [SAJobindsatsY09A02](#ilfzetur)
-- [SAJobindsatsY10A02](#afwnkqzn)
-- [SAJobindsatsY11A02](#kjsxbusw)
-- [SAJobindsatsY12A02](#pmgjvupv)
-- [SAJobindsatsY14D03](#inxxsdpd)
-- [SAJobindsatsY30R21](#ymprmyhk)
-- [SAJobindsatsY35A02](#isweznfw)
-- [SAJobindsatsY36A02](#eqzzcpjs)
-- [SAJobindsatsY38A02](#vlqtmthz)
-- [SATestdata](#iejjkmql)
-- [SAYdelsesrefusion](#riijahcm)
-- [SAYdelsesrefusionIndivid](#vkwotejg)
-- [SKOTestdata](#vhyynhyn)
-- [SKObudgettildeling til drift på omsorgsområdet](#atxvpomr)
-- [Test](#sdenxkyt)
-- [UMTByggesag BOM](#hcjfjbmk)
-- [UMTByggesag afgjorte sager](#paeoyijv)
-- [UMTByggesag modtagede sager](#jkijcgxi)
-- [UMTByggesag-modtagede-sager](#ggklizfn)
-- [UMTKlimadataBrændstof](#jdtobtco)
-- [UMTLandzoneafgjorte sager](#lojbrhkb)
-- [UMTLandzonemodtagede sager](#aldfzzlz)
-- [UMTTestdata](#kbtrkbkj)
-- [elevtrivsel-4til9klasse](#tlpnsgck)
-- [ØKE-handelsfilter](#jqukdatp)
-- [ØKFrontdeskBorgerservice](#njtlhavj)
-- [ØKSD data size](#wcdurwsp)
-- [ØKTestdata](#cbsgmwie)
-- [ØKdst-arealdk](#wuupqpvr)
-- [ØKdst-bil53](#awnpfgio)
-- [ØKdst-bil54](#hnasgxxt)
-- [ØKdst-bol102](#swtbteze)
-- [ØKjo01](#vsjwwpqp)
-- [ØKy30r21](#bjznpxvz)
-- [ØKy36a02](#zhnsoytr)
+## <a id="top">Data i Custom Data i KMD Insight</a>
+- [BSBetaling2401](#hghbvjje)
+- [BSDUBU](#rjdirtbz)
+- [BSData](#euxqoziy)
+- [BSFlyttet](#swzbsvlo)
+- [BSNotinlist](#yvjmdquu)
+- [BSRisikovurdering2410](#rdcyvunb)
+- [BSTestdata](#ywjrsnat)
+- [BSelevtrivsel-4til9klasse](#qqdmvlbk)
+- [HRTestdata](#thfaipeo)
+- [ITTestdata](#ssrpeelr)
+- [SAFrontdeskBorgerservice](#mmweutmz)
+- [SAFrontdeskBorgerserviceFeedback](#ekppgktf)
+- [SAFrontdeskBorgerserviceForecasts](#unokkppg)
+- [SAFrontdeskBorgerservice_old](#ecsfqbxx)
+- [SAJobindsats](#tffblmgr)
+- [SAJobindsatsOTIJ01](#fbahhzrk)
+- [SAJobindsatsPTVA02](#octbdmxg)
+- [SAJobindsatsPTVC01](#donfnhex)
+- [SAJobindsatsY01A02](#rzblyzfj)
+- [SAJobindsatsY04A02](#anbygpds)
+- [SAJobindsatsY07A02](#inxnaamx)
+- [SAJobindsatsY08A02](#eidiumuv)
+- [SAJobindsatsY09A02](#sgjdygzq)
+- [SAJobindsatsY10A02](#yxgpukuq)
+- [SAJobindsatsY11A02](#xgmgxrap)
+- [SAJobindsatsY12A02](#buyhijbg)
+- [SAJobindsatsY14D03](#tkrbghha)
+- [SAJobindsatsY30R21](#juwebgws)
+- [SAJobindsatsY35A02](#kjdffdzg)
+- [SAJobindsatsY36A02](#xjbhnave)
+- [SAJobindsatsY38A02](#vjtombwa)
+- [SATestdata](#qgtkdtrs)
+- [SAYdelsesrefusion](#vywudsgj)
+- [SAYdelsesrefusionIndivid](#npauzymh)
+- [SKOTestdata](#fhrcigur)
+- [SKObudgettildeling til drift på omsorgsområdet](#lbuovatu)
+- [Test](#ikklgtbn)
+- [UMTByggesag BOM](#zgsszrcb)
+- [UMTByggesag afgjorte sager](#touaeqzr)
+- [UMTByggesag modtagede sager](#dnqnkstc)
+- [UMTByggesag-modtagede-sager](#cturxyna)
+- [UMTKlimadataBrændstof](#yoebqdlt)
+- [UMTLandzoneafgjorte sager](#gziqrjzu)
+- [UMTLandzonemodtagede sager](#oquxagoc)
+- [UMTTestdata](#tvwcrxvq)
+- [elevtrivsel-4til9klasse](#ogspzlsq)
+- [ØKE-handelsfilter](#tfxtiqse)
+- [ØKFrontdeskBorgerservice](#hhvmzdty)
+- [ØKSD data size](#pbzudmzs)
+- [ØKTestdata](#oksrgayo)
+- [ØKdst-arealdk](#byopdgok)
+- [ØKdst-bil53](#vcizexkq)
+- [ØKdst-bil54](#maqqpmgs)
+- [ØKdst-bol102](#kxtwhkwa)
+- [ØKjo01](#vunfdxet)
+- [ØKy30r21](#oalnmggy)
+- [ØKy36a02](#dwdkswes)
 
-## <a id="ydkhlaob"> BSBetaling2401</a>
+## <a id="hghbvjje"> BSBetaling2401</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -74,7 +74,7 @@
 | Tekst3        | Sag status       |
 </details>
 
-## <a id="alpqsyat"> BSDUBU</a>
+## <a id="rjdirtbz"> BSDUBU</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -108,7 +108,7 @@
 | Tekst9        | Tilbudsbeskrivelse             |
 </details>
 
-## <a id="wvvocupn"> BSData</a>
+## <a id="euxqoziy"> BSData</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -120,7 +120,7 @@
 | Tekst3        | Landsgennemsnit |
 </details>
 
-## <a id="vggvfxze"> BSFlyttet</a>
+## <a id="swzbsvlo"> BSFlyttet</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -133,7 +133,7 @@
 | Tekst3        | Fraflyt kommunenavn_       |
 </details>
 
-## <a id="aczwhlcz"> BSNotinlist</a>
+## <a id="yvjmdquu"> BSNotinlist</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -144,7 +144,7 @@
 | Tekst1        | Not in list |
 </details>
 
-## <a id="pqxxcpyj"> BSRisikovurdering2410</a>
+## <a id="rdcyvunb"> BSRisikovurdering2410</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -156,7 +156,7 @@
 | Tekst3        | Fødselsår  |
 </details>
 
-## <a id="xmiabkus"> BSTestdata</a>
+## <a id="ywjrsnat"> BSTestdata</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -167,7 +167,7 @@
 | Tekst1        | Uddannelsesniveau |
 </details>
 
-## <a id="nphewatg"> BSelevtrivsel-4til9klasse</a>
+## <a id="qqdmvlbk"> BSelevtrivsel-4til9klasse</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -180,7 +180,7 @@
 | Tekst3        | Indikator     |
 </details>
 
-## <a id="nniyofae"> HRTestdata</a>
+## <a id="thfaipeo"> HRTestdata</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -191,7 +191,7 @@
 | Tekst1        | Uddannelsesniveau |
 </details>
 
-## <a id="oszcvurq"> ITTestdata</a>
+## <a id="ssrpeelr"> ITTestdata</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -202,7 +202,7 @@
 | Tekst1        | Uddannelsesniveau |
 </details>
 
-## <a id="yrkgnhaz"> SAFrontdeskBorgerservice</a>
+## <a id="mmweutmz"> SAFrontdeskBorgerservice</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -230,7 +230,7 @@
 | Tekst6        | QueuesGrouped                 |
 </details>
 
-## <a id="rgjnqfzs"> SAFrontdeskBorgerserviceFeedback</a>
+## <a id="ekppgktf"> SAFrontdeskBorgerserviceFeedback</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -248,7 +248,7 @@
 | Tekst3        | QueuesGrouped   |
 </details>
 
-## <a id="gfihnkdp"> SAFrontdeskBorgerserviceForecasts</a>
+## <a id="unokkppg"> SAFrontdeskBorgerserviceForecasts</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -260,7 +260,7 @@
 | Tekst1        | model      |
 </details>
 
-## <a id="lsdcllcb"> SAFrontdeskBorgerservice_old</a>
+## <a id="ecsfqbxx"> SAFrontdeskBorgerservice_old</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -281,7 +281,7 @@
 | Tekst8        | Medarbejder initialer  |
 </details>
 
-## <a id="efhiivap"> SAJobindsats</a>
+## <a id="tffblmgr"> SAJobindsats</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -299,7 +299,7 @@
 | Tekst2        | Ydelsesgrupper                                         |
 </details>
 
-## <a id="cqnnxzbm"> SAJobindsatsOTIJ01</a>
+## <a id="fbahhzrk"> SAJobindsatsOTIJ01</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -317,7 +317,7 @@
 | Tekst3        | Målgruppe                                           |
 </details>
 
-## <a id="vdyjfion"> SAJobindsatsPTVA02</a>
+## <a id="octbdmxg"> SAJobindsatsPTVA02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -334,7 +334,7 @@
 | Tekst3        | Køn                                                |
 </details>
 
-## <a id="aejvdhxi"> SAJobindsatsPTVC01</a>
+## <a id="donfnhex"> SAJobindsatsPTVC01</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -349,7 +349,7 @@
 | Tekst2        | Ydelsesgrupper                                       |
 </details>
 
-## <a id="rixgkeii"> SAJobindsatsY01A02</a>
+## <a id="rzblyzfj"> SAJobindsatsY01A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -367,7 +367,7 @@
 | Tekst4        | Herkomst                                           |
 </details>
 
-## <a id="lahhhfwk"> SAJobindsatsY04A02</a>
+## <a id="anbygpds"> SAJobindsatsY04A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -384,7 +384,7 @@
 | Tekst3        | Herkomst                                           |
 </details>
 
-## <a id="ugrphciy"> SAJobindsatsY07A02</a>
+## <a id="inxnaamx"> SAJobindsatsY07A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -402,7 +402,7 @@
 | Tekst4        | Status før sygedagpenge                            |
 </details>
 
-## <a id="tpexxgoq"> SAJobindsatsY08A02</a>
+## <a id="eidiumuv"> SAJobindsatsY08A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -419,7 +419,7 @@
 | Tekst3        | Herkomst                                           |
 </details>
 
-## <a id="ilfzetur"> SAJobindsatsY09A02</a>
+## <a id="sgjdygzq"> SAJobindsatsY09A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -436,7 +436,7 @@
 | Tekst3        | Herkomst                                           |
 </details>
 
-## <a id="afwnkqzn"> SAJobindsatsY10A02</a>
+## <a id="yxgpukuq"> SAJobindsatsY10A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -453,7 +453,7 @@
 | Tekst3        | Herkomst                                           |
 </details>
 
-## <a id="kjsxbusw"> SAJobindsatsY11A02</a>
+## <a id="xgmgxrap"> SAJobindsatsY11A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -470,7 +470,7 @@
 | Tekst3        | Herkomst                                           |
 </details>
 
-## <a id="pmgjvupv"> SAJobindsatsY12A02</a>
+## <a id="buyhijbg"> SAJobindsatsY12A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -487,7 +487,7 @@
 | Tekst3        | Herkomst                                           |
 </details>
 
-## <a id="inxxsdpd"> SAJobindsatsY14D03</a>
+## <a id="tkrbghha"> SAJobindsatsY14D03</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -507,7 +507,7 @@
 | Tekst4        | Målgruppe                                                       |
 </details>
 
-## <a id="ymprmyhk"> SAJobindsatsY30R21</a>
+## <a id="juwebgws"> SAJobindsatsY30R21</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -526,7 +526,7 @@
 | Tekst2        | Ydelsesgrupper                                         |
 </details>
 
-## <a id="isweznfw"> SAJobindsatsY35A02</a>
+## <a id="kjdffdzg"> SAJobindsatsY35A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -543,7 +543,7 @@
 | Tekst3        | Herkomst                                           |
 </details>
 
-## <a id="eqzzcpjs"> SAJobindsatsY36A02</a>
+## <a id="xjbhnave"> SAJobindsatsY36A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -561,7 +561,7 @@
 | Tekst4        | Visitationskategori                                |
 </details>
 
-## <a id="vlqtmthz"> SAJobindsatsY38A02</a>
+## <a id="vjtombwa"> SAJobindsatsY38A02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -579,7 +579,7 @@
 | Tekst4        | Visitationskategori                                |
 </details>
 
-## <a id="iejjkmql"> SATestdata</a>
+## <a id="qgtkdtrs"> SATestdata</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -590,7 +590,7 @@
 | Tekst1        | Uddannelsesniveau |
 </details>
 
-## <a id="riijahcm"> SAYdelsesrefusion</a>
+## <a id="vywudsgj"> SAYdelsesrefusion</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -604,7 +604,7 @@
 | Tekst1        | Ydelse          |
 </details>
 
-## <a id="vkwotejg"> SAYdelsesrefusionIndivid</a>
+## <a id="npauzymh"> SAYdelsesrefusionIndivid</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -622,7 +622,7 @@
 | Tekst2        | Finansiering Kommunenavn  |
 </details>
 
-## <a id="vhyynhyn"> SKOTestdata</a>
+## <a id="fhrcigur"> SKOTestdata</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -633,7 +633,7 @@
 | Tekst1        | Uddannelsesniveau |
 </details>
 
-## <a id="atxvpomr"> SKObudgettildeling til drift på omsorgsområdet</a>
+## <a id="lbuovatu"> SKObudgettildeling til drift på omsorgsområdet</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -645,7 +645,7 @@
 | Tekst2        | Formål     |
 </details>
 
-## <a id="sdenxkyt"> Test</a>
+## <a id="ikklgtbn"> Test</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -669,7 +669,7 @@
 | Tekst7        | Medarbejder initialer          |
 </details>
 
-## <a id="hcjfjbmk"> UMTByggesag BOM</a>
+## <a id="zgsszrcb"> UMTByggesag BOM</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -684,7 +684,7 @@
 | Tekst1        | Kategori           |
 </details>
 
-## <a id="paeoyijv"> UMTByggesag afgjorte sager</a>
+## <a id="touaeqzr"> UMTByggesag afgjorte sager</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -704,7 +704,7 @@
 | Tekst2        | Gruppering                     |
 </details>
 
-## <a id="jkijcgxi"> UMTByggesag modtagede sager</a>
+## <a id="dnqnkstc"> UMTByggesag modtagede sager</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -718,7 +718,7 @@
 | Tekst2        | Gruppering  |
 </details>
 
-## <a id="ggklizfn"> UMTByggesag-modtagede-sager</a>
+## <a id="cturxyna"> UMTByggesag-modtagede-sager</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -730,7 +730,7 @@
 | Tekst2        | Gruppering  |
 </details>
 
-## <a id="jdtobtco"> UMTKlimadataBrændstof</a>
+## <a id="yoebqdlt"> UMTKlimadataBrændstof</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -743,7 +743,7 @@
 | Tekst2        | Fakturaenhed  |
 </details>
 
-## <a id="lojbrhkb"> UMTLandzoneafgjorte sager</a>
+## <a id="gziqrjzu"> UMTLandzoneafgjorte sager</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -762,7 +762,7 @@
 | Tekst1        | SBSYS Koder / Beslutningstyper |
 </details>
 
-## <a id="aldfzzlz"> UMTLandzonemodtagede sager</a>
+## <a id="oquxagoc"> UMTLandzonemodtagede sager</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -775,7 +775,7 @@
 | Tekst1        | SBSYS kode  |
 </details>
 
-## <a id="kbtrkbkj"> UMTTestdata</a>
+## <a id="tvwcrxvq"> UMTTestdata</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -786,7 +786,7 @@
 | Tekst1        | Uddannelsesniveau |
 </details>
 
-## <a id="tlpnsgck"> elevtrivsel-4til9klasse</a>
+## <a id="ogspzlsq"> elevtrivsel-4til9klasse</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -799,7 +799,7 @@
 | Tekst3        | Indikator     |
 </details>
 
-## <a id="jqukdatp"> ØKE-handelsfilter</a>
+## <a id="tfxtiqse"> ØKE-handelsfilter</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -818,7 +818,7 @@
 | Tekst9        | Kontraktnavn   |
 </details>
 
-## <a id="njtlhavj"> ØKFrontdeskBorgerservice</a>
+## <a id="hhvmzdty"> ØKFrontdeskBorgerservice</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -845,7 +845,7 @@
 | Tekst7        | Medarbejder initialer          |
 </details>
 
-## <a id="wcdurwsp"> ØKSD data size</a>
+## <a id="pbzudmzs"> ØKSD data size</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -857,7 +857,7 @@
 | Tekst1        | file       |
 </details>
 
-## <a id="cbsgmwie"> ØKTestdata</a>
+## <a id="oksrgayo"> ØKTestdata</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -868,7 +868,7 @@
 | Tekst1        | Uddannelsesniveau |
 </details>
 
-## <a id="wuupqpvr"> ØKdst-arealdk</a>
+## <a id="byopdgok"> ØKdst-arealdk</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -881,7 +881,7 @@
 | Tekst3        | Kvadratkilometer (km2)           |
 </details>
 
-## <a id="awnpfgio"> ØKdst-bil53</a>
+## <a id="vcizexkq"> ØKdst-bil53</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -895,7 +895,7 @@
 | Tekst4        | BILTYPE    |
 </details>
 
-## <a id="hnasgxxt"> ØKdst-bil54</a>
+## <a id="maqqpmgs"> ØKdst-bil54</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -909,7 +909,7 @@
 | Tekst4        | Drivmidler i alt |
 </details>
 
-## <a id="swtbteze"> ØKdst-bol102</a>
+## <a id="kxtwhkwa"> ØKdst-bol102</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -923,7 +923,7 @@
 | Tekst4        | Boliger med CPR tilmeldte personer (beboede boliger) |
 </details>
 
-## <a id="vsjwwpqp"> ØKjo01</a>
+## <a id="vunfdxet"> ØKjo01</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -939,7 +939,7 @@
 | Tekst2        | Erhvervsområder                             |
 </details>
 
-## <a id="bjznpxvz"> ØKy30r21</a>
+## <a id="oalnmggy"> ØKy30r21</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
@@ -958,7 +958,7 @@
 | Tekst2        | Ydelsesgrupper                                                                                                               |
 </details>
 
-## <a id="zhnsoytr"> ØKy36a02</a>
+## <a id="dwdkswes"> ØKy36a02</a> <a id="top"> :arrow_heading_up: </a>
 <details>
 <summary>Vis tabel</summary>
 
