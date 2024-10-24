@@ -12,7 +12,7 @@ from utils.config import CUSTOMDATA_SFTP_HOST, CUSTOMDATA_SFTP_USER, CUSTOMDATA_
 logger = logging.getLogger(__name__)
 
 
-def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+def id_generator(size=8, chars=string.ascii_lowercase):
     return ''.join(random.choice(chars) for _ in range(size))
 
 
@@ -51,7 +51,7 @@ def write_markdown(df, file, head, body):
     hook = id_generator()
     head.write(f"- [{file}](#{hook})\n")
 
-    body.write(f"## <a id=\"{hook}\">{file}</a>\n")
+    body.write(f"## <a id=\"{hook}\"> {file}</a>\n")
     body.write("<details>\n<summary>Vis tabel</summary>\n\n")
     df.to_markdown(buf=body, index=False)
     body.write("\n</details>\n\n")
