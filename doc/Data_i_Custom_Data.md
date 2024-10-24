@@ -1,4 +1,4 @@
-## <a id="top">Data i Custom Data i KMD Insight</a>
+## <a id="top"> Data i Custom Data i KMD Insight</a>
 - [BSBetaling2401](#lfqvxqft)
 - [BSDUBU](#xdyqykaa)
 - [BSData](#filrhkzf)
@@ -73,7 +73,7 @@
 | Tekst2        | Sag rækkeID      |
 | Tekst3        | Sag status       |
 </details>
-[:arrow_heading_up:](#top) </a>
+<a href="#top">:arrow_heading_up:</a>
 
 ## <a id="xdyqykaa"> BSDUBU</a> 
 <details>
