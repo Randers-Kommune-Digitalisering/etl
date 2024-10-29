@@ -44,22 +44,44 @@ def handle_files(files, connection):
 
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
-                needed_cols = ['SagId', 'SagNavn', 'SagType', 'SagModel', 'BorgerId', 'AfdelingId', 'AfdelingNavn', 'PrimærAnsvarlig', 'HandleKommune']
-                df = pd.read_csv(f, sep=";", header=0, decimal=",", na_filter=False, usecols=needed_cols)
+                needed_cols = [
+                    'SagId', 'SagNavn', 'SagType', 'SagModel', 'BorgerId', 'AfdelingId',
+                    'AfdelingNavn', 'PrimærAnsvarlig', 'AlternativSagsbehandler',
+                    'AlternativTeam', 'ForventetParagraf', 'Status', 'Akut', 'HandleKommune',
+                    'BetalingsKommune', 'SagsbehandlerBetalingsKommune', 'HenvendelsesDato',
+                    'AnsøgningModtagetDato', 'SlutDato', 'AfslutningsÅrsag', 'Facet', 'JournalKode'
+                ]
+
+                df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
+                # Filling missing values in columns with the first row's value
+                if pd.isna(df.at[0, 'SlutDato']):
+                    df.at[0, 'SlutDato'] = "Missing Value"
+                if pd.isna(df.at[0, 'AlternativTeam']):
+                    df.at[0, 'AlternativTeam'] = "Missing Value"
+                if pd.isna(df.at[0, 'AlternativSagsbehandler']):
+                    df.at[0, 'AlternativSagsbehandler'] = "Missing Value"
+                if pd.isna(df.at[0, 'SagsbehandlerBetalingsKommune']):
+                    df.at[0, 'SagsbehandlerBetalingsKommune'] = "Missing Value"
+                if pd.isna(df.at[0, 'AfslutningsÅrsag']):
+                    df.at[0, 'AfslutningsÅrsag'] = "Missing Value"
+
                 df_list.append(df)
 
+        df = pd.concat(df_list, ignore_index=True)
+
         file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "sager" + ".csv"
+        filename = "Sager" + ".csv"
 
         if post_data_to_custom_data_connector(filename, file):
-            logger.info("Successfully updated SAsager")
+            logger.info("Successfully updated Sager")
             return True
         else:
+            logger.error("Failed to update Sager")
             return False
 
         # if df_list:
         #     df = pd.concat(df_list, ignore_index=True)
-        #     df_to_csv(df, 'sager')
+        #     df_to_csv(df, 'Sager')
         #     return df
         # else:
         #     logger.error("No data frames to concatenate.")
@@ -70,7 +92,7 @@ def handle_files(files, connection):
         return None
 
 
-def df_to_csv(df, filename):  # For testing purposes
+def df_to_csv(df, filename):  # For testing locally purposes
     try:
         df.to_csv(f"{filename}.csv", index=False)
         logger.info(f"DataFrame saved to {filename}.csv")
