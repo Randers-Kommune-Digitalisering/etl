@@ -183,7 +183,7 @@ def handle_Indsatser_files(files, connection):
         date = datetime.fromtimestamp(last_modified_time)
 
         max_date = date - timedelta(days=1)
-        min_date = datetime(date.year -2, date.month, 1)
+        min_date = datetime(date.year - 2, date.month, 1)
 
         logger.info(f"Data periode: {min_date} - {max_date}")
 
@@ -194,7 +194,7 @@ def handle_Indsatser_files(files, connection):
         min_date = pd.to_datetime(min_date)
 
         for filename in files:
-            with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:                
+            with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
                 needed_cols = [
                     'Tilbud', 'LeverandørId', 'LeverandørIndsatsId', 'LeverandørNavn', 'LeverandørGruppeId', 'LeverandørGruppeNavn',
                     'IndsatsStatus', 'IndsatsGodkendelsesDato', 'IndsatsStartDato', 'IndsatsSlutDato', 'Primær målgruppe',
