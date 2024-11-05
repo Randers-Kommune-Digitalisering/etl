@@ -15,8 +15,8 @@ def job():
     sftp_client = SFTPClient(SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, password=SENSUM_IT_SFTP_PASS)
     conn = sftp_client.get_connection()
     sager_files = [f for f in conn.listdir(SENSUM_IT_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, 'Sager_*.csv')]
-    leverandor_files = [f for f in conn.listdir(SENSUM_IT_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, 'Leverandør_*.csv')]
     indsatser_files = [f for f in conn.listdir(SENSUM_IT_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, 'Indsatser_*.csv')]
+    leverandor_files = [f for f in conn.listdir(SENSUM_IT_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, 'Leverandør_*.csv')]
     borger_files = [f for f in conn.listdir(SENSUM_IT_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, 'Borger_*.csv')]
 
     if sager_files and conn:
@@ -38,7 +38,6 @@ def handle_sager_files(files, connection):
     logger.info('Handling Sensum Sager files')
 
     try:
-
         latest_file = max(files, key=lambda f: connection.stat(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, f)).st_mtime)
         logger.info(f"Latest file: {latest_file}")
 
@@ -59,7 +58,7 @@ def handle_sager_files(files, connection):
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
                 needed_cols = [
-                    'SagId', 'SagNavn', 'SagType', 'SagModel', 'BorgerId', 'AfdelingId',
+                    'SagId', 'BorgerId', 'SagNavn', 'SagType', 'SagModel', 'AfdelingId',
                     'AfdelingNavn', 'PrimærAnsvarlig', 'AlternativSagsbehandler',
                     'AlternativTeam', 'ForventetParagraf', 'Status', 'Akut', 'HandleKommune',
                     'BetalingsKommune', 'SagsbehandlerBetalingsKommune', 'HenvendelsesDato',
@@ -67,39 +66,11 @@ def handle_sager_files(files, connection):
                 ]
 
                 df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
-                # Filling missing values in columns with the first row's value
-                if pd.isna(df.at[0, 'SlutDato']):
-                    df.at[0, 'SlutDato'] = "Missing Value"
-                if pd.isna(df.at[0, 'AlternativTeam']):
-                    df.at[0, 'AlternativTeam'] = "Missing Value"
-                if pd.isna(df.at[0, 'AlternativSagsbehandler']):
-                    df.at[0, 'AlternativSagsbehandler'] = "Missing Value"
-                if pd.isna(df.at[0, 'SagsbehandlerBetalingsKommune']):
-                    df.at[0, 'SagsbehandlerBetalingsKommune'] = "Missing Value"
-                if pd.isna(df.at[0, 'AfslutningsÅrsag']):
-                    df.at[0, 'AfslutningsÅrsag'] = "Missing Value"
 
                 df_list.append(df)
 
         df = pd.concat(df_list, ignore_index=True)
-
-        file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "Sager" + ".csv"
-
-        if post_data_to_custom_data_connector(filename, file):
-            logger.info("Successfully updated Sager")
-            return True
-        else:
-            logger.error("Failed to update Sager")
-            return False
-
-        # if df_list:
-        #     df = pd.concat(df_list, ignore_index=True)
-        #     df_to_csv(df, 'Sager')
-        #     return df
-        # else:
-        #     logger.error("No data frames to concatenate.")
-        #     return None
+        return df
 
     except Exception as e:
         logger.error(f"Error handling files: {e}")
@@ -139,34 +110,10 @@ def handle_leverandor_files(files, connection):
 
                 df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
 
-                if pd.isna(df.at[0, 'LeverandørTelefon']):
-                    df.at[0, 'LeverandørTelefon'] = "Missing Value"
-                if pd.isna(df.at[0, 'LeverandørMobil']):
-                    df.at[0, 'LeverandørMobil'] = "Missing Value"
-                if pd.isna(df.at[0, 'LeverandørFax']):
-                    df.at[0, 'LeverandørFax'] = 'Missing Value'
-                if pd.isna(df.at[0, 'LeverandørEmail']):
-                    df.at[0, 'LeverandørEmail'] = 'Missing Value'
-                if pd.isna(df.at[0, 'LeverandørNummer']):
-                    df.at[0, 'LeverandørNummer'] = 'Missing Value'
-                if pd.isna(df.at[0, 'LeverandørCVR']):
-                    df.at[0, 'LeverandørCVR'] = 'Missing Value'
-                if pd.isna(df.at[0, 'BostedSystemId']):
-                    df.at[0, 'BostedSystemId'] = 'Missing Value'
-
                 df_list.append(df)
 
         df = pd.concat(df_list, ignore_index=True)
-
-        file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "Leverandor" + ".csv"
-
-        if post_data_to_custom_data_connector(filename, file):
-            logger.info("Successfully updated Leverandør")
-            return True
-        else:
-            logger.error("Failed to update Leverandør")
-            return False
+        return df
 
     except Exception as e:
         logger.error(f"Error handling Leverandør files: {e}")
@@ -196,6 +143,7 @@ def handle_Indsatser_files(files, connection):
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
                 needed_cols = [
+                    'IndsatsId', 'SagId', 'Indsats', 'VigtigeNotater', 'IndsatsParagraf',
                     'Tilbud', 'LeverandørId', 'LeverandørIndsatsId', 'LeverandørNavn', 'LeverandørGruppeId', 'LeverandørGruppeNavn',
                     'IndsatsStatus', 'IndsatsGodkendelsesDato', 'IndsatsStartDato', 'IndsatsSlutDato', 'Primær målgruppe',
                     'Sekundær målgruppe', 'IndsatsKreditKonto', 'IndsatsEgenbetalingsKonto', 'IndsatskontoNummer', 'StatsRefusionsKontoNummer',
@@ -204,45 +152,19 @@ def handle_Indsatser_files(files, connection):
                 ]
 
                 df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
-                if pd.isna(df.at[0, 'Sekundær målgruppe']):
-                    df.at[0, 'Sekundær målgruppe'] = "Missing Value"
-                if pd.isna(df.at[0, 'IndsatsKreditKonto']):
-                    df.at[0, 'IndsatsKreditKonto'] = "Missing Value"
-                if pd.isna(df.at[0, 'IndsatsEgenbetalingsKonto']):
-                    df.at[0, 'IndsatsEgenbetalingsKonto'] = "Missing Value"
-                if pd.isna(df.at[0, 'IndsatskontoNummer']):
-                    df.at[0, 'IndsatskontoNummer'] = "Missing Value"
-                if pd.isna(df.at[0, 'StatsRefusionsKontoNummer']):
-                    df.at[0, 'StatsRefusionsKontoNummer'] = "Missing Value"
-                if pd.isna(df.at[0, 'MomsRefusionsKontoNummer']):
-                    df.at[0, 'MomsRefusionsKontoNummer'] = "Missing Value"
-                if pd.isna(df.at[0, 'OverheadKontoNummer']):
-                    df.at[0, 'OverheadKontoNummer'] = "Missing Value"
-                if pd.isna(df.at[0, 'EgenBetalingsKontoNummer']):
-                    df.at[0, 'EgenBetalingsKontoNummer'] = "Missing Value"
-                if pd.isna(df.at[0, 'Afgørelse']):
-                    df.at[0, 'Afgørelse'] = "Missing Value"
 
                 df_list.append(df)
 
         df = pd.concat(df_list, ignore_index=True)
-
-        file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "Indsatser" + ".csv"
-
-        if post_data_to_custom_data_connector(filename, file):
-            logger.info("Successfully updated Indsatser")
-            return True
-        else:
-            logger.error("Failed to update Indsatser")
-            return False
+        return df
 
     except Exception as e:
         logger.error(f"Error handling Indsatser files: {e}")
+        return None
 
 
 def handle_borger_files(files, connection):
-    logger.info('"Handling Sensum Borger files')
+    logger.info('Handling Sensum Borger files')
 
     try:
         latest_file = max(files, key=lambda f: connection.stat(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, f)).st_mtime)
@@ -265,46 +187,18 @@ def handle_borger_files(files, connection):
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
                 needed_cols = [
-                    'BorgerId', 'CPR', 'UdlændingeId', 'MidlertidigtCpr', 'Fornavn', 'Efternavn', 'Initialer',
+                    'BorgerId', 'CPR', 'Fornavn', 'Efternavn', 'Initialer',
                     'PrimærAdresse', 'PrimærPostNr', 'PrimærBy', 'PrimærLand', 'Telefon', 'Mobil', 'Email',
                     'KontaktPerson', 'OprettetDato', 'Diagnose', 'Kommentar', 'OpholdsKommuneNr',
                     'OpholdsKommune', 'BorgerEncodeId'
                 ]
 
                 df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
-                if pd.isna(df.at[0, 'CPR']):
-                    df.at[0, 'CPR'] = "Missing Value"
-                if pd.isna(df.at[0, 'UdlændingeId']):
-                    df.at[0, 'UdlændingeId'] = "Missing Value"
-                if pd.isna(df.at[0, 'MidlertidigtCpr']):
-                    df.at[0, 'MidlertidigtCpr'] = "Missing Value"
-                if pd.isna(df.at[0, 'PrimærLand']):
-                    df.at[0, 'PrimærLand'] = "Missing Value"
-                if pd.isna(df.at[0, 'Telefon']):
-                    df.at[0, 'Telefon'] = "Missing Value"
-                if pd.isna(df.at[0, 'Mobil']):
-                    df.at[0, 'Mobil'] = "Missing Value"
-                if pd.isna(df.at[0, 'Email']):
-                    df.at[0, 'Email'] = "Missing Value"
-                if pd.isna(df.at[0, 'Diagnose']):
-                    df.at[0, 'Diagnose'] = "Missing Value"
-                if pd.isna(df.at[0, 'OpholdsKommuneNr']):
-                    df.at[0, 'OpholdsKommuneNr'] = "Missing Value"
-                if pd.isna(df.at[0, 'OpholdsKommune']):
-                    df.at[0, 'OpholdsKommune'] = "Missing Value"
 
                 df_list.append(df)
 
         df = pd.concat(df_list, ignore_index=True)
-
-        file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "Borger" + ".csv"
-
-        if post_data_to_custom_data_connector(filename, file):
-            logger.info("Successfully updated Borger")
-            return True
-        else:
-            logger.error("Failed to update borger")
+        return df
 
     except Exception as e:
         logger.error(f"Error handling Borger files: {e}")
