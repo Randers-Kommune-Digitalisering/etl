@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 
 def job():
     try:
+        logger.info('Starting Sensum ETL job!')
         sftp_client = SFTPClient(SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, password=SENSUM_IT_SFTP_PASS)
         conn = sftp_client.get_connection()
         sager_files = get_files(conn, 'Sager_*.csv')
@@ -55,15 +56,8 @@ def handle_sager_files(files, connection):
 
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
-                needed_cols = [
-                    'SagId', 'BorgerId', 'SagNavn', 'SagType', 'SagModel', 'AfdelingId',
-                    'AfdelingNavn', 'PrimærAnsvarlig', 'AlternativSagsbehandler',
-                    'AlternativTeam', 'ForventetParagraf', 'Status', 'Akut', 'HandleKommune',
-                    'BetalingsKommune', 'SagsbehandlerBetalingsKommune', 'HenvendelsesDato',
-                    'AnsøgningModtagetDato', 'SlutDato', 'AfslutningsÅrsag', 'Facet', 'JournalKode'
-                ]
 
-                df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
+                df = pd.read_csv(f, sep=";", header=0, decimal=",")
 
                 df_list.append(df)
 
@@ -98,15 +92,8 @@ def handle_leverandor_files(files, connection):
 
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
-                needed_cols = [
-                    'LeverandørId', 'LeverandørNavn', 'LeverandørGruppe', 'LeverandørAdresse', 'LeverandørPostNr', 'LeverandørBy',
-                    'LeverandørLand', 'LeverandørTelefon', 'LeverandørMobil',
-                    'LeverandørFax', 'LeverandørEmail', 'LeverandørNummer', 'LeverandørCVR', 'LeverandørEjerskab',
-                    'LeverandørEgetAfMyndighed', 'LeverandørSidstÆndret', 'BostedSystemId',
-                    'Aktiv'
-                ]
 
-                df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
+                df = pd.read_csv(f, sep=";", header=0, decimal=",")
 
                 df_list.append(df)
 
@@ -140,16 +127,8 @@ def handle_Indsatser_files(files, connection):
 
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
-                needed_cols = [
-                    'IndsatsId', 'SagId', 'Indsats', 'VigtigeNotater', 'IndsatsParagraf',
-                    'Tilbud', 'LeverandørId', 'LeverandørIndsatsId', 'LeverandørNavn', 'LeverandørGruppeId', 'LeverandørGruppeNavn',
-                    'IndsatsStatus', 'IndsatsGodkendelsesDato', 'IndsatsStartDato', 'IndsatsSlutDato', 'Primær målgruppe',
-                    'Sekundær målgruppe', 'IndsatsKreditKonto', 'IndsatsEgenbetalingsKonto', 'IndsatskontoNummer', 'StatsRefusionsKontoNummer',
-                    'MomsRefusionsKontoNummer', 'OverheadKontoNummer', 'EgenBetalingsKontoNummer',
-                    'IndsatsId navn', 'Afgørelse'
-                ]
 
-                df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
+                df = pd.read_csv(f, sep=";", header=0, decimal=",")
 
                 df_list.append(df)
 
@@ -184,14 +163,8 @@ def handle_borger_files(files, connection):
 
         for filename in files:
             with connection.open(os.path.join(SENSUM_IT_SFTP_REMOTE_DIR, filename).replace("\\", "/")) as f:
-                needed_cols = [
-                    'BorgerId', 'CPR', 'Fornavn', 'Efternavn', 'Initialer',
-                    'PrimærAdresse', 'PrimærPostNr', 'PrimærBy', 'PrimærLand', 'Telefon', 'Mobil', 'Email',
-                    'KontaktPerson', 'OprettetDato', 'Diagnose', 'Kommentar', 'OpholdsKommuneNr',
-                    'OpholdsKommune', 'BorgerEncodeId'
-                ]
 
-                df = pd.read_csv(f, sep=";", header=0, decimal=",", usecols=needed_cols)
+                df = pd.read_csv(f, sep=";", header=0, decimal=",")
 
                 df_list.append(df)
 
