@@ -195,12 +195,21 @@ def merge_df(sager_df, indsatser_df, borger_df):
         'PrimærAnsvarlig': 'first',
         'Akut': 'first',
         'AfslutningsÅrsag': 'first',
+        'Facet': 'first',
+        'LeverandørIndsats': 'first',
+        'PrimærBy': 'first',
+        'Tilbud': 'first',
+        'LeverandørNavn': 'first',
+        'Mobil': 'first',
 
     }).reset_index(drop=True)
 
     result.columns = ['Counter', 'IndsatsStatus', 'Indsats', 'CPR', 'Fornavn', 'IndsatsStartDato', 'IndsatsSlutDato',
                       'OprettetDato', 'OpholdsKommune', 'SagNavn', 'SagType', 'Status',
-                      'PrimærAnsvarlig', 'Akut', 'AfslutningsÅrsag']
+                      'PrimærAnsvarlig', 'Akut', 'AfslutningsÅrsag', 'Facet', 'LeverandørIndsats', 'PrimærBy',
+                      'Tilbud', 'LeverandørNavn', 'Mobil']
+
+    result = result.rename(columns={'Mobil': 'BorgerMobil'})
 
     if pd.isna(result.at[0, 'OprettetDato']):
         result.at[0, 'OprettetDato'] = pd.Timestamp('1900-01-01')
