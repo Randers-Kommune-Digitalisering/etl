@@ -125,6 +125,8 @@ class APIClient:
             kwargs['headers']['Content-Type'] = 'application/json'
 
         response = method(url, **kwargs)
+        if response.status_code != 200:
+            logger.info(response.content)
         response.raise_for_status()
 
         if 'application/json' in response.headers.get('Content-Type', ''):
