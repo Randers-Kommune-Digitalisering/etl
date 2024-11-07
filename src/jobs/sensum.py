@@ -240,7 +240,7 @@ def process_files(sager_files, indsatser_files, borger_files, conn):
         result = merge_df(sager_df, indsatser_df, borger_df)
 
         file = io.BytesIO(result.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "SensumMerged.csv"
+        filename = "SA" + "Sensum" + ".csv"
 
         if post_data_to_custom_data_connector(filename, file):
             logger.info("Successfully updated Sensum Data")
