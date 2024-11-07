@@ -30,6 +30,7 @@
 - [SAJobindsatsY35A02](#wbbzbcas)
 - [SAJobindsatsY36A02](#zopasqjs)
 - [SAJobindsatsY38A02](#yttnfyoi)
+- [SASensum](#yttnfyof)
 - [SATestdata](#dzjnvrkh)
 - [SAYdelsesrefusion](#xegaccgw)
 - [SAYdelsesrefusionIndivid](#iutscfwu)
@@ -607,6 +608,36 @@
 | Tekst2        | Køn                                                |
 | Tekst3        | Herkomst                                           |
 | Tekst4        | Visitationskategori                                |
+</details>
+<a href="#top">:arrow_heading_up:</a>
+
+## <a id="yttnfyof"> SASensum</a> 
+<details>
+<summary>Vis tabel</summary>
+
+| TekniskNavn   | EgetNavn                                           |
+|:--------------|:---------------------------------------------------|
+| Numerisk1     | Counter                                            |
+| Tekst1        | IndsatsStatus                                      |
+| Tekst2        | Indsats                                            |
+| CPR           | CPR                                                |
+| Tekst3        | Fornavn                                            |
+| Dato1         | IndsatsStartDato                                   |
+| Dato2         | IndsatsSlutDato                                    |
+| Dato3         | OprettetDato                                       |
+| Tekst4        | OpholdsKommune                                     |
+| Tekst5        | SagNavn                                            |
+| Tekst6        | SagType                                            |
+| Tekst7        | Status                                             |
+| Tekst8        | PrimærAnsvarlig                                    |
+| Tekst9        | Akut                                               |
+| Tekst10       | AfslutningsÅrsag                                   |
+| Tekst11       | Facet                                              |
+| Tekst12       | LeverandørIndsats                                  |
+| Tekst13       | PrimærBy                                           |
+| Tekst14       | Tilbud                                             |
+| Tekst15       | LeverandørNavn                                     |
+| Numerisk2     | BorgerMobil                                        |
 </details>
 <a href="#top">:arrow_heading_up:</a>
 
