@@ -1,45 +1,291 @@
+from jobindsats.jobindsats import get_data
 from jobindsats.jobindsats_y30r21 import get_jobindats_ydelsesgrupper
-from jobindsats.jobindsats_y01a02 import get_jobindsats_dagpenge
-from jobindsats.jobindsats_y07a02 import get_jobindsats_syg_dagpenge
-from jobindsats.jobindsats_y08a02 import get_jobindsats_fleksjob
-from jobindsats.jobindsats_y09a02 import get_jobindsats_ledighedsydelse
-from jobindsats.jobindsats_y12a02 import get_jobindsats_jobafklaringsforløb
-from jobindsats.jobindsats_y35a02 import get_jobindsats_sho
-from jobindsats.jobindsats_y36a02 import get_jobindsats_kontanthjælp
-from jobindsats.jobindsats_y38a02 import get_jobindsats_uddannelseshjælp
-from jobindsats.jobindsats_y11a02 import get_jobindsats_ressourceforløb
-from jobindsats.jobindsats_y04a02 import get_jobindsats_revalidering
 from jobindsats.jobindsats_y14d03 import get_jobindsats_ydelse_til_job
-from jobindsats.jobindsats_y10a02 import get_jobindsats_tilbagetraekningsydelser
-from jobindsats.jobindsats_otij01 import get_jobindsats_ydelsesmodtagere_loentimer
-from jobindsats.jobindsats_ptvc01 import get_jobindsats_tilbud_samtaler
-from jobindsats.jobindsats_ptva02 import get_jobindsats_alle_ydelser
 
 import logging
 
 logger = logging.getLogger(__name__)
 
 
+# TODO: Move configuration to a better place. Maybe use https://github.com/Randers-Kommune-Digitalisering/config-library ?
+jobindsats_jobs_config = [
+    {
+        "name": "Ydelsesmodtagere med løntimer",
+        "years_back": 2,
+        "dataset": "otij01",
+        "data_to_get": {
+            "_ygrp_j01": [
+                "Kontanthjælp",
+                "Uddannelseshjælp",
+                "Selvforsørgelses- og hjemrejseydelse mv.",
+                "Jobafklaringsforløb",
+                "Forrevalidering og revalidering",
+                "Ressourceforløb"
+            ],
+            "_maalgrp": [
+                "Jobparate mv.",
+            ]
+        }
+    },
+    {
+        "name": "Offentligt forsørgede",
+        "years_back": 2,
+        "dataset": "ptv_a02",
+        "data_to_get": {
+            "_ygrpa02": [
+                "Førtidspension",
+                "Efterløn",
+                "Seniorpension",
+                "Jobafklaringsforløb",
+                "Tidlig pension",
+            ],
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+        }
+    },
+    {
+        "name": "Tilbud og samtaler",
+        "years_back": 2,
+        "dataset": "ptvc01",
+        "data_to_get": {
+            "_ygrpc02": [
+                "A-dagpenge",
+                "Kontanthjælp",
+                "Uddannelseshjælp",
+                "Selvforsørgelses- og hjemrejseydelse mv.",
+                "Sygedagpenge"
+            ],
+        }
+    },
+    {
+        "name": "A-Dagpenge",
+        "years_back": 2,
+        "dataset": "y01a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Revalidering",
+        "years_back": 2,
+        "dataset": "y04a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Herkomst i alt",
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Sygedagppenge",
+        "years_back": 1,
+        "dataset": "y07a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ],
+            "_sagsart": [
+                "Lønmodtagere",
+                "Selvstændige erhvervsdrivende",
+                "Fleksjob",
+                "A-dagpengemodtagere"
+            ]
+        }
+    },
+    {
+        "name": "Fleksjob",
+        "years_back": 2,
+        "dataset": "y08a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Ledighedsydelse",
+        "years_back": 2,
+        "dataset": "y09a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Tilbagetrækningsydelser",
+        "years_back": 2,
+        "dataset": "y10a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Ressourceforløb",
+        "years_back": 2,
+        "dataset": "y11a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Herkomst i alt",
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Jobafklaringsforløb",
+        "years_back": 2,
+        "dataset": "y12a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Selvforsørgelses- og hjemrejseydelse samt overgangsydelse",
+        "years_back": 2,
+        "dataset": "y35a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ]
+        }
+    },
+    {
+        "name": "Kontanthjælp",
+        "years_back": 2,
+        "dataset": "y36a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ],
+            "_viskat_1kth": [
+                "Jobparat",
+                "Aktivitetsparat",
+                "Uoplyst visitationskategori"
+            ]
+        }
+    },
+    {
+        "name": "Uddannelseshjælp",
+        "years_back": 0,
+        "dataset": "y38a02",
+        "data_to_get": {
+            "_kon": [
+                "Kvinder",
+                "Mænd"
+            ],
+            "_oprinda": [
+                "Personer med dansk oprindelse",
+                "Indvandrere fra vestlige lande",
+                "Efterkommere fra vestlige lande",
+                "Indvandrere fra ikke-vestlige lande",
+                "Efterkommere fra ikke-vestlige lande"
+            ],
+            "_viskat_2udh": [
+                "Alle uddannelsesparate",
+                "Uddannelsesparat",
+                "Åbenlys uddannelsesparat",
+                "Aktivitetsparat",
+                "Uoplyst visitationskategori"
+            ]
+        }
+    }
+]
+
+
 def job():
     try:
-        logger.info('Starting jobindsats ETL jobs!')
-        get_jobindsats_alle_ydelser()
-        get_jobindsats_tilbud_samtaler()
-        get_jobindsats_ydelsesmodtagere_loentimer()
-        get_jobindsats_tilbagetraekningsydelser()
-        get_jobindsats_ydelse_til_job()
-        get_jobindsats_revalidering()
-        get_jobindsats_ressourceforløb()
-        get_jobindsats_uddannelseshjælp()
-        get_jobindsats_kontanthjælp()
-        get_jobindsats_sho()
-        get_jobindsats_jobafklaringsforløb()
-        get_jobindsats_ledighedsydelse()
-        get_jobindsats_fleksjob()
-        get_jobindsats_syg_dagpenge()
-        get_jobindsats_dagpenge()
-        get_jobindats_ydelsesgrupper()
-        return True
+        logger.info('Starting jobindsats ETL job!')
+        results = []
+        for job in jobindsats_jobs_config:
+            results.append(get_data(job['name'], job['years_back'], job['dataset'], job['data_to_get']))
+        results.append(get_jobindats_ydelsesgrupper())
+        results.append(get_jobindsats_ydelse_til_job())
+        return all(results)
     except Exception as e:
         logger.error(f'An error occurred: {e}')
         return False

@@ -14,6 +14,7 @@ period_url = "https://api.jobindsats.dk/v2/tables/y14d03/json/"
 jobindsats_period_client = APIClient(period_url, JOBINDSATS_API_KEY)
 
 
+# TODO: This function should also be made generic
 def get_jobindsats_ydelse_til_job():
     try:
         logger.info("Starting jobindsats Fra ydelse til job")

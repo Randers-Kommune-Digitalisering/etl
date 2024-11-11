@@ -13,6 +13,7 @@ period_url = "https://api.jobindsats.dk/v2/tables/y30r21/json/"
 jobindsats_period_client = APIClient(period_url, JOBINDSATS_API_KEY)
 
 
+# TODO: This function should also be made generic
 def get_jobindats_ydelsesgrupper():
     try:
         logger.info("Starting jobindsats Ydelsesgrupper")
