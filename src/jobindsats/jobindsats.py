@@ -29,9 +29,7 @@ def get_data(name, years_back, dataset, data_to_get):
 
         df = pd.DataFrame(data, columns=column_names)
 
-        df[f'Periode {name}'] = df['Periode'].apply(convert_to_datetime)  # TODO: Why can it not be called just "Periode"?
-
-        df["Periode"] = df["Periode"]  # TODO: what is this for?
+        df[f'Periode {name}'] = df['Periode'].apply(convert_to_datetime)
 
         df.rename(columns={"Area": "Område"}, inplace=True)
 
@@ -49,21 +47,49 @@ def get_data(name, years_back, dataset, data_to_get):
         return False
 
 
-# TODO: error handling?
 def dynamic_period(latest_period, years_back):
-    current_year = int(latest_period[:4])
-    current_month = int(latest_period[5:])
-    period = []
+    try:
+        period = []
+        if 'QMAT' in latest_period:
+            current_year = int(latest_period[:4])
+            current_qmat = int(latest_period[8:])
 
-    for month in range(1, current_month + 1):
-        period.append(f"{current_year}M{month:02d}")
+            for qmat in range(1, current_qmat + 1):
+                period.append(f"{current_year}QMAT{qmat:02d}")
 
-    if years_back:
-        for year in range(current_year - years_back, current_year):
-            for month in range(1, 13):
-                period.append(f"{year}M{month:02d}")
+            if years_back:
+                for year in range(current_year - years_back, current_year):
+                    for qmat in range(1, 13):
+                        period.append(f"{year}QMAT{qmat:02d}")
 
-    return period
+        elif 'Q' in latest_period:
+            current_year = int(latest_period[:4])
+            current_quarter = int(latest_period[5:])
+
+            for quarter in range(1, current_quarter + 1):
+                period.append(f"{current_year}Q{quarter}")
+
+            if years_back:
+                for year in range(current_year - years_back, current_year):
+                    for quarter in range(1, 5):
+                        period.append(f"{year}Q{quarter}")
+
+        else:
+            current_year = int(latest_period[:4])
+            current_month = int(latest_period[5:])
+
+            for month in range(1, current_month + 1):
+                period.append(f"{current_year}M{month:02d}")
+
+            if years_back:
+                for year in range(current_year - years_back, current_year):
+                    for month in range(1, 13):
+                        period.append(f"{year}M{month:02d}")
+
+        return period
+    except Exception as e:
+        logger.error(f'Error in dynamic_period: {e}')
+        return []
 
 
 def convert_to_datetime(period_str):
