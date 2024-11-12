@@ -1,5 +1,4 @@
 from jobindsats.jobindsats import get_data
-from jobindsats.jobindsats_y30r21 import get_jobindats_ydelsesgrupper
 import logging
 
 logger = logging.getLogger(__name__)
