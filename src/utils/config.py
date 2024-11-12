@@ -44,3 +44,6 @@ SENSUM_IT_SFTP_REMOTE_DIR = os.environ['SENSUM_IT_SFTP_REMOTE_DIR'].rstrip()
 SENSUM_IT_SFTP_HOST = os.environ['SENSUM_IT_SFTP_HOST'].rstrip()
 SENSUM_IT_SFTP_USER = os.environ['SENSUM_IT_SFTP_USER'].rstrip()
 SENSUM_IT_SFTP_PASS = os.environ['SENSUM_IT_SFTP_PASS'].rstrip()
+
+CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
+CONFIG_LIBRARY_PASS = os.environ['CONFIG_LIBRARY_PASS'].rstrip()
