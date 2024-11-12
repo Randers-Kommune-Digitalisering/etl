@@ -1,7 +1,5 @@
 from jobindsats.jobindsats import get_data
 from jobindsats.jobindsats_y30r21 import get_jobindats_ydelsesgrupper
-from jobindsats.jobindsats_y14d03 import get_jobindsats_ydelse_til_job
-
 import logging
 
 logger = logging.getLogger(__name__)
@@ -13,6 +11,7 @@ jobindsats_jobs_config = [
         "name": "Ydelsesmodtagere med løntimer",
         "years_back": 2,
         "dataset": "otij01",
+        "period_format": "M",
         "data_to_get": {
             "_ygrp_j01": [
                 "Kontanthjælp",
@@ -31,6 +30,7 @@ jobindsats_jobs_config = [
         "name": "Offentligt forsørgede",
         "years_back": 2,
         "dataset": "ptv_a02",
+        "period_format": "M",
         "data_to_get": {
             "_ygrpa02": [
                 "Førtidspension",
@@ -49,6 +49,7 @@ jobindsats_jobs_config = [
         "name": "Tilbud og samtaler",
         "years_back": 2,
         "dataset": "ptvc01",
+        "period_format": "M",
         "data_to_get": {
             "_ygrpc02": [
                 "A-dagpenge",
@@ -63,6 +64,7 @@ jobindsats_jobs_config = [
         "name": "A-Dagpenge",
         "years_back": 2,
         "dataset": "y01a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -81,6 +83,7 @@ jobindsats_jobs_config = [
         "name": "Revalidering",
         "years_back": 2,
         "dataset": "y04a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -100,6 +103,7 @@ jobindsats_jobs_config = [
         "name": "Sygedagppenge",
         "years_back": 1,
         "dataset": "y07a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -124,6 +128,7 @@ jobindsats_jobs_config = [
         "name": "Fleksjob",
         "years_back": 2,
         "dataset": "y08a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -142,6 +147,7 @@ jobindsats_jobs_config = [
         "name": "Ledighedsydelse",
         "years_back": 2,
         "dataset": "y09a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -160,6 +166,7 @@ jobindsats_jobs_config = [
         "name": "Tilbagetrækningsydelser",
         "years_back": 2,
         "dataset": "y10a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -178,6 +185,7 @@ jobindsats_jobs_config = [
         "name": "Ressourceforløb",
         "years_back": 2,
         "dataset": "y11a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -194,6 +202,7 @@ jobindsats_jobs_config = [
         "name": "Jobafklaringsforløb",
         "years_back": 2,
         "dataset": "y12a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -212,6 +221,7 @@ jobindsats_jobs_config = [
         "name": "Selvforsørgelses- og hjemrejseydelse samt overgangsydelse",
         "years_back": 2,
         "dataset": "y35a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -230,6 +240,7 @@ jobindsats_jobs_config = [
         "name": "Kontanthjælp",
         "years_back": 2,
         "dataset": "y36a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -253,6 +264,7 @@ jobindsats_jobs_config = [
         "name": "Uddannelseshjælp",
         "years_back": 0,
         "dataset": "y38a02",
+        "period_format": "M",
         "data_to_get": {
             "_kon": [
                 "Kvinder",
@@ -273,7 +285,43 @@ jobindsats_jobs_config = [
                 "Uoplyst visitationskategori"
             ]
         }
-    }
+    },
+    {
+        "name": "Fra ydelse til job",
+        "years_back": 2,
+        "dataset": "y14d03",
+        "period_format": "QMAT",
+        "data_to_get": {
+            "_ygrpmm12": [
+                "A-dagpenge",
+                "Kontanthjælp",
+                "Sygedagpenge"
+            ],
+            "_tilbud_d03": [
+                "Privat virksomhedspraktik",
+                "Offentlig virksomhedspraktik"
+            ],
+            "_maalgrp_d03": [
+                "Jobparate mv.",
+                "Aktivitetsparate mv."
+            ],
+        }
+    },
+    {
+        "name": "Ydelsesgrupper",
+        "years_back": 2,
+        "dataset": "y30r21",
+        "period_format": "QMAT",
+        "data_to_get": {
+            "_ygrp_y30r21": [
+                "Ydelsesgrupper i alt",
+                "A-dagpenge mv.",
+                "Sygedagpenge mv.",
+                "Kontanthjælp mv."
+            ]
+        }
+    },
+
 ]
 
 
@@ -282,9 +330,7 @@ def job():
         logger.info('Starting jobindsats ETL job!')
         results = []
         for job in jobindsats_jobs_config:
-            results.append(get_data(job['name'], job['years_back'], job['dataset'], job['data_to_get']))
-        results.append(get_jobindats_ydelsesgrupper())
-        results.append(get_jobindsats_ydelse_til_job())
+            results.append(get_data(job['name'], job['years_back'], job['dataset'], job['period_format'], job['data_to_get']))
         return all(results)
     except Exception as e:
         logger.error(f'An error occurred: {e}')
