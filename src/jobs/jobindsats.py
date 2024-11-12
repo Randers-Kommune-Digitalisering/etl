@@ -13,7 +13,7 @@ def job():
     try:
         logger.info('Starting jobindsats ETL job!')
 
-        config_path = "/api/file/tests/jobindsats_jobs_config.json"
+        config_path = "/api/file/etl/jobindsats_jobs_config.json"
         jobindsats_jobs_config = config_library_client.make_request(path=config_path)
         if jobindsats_jobs_config is None:
             return False
