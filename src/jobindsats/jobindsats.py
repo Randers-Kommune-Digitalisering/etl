@@ -13,11 +13,11 @@ base_url = "https://api.jobindsats.dk"  # TODO: move to config
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 
-def get_data(name, years_back, dataset, data_to_get):
+def get_data(name, years_back, dataset, period_format, data_to_get):
     try:
         logger.info(f"Starting jobindsats: {name}")
-        latest_period = period_request(dataset)
-        period = dynamic_period(latest_period, years_back)
+        latest_period = period_request(dataset, period_format)
+        period = dynamic_period(latest_period, years_back, period_format)
         payload = {"area": "*", "period": period} | data_to_get
 
         data = jobindsats_client.make_request(path=f'v2/data/{dataset}/json', json=payload)
@@ -47,10 +47,10 @@ def get_data(name, years_back, dataset, data_to_get):
         return False
 
 
-def dynamic_period(latest_period, years_back):
+def dynamic_period(latest_period, years_back, period_format):
     try:
         period = []
-        if 'QMAT' in latest_period:
+        if period_format == 'QMAT' and 'QMAT' in latest_period:
             current_year = int(latest_period[:4])
             current_qmat = int(latest_period[8:])
 
@@ -62,7 +62,7 @@ def dynamic_period(latest_period, years_back):
                     for qmat in range(1, 13):
                         period.append(f"{year}QMAT{qmat:02d}")
 
-        elif 'Q' in latest_period:
+        elif period_format == 'Q' and 'Q' in latest_period:
             current_year = int(latest_period[:4])
             current_quarter = int(latest_period[5:])
 
@@ -74,7 +74,7 @@ def dynamic_period(latest_period, years_back):
                     for quarter in range(1, 5):
                         period.append(f"{year}Q{quarter}")
 
-        else:
+        elif period_format == 'M' and 'M' in latest_period:
             current_year = int(latest_period[:4])
             current_month = int(latest_period[5:])
 
@@ -94,14 +94,37 @@ def dynamic_period(latest_period, years_back):
 
 def convert_to_datetime(period_str):
     year = int(period_str[:4])
-    month = int(period_str[5:])
+    if 'QMAT' in period_str:
+        qmat = int(period_str[8:])
+        month = qmat
+    elif 'Q' in period_str:
+        quarter = int(period_str[5:])
+        month = (quarter - 1) * 3 + 1
+    else:
+        month = int(period_str[5:])
     return datetime(year, month, 1)
 
 
-# TODO: error handling?
-def period_request(dataset):
-    data = jobindsats_client.make_request(path=f'v2/tables/{dataset}/json/')
-    periods = data[0]['Period']
-    valid_periods = [p for p in periods if len(p) == 7 and p[4] == 'M' and p[5:].isdigit()]
-    latest_period = max(valid_periods)
-    return latest_period
+def period_request(dataset, period_format):
+    try:
+        data = jobindsats_client.make_request(path=f'v2/tables/{dataset}/json/')
+        periods = data[0]['Period']
+
+        if period_format == 'QMAT':
+            valid_periods = [p for p in periods if len(p) == 10 and p[4:8] == 'QMAT' and p[8:].isdigit()]
+        elif period_format == 'Q':
+            valid_periods = [p for p in periods if len(p) == 6 and p[4] == 'Q' and p[5:].isdigit()]
+        elif period_format == 'M':
+            valid_periods = [p for p in periods if len(p) == 7 and p[4] == 'M' and p[5:].isdigit()]
+        else:
+            valid_periods = []
+
+        if not valid_periods:
+            logger.error("No valid periods found")
+            return None
+
+        latest_period = max(valid_periods)
+        return latest_period
+    except Exception as e:
+        logger.error(f'Error fetching period for dataset {dataset}: {e}')
+        raise
