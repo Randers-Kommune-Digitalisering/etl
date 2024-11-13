@@ -1,11 +1,11 @@
 from jobindsats.jobindsats import get_data
 import logging
 from utils.api_requests import APIClient
-from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS
+from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_PATH
 
 logger = logging.getLogger(__name__)
 
-base_url = "https://config-library.prototypes.randers.dk"
+base_url = CONFIG_LIBRARY_URL
 config_library_client = APIClient(base_url, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
 
 
@@ -13,7 +13,7 @@ def job():
     try:
         logger.info('Starting jobindsats ETL job!')
 
-        config_path = "/api/file/etl/jobindsats_jobs_config.json"
+        config_path = CONFIG_LIBRARY_PATH
         jobindsats_jobs_config = config_library_client.make_request(path=config_path)
         if jobindsats_jobs_config is None:
             return False

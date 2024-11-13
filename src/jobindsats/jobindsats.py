@@ -4,12 +4,12 @@ from datetime import datetime
 
 import pandas as pd
 from utils.api_requests import APIClient
-from utils.config import JOBINDSATS_API_KEY
+from utils.config import JOBINDSATS_API_KEY, JOBINDSATS_URL
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
 
-base_url = "https://api.jobindsats.dk"  # TODO: move to config
+base_url = JOBINDSATS_URL
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
 
 
