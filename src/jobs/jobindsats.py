@@ -16,6 +16,7 @@ def job():
         config_path = CONFIG_LIBRARY_PATH
         jobindsats_jobs_config = config_library_client.make_request(path=config_path)
         if jobindsats_jobs_config is None:
+            logging.error(f"Failed to load config file from path: {config_path}")
             return False
 
         results = []

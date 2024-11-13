@@ -17,7 +17,15 @@ def get_data(name, years_back, dataset, period_format, data_to_get):
     try:
         logger.info(f"Starting jobindsats: {name}")
         latest_period = period_request(dataset, period_format)
+        if not latest_period:
+            logger.error("Failed to get the latest period")
+            return False
+
         period = dynamic_period(latest_period, years_back, period_format)
+        if not period:
+            logger.error("Failed to generate periods")
+            return False
+
         payload = {"area": "*", "period": period} | data_to_get
 
         data = jobindsats_client.make_request(path=f'v2/data/{dataset}/json', json=payload)
