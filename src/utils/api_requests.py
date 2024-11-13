@@ -2,7 +2,6 @@ import time
 import base64
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -83,10 +82,15 @@ class APIClient:
                     self.refresh_token_expiry = now + data['refresh_expires_in']
 
                 return {'Authorization': f'Bearer {self.access_token}'}
+            elif self.username and self.password:
+                auth_str = f"{self.username}:{self.password}"
+                b64_auth_str = base64.b64encode(auth_str.encode()).decode()
+                return {'Authorization': f'Basic {b64_auth_str}'}
             else:
                 return {}
         except Exception as e:
             logger.error(e)
+            return {}
 
     def make_request(self, **kwargs):
         if 'path' in kwargs:
