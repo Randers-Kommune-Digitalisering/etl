@@ -112,6 +112,100 @@ def get_capa_lgi_data(capa_db_client, in_section, in_dataname, in_computername):
         return None
 
 
+def capadata_navn(computernavn, inshortsite, inadfqdn, inadgroups, inadlastlogon, ininstalldate):
+    try:
+        conn_str = capa_db_client.get_connection()
+
+        if get_capa_data(conn_str, "CapaInstaller", "ComputerName", computernavn).upper() != "NONE":
+            biosver = get_capa_data(conn_str, "Bios information", "SMBIOSVersion", computernavn)
+            biosdato = ""
+            model = get_capa_data(conn_str, "System", "Name", computernavn)
+            manufactor = get_capa_data(conn_str, "System", "Manufacturer", computernavn)
+            serialnr = get_capa_data(conn_str, "System", "Serial Number", computernavn)
+            OS = f"{get_capa_data(conn_str, 'Operating System', 'System', computernavn)} Ver{get_capa_data(conn_str, 'Operating System', 'Version', computernavn)} Build{get_capa_data(conn_str, 'Operating System', 'build', computernavn)} ({get_capa_data(conn_str, 'Operating System', 'Service Pack', computernavn)})"
+            Ram = get_capa_data(conn_str, "Memory", "Total Memory (Mb)", computernavn)
+            Processortype = get_capa_data(conn_str, "CPU", "CPU #1 Processor Name", computernavn)
+            Processorspeed = get_capa_data(conn_str, "CPU", "CPU #1 Processor Speed", computernavn)
+            DiskModel = get_capa_data(conn_str, "HDD", "Disk #1 Model", computernavn)
+            DiskSize = get_capa_data(conn_str, "HDD", "Disk #1 Size", computernavn)
+            DiskSizeSng = float(DiskSize)
+            if DiskSizeSng > 10000000000:
+                DiskSizeOld = DiskSize
+                DiskSize = str(int(DiskSizeSng / 1000000))
+                logger.info(f"DiskSize {computernavn}: {DiskSizeOld} er ændret til {DiskSize}")
+            TPMactivated = get_capa_csi_data(conn_str, "TPM Inventory", "Aktiveret", computernavn).strip().upper() == "SAND"
+            TPMowned = get_capa_csi_data(conn_str, "TPM Inventory", "Ejet", computernavn).strip().upper() == "SAND"
+            TPMenabled = get_capa_csi_data(conn_str, "TPM Inventory", "Enablet", computernavn).strip().upper() == "SAND"
+            TPMversion = get_capa_csi_data(conn_str, "TPM Inventory", "Fysisk TPM Version", computernavn)
+            BitlockerReady = get_capa_csi_data(conn_str, "BitLocker", "Encryption Ready", computernavn).strip().upper() == "YES"
+            DefaultUser = get_capa_lgi_data(conn_str, "Default User", "User Name", computernavn)
+            MACaddress1 = "NONE"
+            manubuf = get_capa_data(conn_str, "Network Adapter", "Device #1 Network adapter manufacturer", computernavn)
+            if check_net_manu(manubuf):
+                MACaddress1 = get_capa_data(conn_str, "Network Adapter", "Device #1 MAC Address", computernavn).replace(":", "")
+            MACaddress2 = "NONE"
+            manubuf = get_capa_data(conn_str, "Network Adapter", "Device #2 Network adapter manufacturer", computernavn)
+            if check_net_manu(manubuf):
+                MACaddress2 = get_capa_data(conn_str, "Network Adapter", "Device #2 MAC Address", computernavn).replace(":", "")
+            MACaddress3 = "NONE"
+            manubuf = get_capa_data(conn_str, "Network Adapter", "Device #3 Network adapter manufacturer", computernavn)
+            if check_net_manu(manubuf):
+                MACaddress3 = get_capa_data(conn_str, "Network Adapter", "Device #3 MAC Address", computernavn).replace(":", "")
+            MACaddress4 = "NONE"
+            manubuf = get_capa_data(conn_str, "Network Adapter", "Device #4 Network adapter manufacturer", computernavn)
+            if check_net_manu(manubuf):
+                MACaddress4 = get_capa_data(conn_str, "Network Adapter", "Device #4 MAC Address", computernavn).replace(":", "")
+            MACaddress5 = "NONE"
+            manubuf = get_capa_data(conn_str, "Network Adapter", "Device #5 Network adapter manufacturer", computernavn)
+            if check_net_manu(manubuf):
+                MACaddress5 = get_capa_data(conn_str, "Network Adapter", "Device #5 MAC Address", computernavn).replace(":", "")
+            MACaddress6 = "NONE"
+            manubuf = get_capa_data(conn_str, "Network Adapter", "Device #6 Network adapter manufacturer", computernavn)
+            if check_net_manu(manubuf):
+                MACaddress6 = get_capa_data(conn_str, "Network Adapter", "Device #6 MAC Address", computernavn).replace(":", "")
+
+            pcid = sshw_pcid_name(sshw_db_client, computernavn)
+            if pcid == "0":
+                if MACaddress1.upper() != "NONE":
+                    pcid = sshw_pcid_mac(MACaddress1)
+                if pcid == "0" and MACaddress2.upper() != "NONE":
+                    pcid = sshw_pcid_mac(MACaddress2)
+                if pcid == "0" and MACaddress3.upper() != "NONE":
+                    pcid = sshw_pcid_mac(MACaddress3)
+                if pcid == "0" and MACaddress4.upper() != "NONE":
+                    pcid = sshw_pcid_mac(MACaddress4)
+                if pcid == "0" and MACaddress5.upper() != "NONE":
+                    pcid = sshw_pcid_mac(MACaddress5)
+                if pcid == "0" and MACaddress6.upper() != "NONE":
+                    pcid = sshw_pcid_mac(MACaddress6)
+
+            if pcid == "0":
+                sshw_new_pcinfo(computernavn, "2", get_agedate(model, biosver), inshortsite, biosver, biosdato, inadfqdn, inadgroups, model, manufactor, serialnr, OS, Ram, Processortype, Processorspeed, DiskModel, DiskSize, TPMactivated, TPMowned, TPMenabled, TPMversion, DefaultUser, BitlockerReady, get_SSHwtype(model, biosver), inadlastlogon, ininstalldate)
+                pcid = sshw_pcid_name(sshw_db_client, computernavn)
+            else:
+                sshw_upd_pcinfo(pcid, computernavn, "2", get_agedate(model, biosver), inshortsite, biosver, biosdato, inadfqdn, inadgroups, model, manufactor, serialnr, OS, Ram, Processortype, Processorspeed, DiskModel, DiskSize, TPMactivated, TPMowned, TPMenabled, TPMversion, DefaultUser, BitlockerReady, get_SSHwtype(model, biosver), inadlastlogon, ininstalldate)
+
+            if MACaddress1.upper() != "NONE":
+                sshw_mac(pcid, MACaddress1)
+            if MACaddress2.upper() != "NONE":
+                sshw_mac(pcid, MACaddress2)
+            if MACaddress3.upper() != "NONE":
+                sshw_mac(pcid, MACaddress3)
+            if MACaddress4.upper() != "NONE":
+                sshw_mac(pcid, MACaddress4)
+            if MACaddress5.upper() != "NONE":
+                sshw_mac(pcid, MACaddress5)
+            if MACaddress6.upper() != "NONE":
+                sshw_mac(pcid, MACaddress6)
+        else:
+            sshw_ad_only_state(computernavn, inadlastlogon, inshortsite, inadfqdn, inadgroups)
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Error in capadata_navn: {e}")
+        return False
+
+
 def check_net_manu(inmanu):
     inmanu = inmanu.upper()
     if "WAN MINIPORT" in inmanu or "BLUETOOTH" in inmanu or "MICROSOFT WI-FI DIRECT VIRTUAL ADAPTER" in inmanu:
@@ -119,10 +213,10 @@ def check_net_manu(inmanu):
     return True
 
 
-def sshw_pcid_name(db_client, inname):
+def sshw_pcid_name(sshw_db_client, inname):
     sql_command = f"SELECT id FROM pcinfo WHERE name = '{inname}'"
     try:
-        result = db_client.execute_sql(sql_command)
+        result = sshw_db_client.execute_sql(sql_command)
         if result and len(result) > 0:
             return result[0][0]
         else:
