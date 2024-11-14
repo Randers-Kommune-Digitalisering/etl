@@ -1,6 +1,5 @@
 import logging
 from utils.database_client import DatabaseClient
-from utils.db_creation import create_hwdb
 from utils.config import (
     ASSET_MANAGEMENT_LIGHT_DB_HOST,
     ASSET_MANAGEMENT_LIGHT_DB_USER,
@@ -32,10 +31,6 @@ logger = logging.getLogger(__name__)
 def job():
     try:
         logger.info("Starting Asset-Management-Light job")
-        if create_hwdb():
-            logger.info("Database created successfully")
-        else:
-            logger.error("Failed to create database")
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
