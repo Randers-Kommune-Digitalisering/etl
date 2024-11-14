@@ -33,6 +33,11 @@ class DatabaseClient:
         try:
             cur = self.get_cursor()
             cur.execute(sql)
-            return cur.fetchall()
+            if cur.description:
+                return cur.fetchall()
+            else:
+                self.connection.commit()
+                return None
         except Exception as e:
             self.logger.error(f"Error executing SQL: {e}")
+            return None
