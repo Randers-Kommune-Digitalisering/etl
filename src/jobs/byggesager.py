@@ -118,7 +118,7 @@ def get_sbsys_data(config):
                         df.columns = received_df.columns
                         received_df = pd.concat([received_df, df], axis=0)
 
-                elif all(x in file_name.lower() for x in [config['keywords']['concluded'],  config['keywords']['template_code']]):
+                elif all(x in file_name.lower() for x in [config['keywords']['concluded'], config['keywords']['template_code']]):
                     last_modified_concluded.append(datetime.fromtimestamp(conn.stat(file_name).st_mtime))
                     with conn.open(file_name, 'r') as file:
                         df = read_file(file)
