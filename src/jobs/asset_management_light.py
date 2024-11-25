@@ -41,6 +41,15 @@ def job():
         else:
             logger.info("No serial numbers found.")
 
+        # Insert/Update Producent
+        producent_result = get_producent(capa_db_client)
+        if producent_result:
+            for row in producent_result:
+                logger.info(f"Producent: {row}")
+            update_producent(sshw_db_client, producent_result)
+        else:
+            logger.info("No producent data found.")
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -93,3 +102,47 @@ def insert_serial_numbers(sshw_db_client, data):
         logger.info("Data inserted successfully into ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error inserting data into ComputerAssets table: {e}")
+
+
+def get_producent(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME, INV.VALUE
+    FROM UNIT
+    JOIN INV ON UNIT.UNITID = INV.UNITID
+    WHERE (INV.SECTION = 'System') AND (INV.NAME = 'Manufacturer')
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                unit_name, producent = row
+                if producent and not (unit_name.startswith('DQ') or unit_name.startswith('AP')):  # Filter out USERS(DQ/AP) ONLY PC's
+                    logger.info(f"Unit Name: {unit_name}, Producent: {producent}")
+                    filtered_result.append(row)
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        capa_db_client.logger.error(f"Error retrieving producent data: {e}")
+        return None
+
+
+def update_producent(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET Producent = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            unit_name, producent = row
+            sshw_db_client.execute_sql(sql_command, (producent, unit_name))
+        sshw_db_client.get_connection().commit()
+        logger.info("Producent Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
