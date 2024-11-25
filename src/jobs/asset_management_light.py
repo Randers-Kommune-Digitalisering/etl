@@ -68,6 +68,15 @@ def job():
         else:
             logger.info("No OS deployment data found.")
 
+        # Insert/Update Last Online
+        last_online_result = get_last_online(capa_db_client)
+        if last_online_result:
+            for row in last_online_result:
+                logger.info(f"Last Online: {row}")
+            update_last_online(sshw_db_client, last_online_result)
+        else:
+            logger.info("No last online data found.")
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -249,5 +258,51 @@ def update_os_deployment(sshw_db_client, data):
             sshw_db_client.execute_sql(sql_command, (os_value, unit_name))
         sshw_db_client.get_connection().commit()
         logger.info("OS Deployment Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_last_online(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME,
+           FORMAT(DATEADD(HOUR, 1, DATEADD(SECOND, TRY_CAST(UNIT.LASTONLINE AS BIGINT), '1970-01-01')), 'yyyy-MM-dd HH:mm:ss') AS LASTONLINE
+    FROM UNIT
+    WHERE UNIT.NAME NOT LIKE 'DQ%' AND UNIT.NAME NOT LIKE 'AP%'
+      AND UNIT.LASTONLINE IS NOT NULL
+      AND ISNUMERIC(UNIT.LASTONLINE) = 1
+      AND TRY_CAST(UNIT.LASTONLINE AS BIGINT) BETWEEN 0 AND 253402300799
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                unit_name, last_online = row
+                logger.info(f"Unit Name: {unit_name}, Last Online: {last_online}")
+                filtered_result.append((unit_name, last_online))
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        logger.error(f"Error retrieving last online data: {e}")
+        return None
+
+
+def update_last_online(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET SidsteLoginDato = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            unit_name, last_online = row
+            sshw_db_client.execute_sql(sql_command, (last_online, unit_name))
+        sshw_db_client.get_connection().commit()
+        logger.info("Last Online Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
