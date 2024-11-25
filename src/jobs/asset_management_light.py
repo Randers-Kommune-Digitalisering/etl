@@ -50,6 +50,15 @@ def job():
         else:
             logger.info("No producent data found.")
 
+        # Insert/Update Device Type
+        device_type_result = get_device_type(capa_db_client)
+        if device_type_result:
+            for row in device_type_result:
+                logger.info(f"Device Type: {row}")
+            update_device_type(sshw_db_client, device_type_result)
+        else:
+            logger.info("No device type data found.")
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -144,5 +153,48 @@ def update_producent(sshw_db_client, data):
             sshw_db_client.execute_sql(sql_command, (producent, unit_name))
         sshw_db_client.get_connection().commit()
         logger.info("Producent Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_device_type(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME, DEVICETYPE.HWNAME
+    FROM UNIT
+    JOIN DEVICETYPE ON UNIT.DEVICETYPEID = DEVICETYPE.ID
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                unit_name, device_type = row
+                if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
+                    logger.info(f"Unit Name: {unit_name}, Device Type: {device_type}")
+                    filtered_result.append(row)
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        capa_db_client.logger.error(f"Error retrieving device type data: {e}")
+        return None
+
+
+def update_device_type(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET Enhedstype = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            unit_name, device_type = row
+            sshw_db_client.execute_sql(sql_command, (device_type, unit_name))
+        sshw_db_client.get_connection().commit()
+        logger.info("Device Type Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
