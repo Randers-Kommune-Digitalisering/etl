@@ -29,10 +29,13 @@ class DatabaseClient:
         except Exception as e:
             self.logger.error(f"Error getting cursor: {e}")
 
-    def execute_sql(self, sql):
+    def execute_sql(self, sql, params=None):
         try:
             cur = self.get_cursor()
-            cur.execute(sql)
+            if params:
+                cur.execute(sql, params)
+            else:
+                cur.execute(sql)
             if cur.description:
                 return cur.fetchall()
             else:
