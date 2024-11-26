@@ -113,6 +113,15 @@ def job():
         else:
             logger.info("No department data found.")
 
+        # Insert/Update BitLocker Code
+        bitlocker_code_result = get_bitlocker_code(capa_db_client)
+        if bitlocker_code_result:
+            for row in bitlocker_code_result:
+                logger.info(f"BitLocker Code: {row}")
+            update_bitlocker_code(sshw_db_client, bitlocker_code_result)
+        else:
+            logger.info("No BitLocker code data found.")
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -553,5 +562,56 @@ def update_department(sshw_db_client, data):
                 logger.error(f"Unexpected row format: {row}")
         sshw_db_client.get_connection().commit()
         logger.info("Department Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_bitlocker_code(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME, CSI.VALUE
+    FROM UNIT
+    JOIN CSI ON UNIT.UNITID = CSI.UNITID
+    WHERE CSI.SECTION = 'CapaServices | CapaBitLocker' 
+      AND (CSI.NAME = 'Recovery Password C: #1 Password'
+           OR CSI.NAME = 'Recovery Password D: #1 Password' 
+           OR CSI.NAME = 'Recovery Password E: #1 Password')
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+
+                unit_name, bitlocker_code = row
+                if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
+                    logger.info(f"Unit Name: {unit_name}, BitLocker Code: {bitlocker_code}")
+                    filtered_result.append((unit_name, bitlocker_code))
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        logger.error(f"Error retrieving BitLocker code data: {e}")
+        return None
+
+
+def update_bitlocker_code(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET BitlockerKode = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            if len(row) == 2:
+                unit_name, bitlocker_code = row
+                sshw_db_client.execute_sql(sql_command, (bitlocker_code, unit_name))
+            else:
+                logger.error(f"Unexpected row format: {row}")
+        sshw_db_client.get_connection().commit()
+        logger.info("BitLocker Code Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
