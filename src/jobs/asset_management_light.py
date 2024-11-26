@@ -571,9 +571,9 @@ def get_bitlocker_code(capa_db_client):
     SELECT UNIT.NAME, CSI.VALUE
     FROM UNIT
     JOIN CSI ON UNIT.UNITID = CSI.UNITID
-    WHERE CSI.SECTION = 'CapaServices | CapaBitLocker' 
+    WHERE CSI.SECTION = 'CapaServices | CapaBitLocker'
       AND (CSI.NAME = 'Recovery Password C: #1 Password'
-           OR CSI.NAME = 'Recovery Password D: #1 Password' 
+           OR CSI.NAME = 'Recovery Password D: #1 Password'
            OR CSI.NAME = 'Recovery Password E: #1 Password')
     """
     logger.info(f"Executing SQL command: {sql_command}")
