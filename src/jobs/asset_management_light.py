@@ -86,6 +86,15 @@ def job():
         else:
             logger.info("No default user data found.")
 
+        # Insert/Update Last Install Date
+        last_install_dateresult = get_last_install_date(capa_db_client)
+        if last_install_dateresult:
+            for row in last_install_dateresult:
+                logger.info(f"Last Install Date: {row}")
+            update_last_install_date(sshw_db_client, last_install_dateresult)
+        else:
+            logger.info("No last install date data found.")
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -357,5 +366,53 @@ def update_default_user(sshw_db_client, data):
             sshw_db_client.execute_sql(sql_command, (user_name, unit_name))
         sshw_db_client.get_connection().commit()
         logger.info("Default User Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_last_install_date(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME,
+           FORMAT(DATEADD(SECOND, TRY_CAST(INV.VALUE AS BIGINT), '1970-01-01'), 'yyyy-MM-dd HH:mm:ss') AS LAST_INSTALL_DATE
+    FROM UNIT
+    JOIN INV ON UNIT.UNITID = INV.UNITID
+    WHERE INV.SECTION = 'Operating System' AND INV.NAME = 'InstallDate'
+      AND INV.VALUE IS NOT NULL
+      AND ISNUMERIC(INV.VALUE) = 1
+      AND TRY_CAST(INV.VALUE AS BIGINT) BETWEEN 0 AND 253402300799
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                unit_name, last_install_date = row
+                if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
+                    logger.info(f"Unit Name: {unit_name}, Last Install Date: {last_install_date}")
+                    filtered_result.append((unit_name, last_install_date))
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        logger.error(f"Error retrieving last install date data: {e}")
+        return None
+
+
+def update_last_install_date(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET SidsteRul = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            unit_name, last_install_date = row
+            sshw_db_client.execute_sql(sql_command, (last_install_date, unit_name))
+        sshw_db_client.get_connection().commit()
+        logger.info("Last Install Date Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
