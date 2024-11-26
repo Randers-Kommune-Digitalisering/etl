@@ -63,10 +63,10 @@ def job():
         os_deployment_result = get_os(capa_db_client)
         if os_deployment_result:
             for row in os_deployment_result:
-                logger.info(f"OS Deployment: {row}")
+                logger.info(f"OS: {row}")
             update_os_deployment(sshw_db_client, os_deployment_result)
         else:
-            logger.info("No OS deployment data found.")
+            logger.info("No OS data found.")
 
         # Insert/Update Last Online
         last_online_result = get_last_online(capa_db_client)
@@ -103,6 +103,15 @@ def job():
             update_mac_addresses(sshw_db_client, mac_addresses_result)
         else:
             logger.info("No MAC addresses data found.")
+
+        # Insert/Update Department
+        department_result = get_department(capa_db_client)
+        if department_result:
+            for row in department_result:
+                logger.info(f"Department: {row}")
+            update_department(sshw_db_client, department_result)
+        else:
+            logger.info("No department data found.")
 
         return True
     except Exception as e:
@@ -337,7 +346,7 @@ def update_last_online(sshw_db_client, data):
 
 def get_default_user(capa_db_client):
     sql_command = """
-    SELECT UNIT.NAME, LGI.VALUE
+    SELECT UNIT.NAME, REPLACE(LGI.VALUE, '@RANDERS.DK', '') AS USER_NAME
     FROM UNIT
     JOIN LGI ON UNIT.UNITID = LGI.UNITID
     WHERE LGI.SECTION = 'Default User' AND LGI.NAME = 'User Name'
@@ -486,5 +495,63 @@ def update_mac_addresses(sshw_db_client, data):
             sshw_db_client.execute_sql(sql_command, (mac_addresses, unit_name))
         sshw_db_client.get_connection().commit()
         logger.info("MAC Addresses Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_department(capa_db_client):
+    sql_command = """
+    WITH DefaultUsers AS (
+        SELECT UNIT.UNITID, UNIT.NAME AS PC_UNIT_NAME, LGI.VALUE , REPLACE(LGI.VALUE, '@RANDERS.DK', '')  AS DEFAULT_USER
+        FROM UNIT
+        JOIN LGI ON UNIT.UNITID = LGI.UNITID
+        WHERE LGI.SECTION = 'Default User' AND LGI.NAME = 'User Name'
+    )
+    SELECT DU.PC_UNIT_NAME, USI.VALUE AS DEPARTMENT
+    FROM DefaultUsers DU
+    JOIN UNIT ON UNIT.NAME = DU.DEFAULT_USER
+    JOIN USI ON UNIT.UNITID = USI.UNITID
+    WHERE USI.SECTION = 'General User Inventory' AND USI.NAME = 'Department'
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+
+                if len(row) == 2:
+                    pc_unit_name, department = row
+                    if not (pc_unit_name.startswith('DQ') or pc_unit_name.startswith('AP')):
+                        logger.info(f"PC Unit Name: {pc_unit_name}, Department: {department}")
+                        filtered_result.append((pc_unit_name, department))
+                else:
+                    logger.error(f"Unexpected row format: {row}")
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        logger.error(f"Error retrieving department data: {e}")
+        return None
+
+
+def update_department(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET Afdeling = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            if len(row) == 2:
+                pc_unit_name, department = row
+                sshw_db_client.execute_sql(sql_command, (department, pc_unit_name))
+            else:
+                logger.error(f"Unexpected row format: {row}")
+        sshw_db_client.get_connection().commit()
+        logger.info("Department Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
