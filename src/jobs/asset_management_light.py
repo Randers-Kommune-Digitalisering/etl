@@ -64,7 +64,7 @@ def job():
         if os_deployment_result:
             for row in os_deployment_result:
                 logger.info(f"OS: {row}")
-            update_os_deployment(sshw_db_client, os_deployment_result)
+            update_os(sshw_db_client, os_deployment_result)
         else:
             logger.info("No OS data found.")
 
@@ -121,6 +121,15 @@ def job():
             update_bitlocker_code(sshw_db_client, bitlocker_code_result)
         else:
             logger.info("No BitLocker code data found.")
+
+        # Insert/Update BitLocker Encryption
+        bitlocker_encryption_result = get_bitlocker_encryption(capa_db_client)
+        if bitlocker_encryption_result:
+            for row in bitlocker_encryption_result:
+                logger.info(f"BitLocker Encryption: {row}")
+            update_bitlocker_encryption(sshw_db_client, bitlocker_encryption_result)
+        else:
+            logger.info("No BitLocker Encryption data found.")
 
         return True
     except Exception as e:
@@ -291,7 +300,7 @@ def get_os(capa_db_client):
         return None
 
 
-def update_os_deployment(sshw_db_client, data):
+def update_os(sshw_db_client, data):
     sql_command = """
     UPDATE ComputerAssets
     SET OSVersion = %s
@@ -613,5 +622,49 @@ def update_bitlocker_code(sshw_db_client, data):
                 logger.error(f"Unexpected row format: {row}")
         sshw_db_client.get_connection().commit()
         logger.info("BitLocker Code Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_bitlocker_encryption(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME, CSI.VALUE
+    FROM UNIT
+    JOIN CSI ON UNIT.UNITID = CSI.UNITID
+    WHERE CSI.SECTION = 'CapaServices | CapaBitLocker' AND CSI.NAME = 'Encryption Status C:'
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                unit_name, bitlocker_status = row
+                if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
+                    logger.info(f"Unit Name: {unit_name}, BitLocker Status: {bitlocker_status}")
+                    filtered_result.append((unit_name, bitlocker_status))
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        logger.error(f"Error retrieving BitLocker Encryption data: {e}")
+        return None
+
+
+def update_bitlocker_encryption(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET BitlockerKrypteringProcent = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            unit_name, bitlocker_status = row
+            sshw_db_client.execute_sql(sql_command, (bitlocker_status, unit_name))
+        sshw_db_client.get_connection().commit()
+        logger.info("BitLocker Encryption Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
