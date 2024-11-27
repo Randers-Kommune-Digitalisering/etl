@@ -77,14 +77,14 @@ def job():
         else:
             logger.info("No last online data found.")
 
-        # Insert/Update Default User
-        default_user_result = get_default_user(capa_db_client)
-        if default_user_result:
-            for row in default_user_result:
-                logger.info(f"Default User: {row}")
-            update_default_user(sshw_db_client, default_user_result)
+        # Insert/Update Primary User
+        primary_user_result = get_primary_user(capa_db_client)
+        if primary_user_result:
+            for row in primary_user_result:
+                logger.info(f"primary User: {row}")
+            update_primary_user(sshw_db_client, primary_user_result)
         else:
-            logger.info("No default user data found.")
+            logger.info("No primary user data found.")
 
         # Insert/Update Last Install Date
         last_install_dateresult = get_last_install_date(capa_db_client)
@@ -371,12 +371,13 @@ def update_last_online(sshw_db_client, data):
         logger.error(f"Error updating data in ComputerAssets table: {e}")
 
 
-def get_default_user(capa_db_client):
+def get_primary_user(capa_db_client):
     sql_command = """
     SELECT UNIT.NAME, REPLACE(LGI.VALUE, '@RANDERS.DK', '') AS USER_NAME
     FROM UNIT
     JOIN LGI ON UNIT.UNITID = LGI.UNITID
-    WHERE LGI.SECTION = 'Default User' AND LGI.NAME = 'User Name'
+    WHERE LGI.SECTION = 'Current Logon' AND LGI.NAME = 'User Name'
+
     """
     logger.info(f"Executing SQL command: {sql_command}")
 
@@ -387,7 +388,7 @@ def get_default_user(capa_db_client):
             for row in result:
                 unit_name, user_name = row
                 if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
-                    logger.info(f"Unit Name: {unit_name}, Default User: {user_name}")
+                    logger.info(f"Unit Name: {unit_name}, Primary User: {user_name}")
                     filtered_result.append((unit_name, user_name))
             logger.info(f"Total elements: {len(filtered_result)}")
             return filtered_result
@@ -395,14 +396,14 @@ def get_default_user(capa_db_client):
             logger.error("No results found.")
             return "NONE"
     except Exception as e:
-        logger.error(f"Error retrieving default user data: {e}")
+        logger.error(f"Error retrieving primary user data: {e}")
         return None
 
 
-def update_default_user(sshw_db_client, data):
+def update_primary_user(sshw_db_client, data):
     sql_command = """
     UPDATE ComputerAssets
-    SET DefaultUser = %s
+    SET PrimaryUser = %s
     WHERE UnitName = %s
     """
     try:
@@ -410,7 +411,7 @@ def update_default_user(sshw_db_client, data):
             unit_name, user_name = row
             sshw_db_client.execute_sql(sql_command, (user_name, unit_name))
         sshw_db_client.get_connection().commit()
-        logger.info("Default User Data updated successfully in ComputerAssets table.")
+        logger.info("Primary User Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
 
@@ -528,15 +529,15 @@ def update_mac_addresses(sshw_db_client, data):
 
 def get_department(capa_db_client):
     sql_command = """
-    WITH DefaultUsers AS (
-        SELECT UNIT.UNITID, UNIT.NAME AS PC_UNIT_NAME, LGI.VALUE , REPLACE(LGI.VALUE, '@RANDERS.DK', '')  AS DEFAULT_USER
+    WITH PrimaryUsers AS (
+        SELECT UNIT.UNITID, UNIT.NAME AS PC_UNIT_NAME, LGI.VALUE , REPLACE(LGI.VALUE, '@RANDERS.DK', '')  AS PRIMARY_USER
         FROM UNIT
         JOIN LGI ON UNIT.UNITID = LGI.UNITID
-        WHERE LGI.SECTION = 'Default User' AND LGI.NAME = 'User Name'
+        WHERE LGI.SECTION = 'Current Logon' AND LGI.NAME = 'User Name'
     )
     SELECT DU.PC_UNIT_NAME, USI.VALUE AS DEPARTMENT
-    FROM DefaultUsers DU
-    JOIN UNIT ON UNIT.NAME = DU.DEFAULT_USER
+    FROM PrimaryUsers DU
+    JOIN UNIT ON UNIT.NAME = DU.PRIMARY_USER
     JOIN USI ON UNIT.UNITID = USI.UNITID
     WHERE USI.SECTION = 'General User Inventory' AND USI.NAME = 'Department'
     """
