@@ -5,24 +5,26 @@ from utils.config import (
     ASSET_MANAGEMENT_LIGHT_DB_USER,
     ASSET_MANAGEMENT_LIGHT_DB_PASS,
     ASSET_MANAGEMENT_LIGHT_DB_DATABASE,
-    SSHW_DB_DATABASE,
-    SSHW_DB_USER,
-    SSHW_DB_PASS,
-    SSHW_DB_HOST
+    ASSET_DB_DATABASE,
+    ASSET_DB_USER,
+    ASSET_DB_PASS,
+    ASSET_DB_HOST
 )
 
 capa_db_client = DatabaseClient(
     database=ASSET_MANAGEMENT_LIGHT_DB_DATABASE,
     username=ASSET_MANAGEMENT_LIGHT_DB_USER,
     password=ASSET_MANAGEMENT_LIGHT_DB_PASS,
-    host=ASSET_MANAGEMENT_LIGHT_DB_HOST
+    host=ASSET_MANAGEMENT_LIGHT_DB_HOST,
+    db_type='mssql'
 )
 
 sshw_db_client = DatabaseClient(
-    database=SSHW_DB_DATABASE,
-    username=SSHW_DB_USER,
-    password=SSHW_DB_PASS,
-    host=SSHW_DB_HOST
+    database=ASSET_DB_DATABASE,
+    username=ASSET_DB_USER,
+    password=ASSET_DB_PASS,
+    host=ASSET_DB_HOST,
+    db_type='mysql'
 )
 
 logger = logging.getLogger(__name__)
@@ -41,7 +43,7 @@ def job():
         else:
             logger.info("No serial numbers found.")
 
-        # Insert/Update Producent
+        # # Insert/Update Producent
         producent_result = get_producent(capa_db_client)
         if producent_result:
             for row in producent_result:

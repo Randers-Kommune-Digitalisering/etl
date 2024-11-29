@@ -61,3 +61,8 @@ SSHW_DB_USER = os.environ['SSHW_DB_USER'].rstrip()
 SSHW_DB_PASS = os.environ['SSHW_DB_PASS'].rstrip()
 SSHW_DB_HOST = os.environ['SSHW_DB_HOST'].rstrip()
 SSHW_DB_DATABASE = os.environ['SSHW_DB_DATABASE'].rstrip()
+
+ASSET_DB_USER = os.environ['ASSET_DB_USER'].rstrip()
+ASSET_DB_PASS = os.environ['ASSET_DB_PASS'].rstrip()
+ASSET_DB_HOST = os.environ['ASSET_DB_HOST'].rstrip()
+ASSET_DB_DATABASE = os.environ['ASSET_DB_DATABASE'].rstrip()
