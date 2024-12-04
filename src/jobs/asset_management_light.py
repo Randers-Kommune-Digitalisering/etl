@@ -339,7 +339,7 @@ def update_os(sshw_db_client, data):
 def get_last_online(capa_db_client):
     sql_command = """
     SELECT UNIT.NAME,
-           FORMAT(DATEADD(HOUR, 1, DATEADD(SECOND, TRY_CAST(UNIT.LASTONLINE AS BIGINT), '1970-01-01')), 'yyyy-MM-dd HH:mm:ss') AS LASTONLINE
+           FORMAT(DATEADD(HOUR, 1, DATEADD(SECOND, TRY_CAST(UNIT.LASTONLINE AS BIGINT), '1970-01-01')), 'dd-MM-yyyy') AS LASTONLINE
     FROM UNIT
     WHERE UNIT.NAME NOT LIKE 'DQ%' AND UNIT.NAME NOT LIKE 'AP%'
       AND UNIT.LASTONLINE IS NOT NULL
