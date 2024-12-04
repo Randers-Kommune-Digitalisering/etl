@@ -142,6 +142,15 @@ def job():
         else:
             logger.info("No BitLocker status data found.")
 
+        # Insert/Update Model
+        model_result = get_model(capa_db_client)
+        if model_result:
+            for row in model_result:
+                logger.info(f"Model Status: {row}")
+            update_model(sshw_db_client, model_result)
+        else:
+            logger.info("No Model data found")
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -725,3 +734,50 @@ def update_bitlocker_status(sshw_db_client, data):
         logger.info("BitLocker Status Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_model(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME, CSI.VALUE
+    FROM UNIT
+    JOIN CSI ON UNIT.UNITID = CSI.UNITID
+    WHERE CSI.SECTION = 'Randers Kommune' AND CSI.NAME = 'WSName'
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                unit_name, model = row
+                if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
+                    logger.info(f"Unit Name: {unit_name}, Model: {model}")
+                    filtered_result.append((unit_name, model))
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        logger.error(f"Error retrieving model data: {e}")
+        return None
+
+
+def update_model(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET Model = %s
+    WHERE UnitName = %s
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        for unit_name, model in data:
+            sshw_db_client.execute_sql(sql_command, (model, unit_name))
+            logger.info(f"Updated Unit Name: {unit_name} with Model: {model}")
+        logger.info("All updates completed successfully.")
+        return "SUCCESS"
+    except Exception as e:
+        logger.error(f"Error updating model data: {e}")
+        return None
