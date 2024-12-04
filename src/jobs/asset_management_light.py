@@ -151,6 +151,15 @@ def job():
         else:
             logger.info("No Model data found")
 
+        # Insert/Update FullName
+        fullname_result = get_fullname(capa_db_client)
+        if fullname_result:
+            for row in fullname_result:
+                logger.info(f"FullName Status: {row}")
+            update_fullname(sshw_db_client, fullname_result)
+        else:
+            logger.info("No Fullname data found")
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -430,7 +439,7 @@ def update_primary_user(sshw_db_client, data):
 def get_last_install_date(capa_db_client):
     sql_command = """
     SELECT UNIT.NAME,
-           FORMAT(DATEADD(SECOND, TRY_CAST(INV.VALUE AS BIGINT), '1970-01-01'), 'yyyy-MM-dd HH:mm:ss') AS LAST_INSTALL_DATE
+           FORMAT(DATEADD(SECOND, TRY_CAST(INV.VALUE AS BIGINT), '1970-01-01'), 'dd-MM-yyyy') AS LAST_INSTALL_DATE
     FROM UNIT
     JOIN INV ON UNIT.UNITID = INV.UNITID
     WHERE INV.SECTION = 'Operating System' AND INV.NAME = 'InstallDate'
@@ -781,3 +790,61 @@ def update_model(sshw_db_client, data):
     except Exception as e:
         logger.error(f"Error updating model data: {e}")
         return None
+
+
+def get_fullname(capa_db_client):
+    sql_command = """
+    WITH PrimaryUsers AS (
+        SELECT UNIT.UNITID, UNIT.NAME AS PC_UNIT_NAME, LGI.VALUE, REPLACE(LGI.VALUE, '@RANDERS.DK', '') AS PRIMARY_USER
+        FROM UNIT
+        JOIN LGI ON UNIT.UNITID = LGI.UNITID
+        WHERE LGI.SECTION = 'Current Logon' AND LGI.NAME = 'User Name'
+    )
+    SELECT DU.PC_UNIT_NAME, USI.VALUE AS FULLNAME
+    FROM PrimaryUsers DU
+    JOIN UNIT ON UNIT.NAME = DU.PRIMARY_USER
+    JOIN USI ON UNIT.UNITID = USI.UNITID
+    WHERE USI.SECTION = 'General User Inventory' AND USI.NAME = 'Full Name'
+    """
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                if len(row) == 2:
+                    pc_unit_name, fullname = row
+                    if not (pc_unit_name.startswith('DQ') or pc_unit_name.startswith('AP')):
+                        logger.info(f"PC Unit Name: {pc_unit_name}, Full Name: {fullname}")
+                        filtered_result.append((pc_unit_name, fullname))
+                else:
+                    logger.error(f"Unexpected row format: {row}")
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        logger.error(f"Error retrieving full name data: {e}")
+        return None
+
+
+def update_fullname(sshw_db_client, data):
+    sql_command = """
+    UPDATE ComputerAssets
+    SET PrimaryFullName = %s
+    WHERE UnitName = %s
+    """
+    try:
+        for row in data:
+            if len(row) == 2:
+                pc_unit_name, fullname = row
+                sshw_db_client.execute_sql(sql_command, (fullname, pc_unit_name))
+                logger.info(f"Updated Unit Name: {pc_unit_name} with Full Name: {fullname}")
+            else:
+                logger.error(f"Unexpected row format: {row}")
+        sshw_db_client.get_connection().commit()
+        logger.info("Full Name Data updated successfully in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data in ComputerAssets table: {e}")
