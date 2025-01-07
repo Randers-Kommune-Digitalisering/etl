@@ -43,7 +43,7 @@ def job():
         else:
             logger.info("No serial numbers found.")
 
-        # # Insert/Update Producent
+        # Insert/Update Producent
         producent_result = get_producent(capa_db_client)
         if producent_result:
             for row in producent_result:
@@ -348,7 +348,7 @@ def update_os(sshw_db_client, data):
 def get_last_online(capa_db_client):
     sql_command = """
     SELECT UNIT.NAME,
-           FORMAT(DATEADD(HOUR, 1, DATEADD(SECOND, TRY_CAST(UNIT.LASTONLINE AS BIGINT), '1970-01-01')), 'dd-MM-yyyy') AS LASTONLINE
+           FORMAT(DATEADD(HOUR, 1, DATEADD(SECOND, TRY_CAST(UNIT.LASTONLINE AS BIGINT), '1970-01-01')), 'yyyy-MM-ddTHH:mm:ss.ff') AS LASTONLINE
     FROM UNIT
     WHERE UNIT.NAME NOT LIKE 'DQ%' AND UNIT.NAME NOT LIKE 'AP%'
       AND UNIT.LASTONLINE IS NOT NULL
@@ -439,7 +439,7 @@ def update_primary_user(sshw_db_client, data):
 def get_last_install_date(capa_db_client):
     sql_command = """
     SELECT UNIT.NAME,
-           FORMAT(DATEADD(SECOND, TRY_CAST(INV.VALUE AS BIGINT), '1970-01-01'), 'dd-MM-yyyy') AS LAST_INSTALL_DATE
+           FORMAT(DATEADD(SECOND, TRY_CAST(INV.VALUE AS BIGINT), '1970-01-01'), 'yyyy-MM-ddTHH:mm:ss.ff') AS LAST_INSTALL_DATE
     FROM UNIT
     JOIN INV ON UNIT.UNITID = INV.UNITID
     WHERE INV.SECTION = 'Operating System' AND INV.NAME = 'InstallDate'
