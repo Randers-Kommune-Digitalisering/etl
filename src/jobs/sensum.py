@@ -185,6 +185,7 @@ def merge_df(sager_df, indsatser_df, borger_df):
         'Indsats': 'first',
         'CPR': 'first',
         'Fornavn': 'first',
+        'Efternavn': 'first',
         'IndsatsStartDato': 'first',
         'IndsatsSlutDato': 'first',
         'OprettetDato': 'first',
@@ -195,24 +196,23 @@ def merge_df(sager_df, indsatser_df, borger_df):
         'PrimærAnsvarlig': 'first',
         'Akut': 'first',
         'AfslutningsÅrsag': 'first',
-        'Facet': 'first',
         'LeverandørIndsats': 'first',
         'PrimærBy': 'first',
-        'Tilbud': 'first',
         'LeverandørNavn': 'first',
-        'Mobil': 'first',
+        'Primær målgruppe': 'first',
+        'Sekundær målgruppe': 'first',
 
     }).reset_index(drop=True)
 
-    result.columns = ['Counter', 'IndsatsStatus', 'Indsats', 'CPR', 'Fornavn', 'IndsatsStartDato', 'IndsatsSlutDato',
+    result.columns = ['Counter', 'IndsatsStatus', 'Indsats', 'CPR', 'Fornavn', 'Efternavn', 'IndsatsStartDato', 'IndsatsSlutDato',
                       'OprettetDato', 'OpholdsKommune', 'SagNavn', 'SagType', 'Status',
-                      'PrimærAnsvarlig', 'Akut', 'AfslutningsÅrsag', 'Facet', 'LeverandørIndsats', 'PrimærBy',
-                      'Tilbud', 'LeverandørNavn', 'Mobil']
-
-    result = result.rename(columns={'Mobil': 'BorgerMobil'})
+                      'PrimærAnsvarlig', 'Akut', 'AfslutningsÅrsag', 'LeverandørIndsats', 'PrimærBy', 'LeverandørNavn',
+                      'Primær målgruppe', 'Sekundær målgruppe']
 
     if pd.isna(result.at[0, 'OprettetDato']):
         result.at[0, 'OprettetDato'] = pd.Timestamp('1900-01-01')
+    if pd.isna(result.at[0, 'Sekundær målgruppe']):
+        result.at[0, 'Sekundær målgruppe'] = 'Ikke angivet'
 
     result['OprettetDato'] = pd.to_datetime(result['OprettetDato'])
 
@@ -241,7 +241,6 @@ def process_files(sager_files, indsatser_files, borger_files, conn):
 
         file = io.BytesIO(result.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "Sensum" + ".csv"
-
         if post_data_to_custom_data_connector(filename, file):
             logger.info("Successfully updated Sensum Data")
             return True
