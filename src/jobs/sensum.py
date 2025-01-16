@@ -1,5 +1,6 @@
 from sensum.sensum_data import get_sensum_data
 from sensum.sensum_sager import get_sensum_sager
+from sensum.sensum_sags_aktiviteter import get_sensum_sags_aktiviteter
 import logging
 logger = logging.getLogger(__name__)
 
@@ -9,6 +10,7 @@ def job():
         logger.info('Starting Sensum ETL job!')
         get_sensum_data()
         get_sensum_sager()
+        get_sensum_sags_aktiviteter()
         return True
 
     except Exception as e:
