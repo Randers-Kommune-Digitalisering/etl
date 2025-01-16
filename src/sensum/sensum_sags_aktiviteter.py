@@ -181,7 +181,7 @@ def process_files(sager_files, sags_aktivitet_files, borger_files, conn):
         result = merge_df(sager_df, sags_aktivitet_df, borger_df)
 
         file = io.BytesIO(result.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = "SA" + "SensumSagsAktivitet_v2" + ".csv"
+        filename = "SA" + "SensumSagsAktivitet" + ".csv"
         if post_data_to_custom_data_connector(filename, file):
             logger.info("Successfully updated Sensum Sags Aktiviteter")
             return True
