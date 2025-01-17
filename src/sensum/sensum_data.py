@@ -180,14 +180,6 @@ def merge_df(sager_df, indsatser_df, borger_df):
     return result
 
 
-def df_to_csv(df, filename):  # For testing locally purposes
-    try:
-        df.to_csv(f"{filename}.csv", index=False)
-        logger.info(f"DataFrame saved to {filename}.csv")
-    except Exception as e:
-        logger.error(f"Error saving DataFrame to CSV: {e}")
-
-
 def get_files(conn, pattern):
     return [f for f in conn.listdir(SENSUM_IT_SFTP_REMOTE_DIR) if fnmatch.fnmatch(f, pattern)]
 
