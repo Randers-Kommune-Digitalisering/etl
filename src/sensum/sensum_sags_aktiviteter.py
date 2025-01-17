@@ -1,10 +1,7 @@
-import os
 import io
-import fnmatch
 import logging
 import pandas as pd
-from datetime import datetime, timedelta
-from utils.config import SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, SENSUM_IT_SFTP_PASS, SENSUM_IT_SFTP_REMOTE_DIR
+from utils.config import SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, SENSUM_IT_SFTP_PASS
 from utils.stfp import SFTPClient
 from custom_data_connector import post_data_to_custom_data_connector
 from sensum.sensum import handle_files, get_files
