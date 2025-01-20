@@ -4,22 +4,23 @@ import fnmatch
 import logging
 import pandas as pd
 from datetime import datetime, timedelta
-from utils.config import SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, SENSUM_IT_SFTP_PASS, SENSUM_IT_SFTP_REMOTE_DIR
-from utils.stfp import SFTPClient
+from utils.config import SENSUM_IT_SFTP_REMOTE_DIR
+from utils.sftp_connection import get_sftp_client
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
 
+sftp_client = get_sftp_client()
 
-def get_sensum(file_patterns, process_func, merge_func, output_filename):
+
+def process_sensum(file_patterns, process_func, merge_func, output_filename):
     try:
         logger.info(f'Starting {output_filename}')
-        sftp_client = SFTPClient(SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, password=SENSUM_IT_SFTP_PASS)
-        conn = sftp_client.get_connection()
-        files_list = [get_files(conn, pattern) for pattern in file_patterns]
+        with sftp_client.get_connection() as conn:
+            files_list = [get_files(conn, pattern) for pattern in file_patterns]
 
-        if all(files_list):
-            return process_and_post_files(files_list, conn, process_func, merge_func, output_filename)
+            if all(files_list):
+                return process_and_post_files(files_list, conn, process_func, merge_func, output_filename)
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         return False
@@ -50,7 +51,10 @@ def handle_files(files, connection):
                 df = pd.read_csv(f, sep=";", header=0, decimal=",")
                 df_list.append(df)
 
-        return pd.concat(df_list, ignore_index=True)
+        df = pd.concat(df_list, ignore_index=True)
+        df = df.drop_duplicates()
+        return df
+
     except Exception as e:
         logger.error(f"Error handling files: {e}")
         return None

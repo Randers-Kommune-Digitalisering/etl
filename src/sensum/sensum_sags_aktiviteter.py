@@ -1,18 +1,18 @@
 import io
 import logging
 import pandas as pd
-from utils.config import SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, SENSUM_IT_SFTP_PASS
-from utils.stfp import SFTPClient
 from custom_data_connector import post_data_to_custom_data_connector
 from sensum.sensum import handle_files, get_files
+from utils.sftp_connection import get_sftp_client
 
 logger = logging.getLogger(__name__)
+
+sftp_client = get_sftp_client()
 
 
 def get_sensum_sags_aktiviteter():
     try:
         logger.info('Starting Sensum Sags Aktiviteter')
-        sftp_client = SFTPClient(SENSUM_IT_SFTP_HOST, SENSUM_IT_SFTP_USER, password=SENSUM_IT_SFTP_PASS)
         conn = sftp_client.get_connection()
         sager_files = get_files(conn, 'Sager_*.csv')
         sags_aktivitet_files = get_files(conn, 'SagsAktiviteter_*.csv')
