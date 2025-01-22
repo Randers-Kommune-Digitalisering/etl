@@ -1,11 +1,10 @@
 import io
 import logging
-import os
 import pandas as pd
-import fnmatch
 from custom_data_connector import post_data_to_custom_data_connector
 from utils.sftp_connection import get_sftp_client
 from utils.config import SENSUM_IT_SFTP_REMOTE_SUBFOLDER_DIR
+from sensum.sensum import handle_sub_folder_files, get_subfolders
 
 logger = logging.getLogger(__name__)
 
@@ -16,12 +15,11 @@ def get_sensum_ydelse():
     try:
         logger.info('Starting Sensum Udfører Data: Ydelse')
         conn = sftp_client.get_connection()
-        subfolders = ['Baa', 'BeVej', 'BoAu', 'Born_Bo', 'Bvh', 'Frem', 'Hjorne', 'Job', 'Lade', 'Lbg', 'Meau', 'Mepu',
-                      'P4', 'Phus', 'Psyk', 'Senhj', 'STU']
+        subfolders = get_subfolders()
 
-        ydelse_df = handle_files(subfolders, conn, 'Ydelse_*.csv')
-        borger_information_df = handle_files(subfolders, conn, 'Borger_information_*.csv')
-        afdeling_df = handle_files(subfolders, conn, 'Afdeling_*.csv')
+        ydelse_df = handle_sub_folder_files(subfolders, conn, 'Ydelse_*.csv', SENSUM_IT_SFTP_REMOTE_SUBFOLDER_DIR)
+        borger_information_df = handle_sub_folder_files(subfolders, conn, 'Borger_information_*.csv', SENSUM_IT_SFTP_REMOTE_SUBFOLDER_DIR)
+        afdeling_df = handle_sub_folder_files(subfolders, conn, 'Afdeling_*.csv', SENSUM_IT_SFTP_REMOTE_SUBFOLDER_DIR)
 
         if ydelse_df is not None and borger_information_df is not None and afdeling_df is not None:
             return process_files(ydelse_df, borger_information_df, afdeling_df)
@@ -30,40 +28,6 @@ def get_sensum_ydelse():
         return False
 
     return False
-
-
-def handle_files(subfolders, connection, file_pattern):
-    try:
-        df_list = []
-        for subfolder in subfolders:
-            folder_path = os.path.join(SENSUM_IT_SFTP_REMOTE_SUBFOLDER_DIR, subfolder)
-            files = [f for f in connection.listdir(folder_path) if fnmatch.fnmatch(f, file_pattern)]
-
-            if not files:
-                logger.info(f"No files found in {subfolder} matching pattern {file_pattern}")
-                continue
-
-            for file in files:
-                logger.info(f"Found file in {subfolder}: {file}")
-
-            latest_file = max(files, key=lambda f: connection.stat(os.path.join(folder_path, f)).st_mtime)
-            logger.info(f"Latest file in {subfolder}: {latest_file}")
-
-            with connection.open(os.path.join(folder_path, latest_file).replace("\\", "/")) as f:
-                df = pd.read_csv(f, sep=";", header=0, decimal=",")
-                df_list.append(df)
-
-        if df_list:
-            df = pd.concat(df_list, ignore_index=True)
-            df = df.drop_duplicates()
-            return df
-        else:
-            logger.info("No files found in the specified subfolders.")
-            return None
-
-    except Exception as e:
-        logger.error(f"Error handling files: {e}")
-        return None
 
 
 def merge_df(ydelse_df, borger_information_df, afdeling_df):

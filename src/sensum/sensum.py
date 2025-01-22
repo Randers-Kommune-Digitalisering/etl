@@ -60,6 +60,45 @@ def handle_files(files, connection):
         return None
 
 
+def handle_sub_folder_files(subfolders, connection, file_pattern, base_dir):
+    try:
+        df_list = []
+        for subfolder in subfolders:
+            folder_path = os.path.join(base_dir, subfolder)
+            files = [f for f in connection.listdir(folder_path) if fnmatch.fnmatch(f, file_pattern)]
+
+            if not files:
+                logger.info(f"No files found in {subfolder} matching pattern {file_pattern}")
+                continue
+
+            for file in files:
+                logger.info(f"Found file in {subfolder}: {file}")
+
+            latest_file = max(files, key=lambda f: connection.stat(os.path.join(folder_path, f)).st_mtime)
+            logger.info(f"Latest file in {subfolder}: {latest_file}")
+
+            with connection.open(os.path.join(folder_path, latest_file).replace("\\", "/")) as f:
+                df = pd.read_csv(f, sep=";", header=0, decimal=",")
+                df_list.append(df)
+
+        if df_list:
+            df = pd.concat(df_list, ignore_index=True)
+            df = df.drop_duplicates()
+            return df
+        else:
+            logger.info("No files found in the specified subfolders.")
+            return None
+
+    except Exception as e:
+        logger.error(f"Error handling files: {e}")
+        return None
+
+
+def get_subfolders():
+    return ['Baa', 'BeVej', 'BoAu', 'Born_Bo', 'Bvh', 'Frem', 'Hjorne', 'Job', 'Lade', 'Lbg', 'Meau', 'Mepu',
+            'P4', 'Phus', 'Psyk', 'Senhj', 'STU']
+
+
 def merge_dataframes(df1, df2, merge_on, group_by, agg_dict, columns):
     try:
         merged_df = pd.merge(df1, df2, on=merge_on, how='inner')
