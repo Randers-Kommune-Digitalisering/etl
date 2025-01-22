@@ -6,6 +6,7 @@ from utils.api_requests import APIClient
 from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_URL, SENSUM_CONFIG_LIBRARY_PATH
 from sensum.sensum_ydelse import get_sensum_ydelse
 from sensum.sensum_administrative_forhold import get_sensum_adminstrative_forhold
+from sensum.sensum_mål import get_sensum_mål
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +36,7 @@ def job():
         results.append(get_sensum_data())
         results.append(get_sensum_ydelse())
         results.append(get_sensum_adminstrative_forhold())
+        results.append(get_sensum_mål())
         return all(results)
     except Exception as e:
         logger.error(f'An error occurred: {e}')

@@ -57,7 +57,7 @@ def process_files(ydelse_df, borger_information_df, afdeling_df):
     result = merge_df(ydelse_df, borger_information_df, afdeling_df)
 
     file = io.BytesIO(result.to_csv(index=False, sep=';').encode('utf-8'))
-    filename = "SA" + "SensumUdførerYdelsev" + ".csv"
+    filename = "SA" + "SensumUdførerYdelse" + ".csv"
     if post_data_to_custom_data_connector(filename, file):
         logger.info("Successfully updated Sensum Ydelse Data")
         return True
