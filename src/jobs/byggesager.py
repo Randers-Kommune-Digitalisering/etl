@@ -24,44 +24,53 @@ def job():
             logging.error(f"Failed to load config file from path: {BYGGESAGER_CONFIG_PATH}")
             return False
 
-        data = get_sbsys_data(config)
+        new_data, update_data = get_sbsys_data(config)
 
-        if data:
+        if new_data and update_data:
             results = []
             for file_to_update in config['files_to_update']:
                 old_file = read_data_from_custom_data_connector(file_to_update, path='in')
                 if old_file:
-                    for key in data:
+                    for key in new_data:
                         if key in old_file.filename:
-                            if data.get(key, {}).get('file', None):
-                                date = data.get(key, {}).get('date', None)
-                                if date:
-                                    if check_csv_file_for_string(old_file, date):
-                                        logger.info(f'{old_file.filename} already up to date - skipping')
-                                        results.append(True)
-                                        continue
-                                    else:
-                                        new_file = combine_two_csv_files(old_file, data[key]['file'])
+                            if update_data.get(key, {}).get('file', None) and new_data.get(key, {}).get('file', None):
+                                update_date = update_data.get(key, {}).get('date', None)
+                                if update_date:
+                                    updated_file = update_csv_file(old_file, update_data[key]['file'], update_date)
+                           
+                                    new_date = new_data.get(key, {}).get('date', None)
+                                    if new_date:
+                                        if check_csv_file_for_string(updated_file, new_date):
+                                            logger.info(f'{old_file.filename} already up to date - skipping')
+                                            results.append(True)
+                                            continue
+
+                                        new_file = combine_two_csv_files(updated_file, new_data[key]['file'])
                                         if post_data_to_custom_data_connector(key, new_file):
                                             logger.info(f'{key} uploaded to custom-data-connector - {file_to_update} updated')
                                             results.append(True)
                                             continue
                                         else:
                                             logger.warning(f'{key} failed to upload to custom-data-connector - {file_to_update} NOT updated')
+                                    else:
+                                        logger.warning('No new date provided')
+                                        results.append(False)
+                                        continue
                                 else:
-                                    logger.warning('No date provided')
+                                    logger.warning('No update date provided')
                                     results.append(False)
                                     continue
-                            else:
-                                logger.warning('No new file for ' + key)
-                                results.append(False)
-                                continue
+                        else:
+                            logger.warning('No new file for ' + key)
+                            results.append(False)
+                            continue
                 elif old_file is None:
-                    for key in data:
+                    for key in new_data:
                         if key in file_to_update:
                             logger.info(f'{file_to_update} does not exist in custom-data-connector - creating')
-                            if data.get(key, {}).get('file', None):
-                                if post_data_to_custom_data_connector(key, data[key]['file']):
+                            if new_data.get(key, {}).get('file', None) and update_data.get(key, {}).get('date', None):
+                                file = combine_two_csv_files(update_data[key]['file'], new_data[key]['file'],)
+                                if post_data_to_custom_data_connector(key, file):
                                     logger.info(f'{key} uploaded to custom-data-connector - {file_to_update} created')
                                     results.append(True)
                                     continue
@@ -92,8 +101,10 @@ def get_sbsys_data(config):
     try:
         last_modified_received = []
         last_modified_concluded = []
-        received_df = pd.DataFrame(columns=['Byggesagskode', 'Antal', 'År'])
-        concluded_df = pd.DataFrame(columns=['Byggesagskode', 'Beslutningstype', 'Antal', 'År'])
+        # received_df = pd.DataFrame(columns=['Byggesagskode', 'Antal', 'År'])
+        # concluded_df = pd.DataFrame(columns=['Byggesagskode', 'Beslutningstype', 'Antal', 'År'])
+        received_df_new = pd.DataFrame(columns=['Byggesagskode', 'LastMonth', 'MonthBeforeLast', 'Year'])
+        concluded_df_new = pd.DataFrame(columns=['Byggesagskode', 'Beslutningstype', 'LastMonth', 'MonthBeforeLast', 'Year'])
 
         def read_file(file):
             df = pd.read_csv(file, sep=';', header=None)
@@ -108,30 +119,31 @@ def get_sbsys_data(config):
                     last_modified_received.append(datetime.fromtimestamp(conn.stat(file_name).st_mtime))
                     with conn.open(file_name, 'r') as file:
                         df = read_file(file)
-                        df.columns = received_df.columns
-                        received_df = pd.concat([received_df, df], axis=0)
+                        df.columns = received_df_new.columns
+                        received_df_new = pd.concat([received_df_new, df], axis=0)
 
                 elif all(x in file_name.lower() for x in [config['keywords']['received'], config['keywords']['building_code']]):
                     last_modified_received.append(datetime.fromtimestamp(conn.stat(file_name).st_mtime))
                     with conn.open(file_name, 'r') as file:
                         df = read_file(file)
-                        df.columns = received_df.columns
-                        received_df = pd.concat([received_df, df], axis=0)
+                        df.columns = received_df_new.columns
+                        received_df_new = pd.concat([received_df_new, df], axis=0)
 
                 elif all(x in file_name.lower() for x in [config['keywords']['concluded'], config['keywords']['template_code']]):
                     last_modified_concluded.append(datetime.fromtimestamp(conn.stat(file_name).st_mtime))
                     with conn.open(file_name, 'r') as file:
                         df = read_file(file)
-                        df.columns = concluded_df.columns
-                        concluded_df = pd.concat([concluded_df, df], axis=0)
+                        df.columns = concluded_df_new.columns
+                        concluded_df_new = pd.concat([concluded_df_new, df], axis=0)
 
                 elif all(x in file_name.lower() for x in [config['keywords']['concluded'], config['keywords']['building_code']]):
                     last_modified_concluded.append(datetime.fromtimestamp(conn.stat(file_name).st_mtime))
                     with conn.open(file_name, 'r') as file:
                         df = read_file(file)
-                        df.columns = concluded_df.columns
-                        concluded_df = pd.concat([concluded_df, df], axis=0)
+                        df.columns = concluded_df_new.columns
+                        concluded_df_new = pd.concat([concluded_df_new, df], axis=0)
 
+        # TODO: Check files has been modified this month - fail if not.
         dates_received = [(dt.replace(day=1) - timedelta(days=1)).replace(day=1).strftime('%Y-%m-%d') for dt in last_modified_received]
         dates_concluded = [(dt.replace(day=1) - timedelta(days=1)).replace(day=1).strftime('%Y-%m-%d') for dt in last_modified_concluded]
 
@@ -141,24 +153,32 @@ def get_sbsys_data(config):
         received_filename = "UMTByggesagerModtagede.csv"
         concluded_filename = "UMTByggesagerAfgjorte.csv"
 
-        received_file = None
-        concluded_file = None
+        received_file_new = None
+        concluded_file_new = None
 
         if received_dates_match:
-            received_df = clean_dataframe(received_df, dates_received[0], config['code_mapping'], config['template_name_mapping'], config['allowed_decision_types'])
-            received_file = io.BytesIO(received_df.to_csv(index=False, sep=';').encode('utf-8'))
-            received_file.seek(0)
+            received_df_new = clean_dataframe(received_df_new, dates_received[0], config['code_mapping'], config['template_name_mapping'], config['allowed_decision_types'], 'LastMonth', 'MonthBeforeLast')
+            received_df_update = clean_dataframe(received_df_new, dates_received[0], config['code_mapping'], config['template_name_mapping'], config['allowed_decision_types'], 'MonthBeforeLast', 'LastMonth')
+            received_file_new = io.BytesIO(received_df_new.to_csv(index=False, sep=';').encode('utf-8'))
+            received_file_new.seek(0)
+            received_file_update = io.BytesIO(received_df_update.to_csv(index=False, sep=';').encode('utf-8'))
+            received_file_update.seek(0)
         else:
             logger.warning('Received dates do not match')
 
         if concluded_dates_match:
-            concluded_df = clean_dataframe(concluded_df, dates_concluded[0], config['code_mapping'], config['template_name_mapping'], config['allowed_decision_types'])
-            concluded_file = io.BytesIO(concluded_df.to_csv(index=False, sep=';').encode('utf-8'))
-            concluded_file.seek(0)
+            concluded_df_new = clean_dataframe(concluded_df_new, dates_concluded[0], config['code_mapping'], config['template_name_mapping'], config['allowed_decision_types'], 'LastMonth', 'MonthBeforeLast')
+            concluded_df_update = clean_dataframe(concluded_df_new, dates_concluded[0], config['code_mapping'], config['template_name_mapping'], config['allowed_decision_types'], 'MonthBeforeLast', 'LastMonth')
+            concluded_file_new = io.BytesIO(concluded_df_new.to_csv(index=False, sep=';').encode('utf-8'))
+            concluded_file_new.seek(0)
+            concluded_file_update = io.BytesIO(concluded_df_update.to_csv(index=False, sep=';').encode('utf-8'))
+            concluded_file_update.seek(0)
+
         else:
             logger.warning('Concluded dates do not match')
 
-        return {received_filename: {"file": received_file, "date": dates_received[0]}, concluded_filename: {"file": concluded_file, "date": dates_concluded[0]}}
+        return {received_filename: {"file": received_file_new, "date": dates_received[0]}, concluded_filename: {"file": concluded_file_new, "date": dates_concluded[0]}}, \
+            {received_filename: {"file": received_file_update, "date": (dates_received[0] - timedelta(days=1)).replace(day=1)}, concluded_filename: {"file": concluded_df_update, "date": (dates_concluded[0] - timedelta(days=1)).replace(day=1)}}
     except Exception as e:
         logger.error(e)
 
@@ -176,7 +196,7 @@ def custom_sort_key(value):
     return (1, value) if value.strip().isdigit() else (0, value)
 
 
-def clean_dataframe(df, date, code_mapping, template_name_mapping, allowed_decision_types):
+def clean_dataframe(df, date, code_mapping, template_name_mapping, allowed_decision_types, month_to_use, month_to_drop):
     # Add grouping
     df['codes'] = df['Byggesagskode'].apply(map_codes)
     reverse_mapping = {k: v for v, keys in code_mapping.items() for k in keys}
@@ -185,8 +205,9 @@ def clean_dataframe(df, date, code_mapping, template_name_mapping, allowed_decis
     # Clenup
     df.insert(0, 'Dato', date)
     df = df.dropna(subset=['Gruppering'], how='any')
-    df = df.drop(['År', 'codes'], axis=1)
-    df['Antal'] = df['Antal'].astype(int)
+    df['Antal'] = df[month_to_use].astype(int)
+
+    df = df.drop(['Year', 'codes', month_to_use, month_to_drop], axis=1)
 
     if 'Beslutningstype' in df.columns:
         # Fix incorrect decision types
@@ -229,3 +250,17 @@ def combine_two_csv_files(file1, file2):
     file_combined = io.BytesIO(df_combined.to_csv(index=False, sep=';').encode('utf-8'))
 
     return file_combined
+
+
+def update_csv_file(old_file, new_file, date):
+    df_old = pd.read_csv(old_file, sep=';')
+    df_new = pd.read_csv(new_file, sep=';')
+
+    if not df_old.columns.equals(df_new.columns):
+        raise ValueError("The two CSV files do not have the same columns")
+
+    df_old.loc[df_old['Dato'] == date] = df_new.values
+
+    updated_file = io.BytesIO(df_old.to_csv(index=False, sep=';').encode('utf-8'))
+
+    return updated_file
