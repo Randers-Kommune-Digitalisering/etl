@@ -51,4 +51,4 @@ CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
 CONFIG_LIBRARY_PASS = os.environ['CONFIG_LIBRARY_PASS'].rstrip()
 CONFIG_LIBRARY_URL = os.environ['CONFIG_LIBRARY_URL'].rstrip()
 CONFIG_LIBRARY_PATH = os.environ['CONFIG_LIBRARY_PATH'].rstrip()
-SENSUM_CONFIG_LIBRARY_PATH = os.environ['SENSUM_CONFIG_LIBRARY_PATH'].rstrip()
+SENSUM_CONFIG_LIBRARY_PATH = "api/file/etl/sensum_jobs_config.json"
