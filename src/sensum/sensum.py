@@ -13,11 +13,11 @@ logger = logging.getLogger(__name__)
 sftp_client = get_sftp_client()
 
 
-def process_sensum(file_patterns, directories, process_func, merge_func, output_filename):
+def process_sensum(file_patterns: list, directories: list, merge_func, output_filename):
     try:
         logger.info(f'Starting {output_filename}')
-        with sftp_client.get_connection() as conn:
-            if directories:
+        if isinstance(directories, list) and isinstance(file_patterns, list) and directories and file_patterns:
+            with sftp_client.get_connection() as conn:
                 file_list_list = []
                 for pattern in file_patterns:
                     files_list = []
@@ -29,12 +29,9 @@ def process_sensum(file_patterns, directories, process_func, merge_func, output_
                         raise Exception(f"No files found for pattern {pattern}")
 
                 if all(file_list_list):
-                    return process_and_post_files(file_list_list, conn, process_func, merge_func, output_filename)
-            else:
-                files_list = [get_files(connection=conn, directory=SENSUM_IT_SFTP_REMOTE_DIR, subdirectory='sensum_randers', pattern=pattern) for pattern in file_patterns]
-
-                if all(files_list):
-                    return process_and_post_files(files_list, conn, process_func, merge_func, output_filename)
+                    return process_and_post_files(file_list_list, conn, merge_func, output_filename)
+        else:
+            raise Exception("Directories or file patterns are missing")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         return False
@@ -78,25 +75,6 @@ def handle_files(files, connection):
         return None
 
 
-def merge_dataframes(df1, df2, merge_on, group_by, agg_dict, columns):
-    try:
-        merged_df = pd.merge(df1, df2, on=merge_on, how='inner')
-        result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
-        result.columns = columns
-
-        for col in result.columns:
-            if pd.isna(result.at[0, col]):
-                if result[col].dtype == 'datetime64[ns]':
-                    result.at[0, col] = pd.Timestamp('1900-01-01')
-                elif result[col].dtype == 'object':
-                    result.at[0, col] = 'Ikke angivet'
-                elif result[col].dtype == 'float64' or result[col].dtype == 'int64':
-                    result.at[0, col] = 0
-    except Exception as e:
-        raise Exception(f"An error occurred: {e}")
-    return result
-
-
 def get_files(connection, directory, subdirectory, pattern, only_latest=False):
     try:
         if only_latest:
@@ -109,8 +87,8 @@ def get_files(connection, directory, subdirectory, pattern, only_latest=False):
         raise Exception(f"An error occurred while getting files: {e}")
 
 
-def process_and_post_files(file_list_list, conn, process_func, merge_func, output_filename):
-    dfs = [process_func(file_list, conn) for file_list in file_list_list]
+def process_and_post_files(file_list_list, conn, merge_func, output_filename):
+    dfs = [handle_files(file_list, conn) for file_list in file_list_list]
 
     if all(df is not None and not df.empty for df in dfs):
         result = merge_func(*dfs)
@@ -124,147 +102,82 @@ def process_and_post_files(file_list_list, conn, process_func, merge_func, outpu
     return False
 
 
-def create_merge_lambda(merge_func, config):
+def set_values_for_first_row(df):
+    for col in df.columns:
+        if pd.isna(df.at[0, col]):
+            if col == 'CPR' and df[col].dtype == 'float64':
+                df.at[0, col] = 000000000.0
+            elif df[col].dtype == 'datetime64[ns]':
+                df.at[0, col] = pd.Timestamp('1900-01-01')
+            elif df[col].dtype == 'object':
+                df.at[0, col] = 'Ikke angivet'
+            elif df[col].dtype == 'float64' or df[col].dtype == 'int64':
+                df.at[0, col] = 0
+    return df
+
+
+def create_merge_lambda(config):
+    merge_func = globals().get(config['merge_func'])
     if all(key in config for key in ['merge_on', 'group_by', 'agg_columns', 'columns']):
         def merge_lambda(*dfs):
             return merge_func(*dfs, config['merge_on'], config['group_by'], config['agg_columns'], config['columns'])
-    else:
+    elif all(key in config for key in ['group_by', 'agg_columns', 'columns']):
         def merge_lambda(*dfs):
-            return merge_func(*dfs)
+            return merge_func(*dfs, config['group_by'], config['agg_columns'], config['columns'])
+    else:
+        raise Exception("Missing required keys in config")
     return merge_lambda
 
 
-def sags_aktiviteter_merge_df(sager_df, sags_aktivitet_df, borger_df):
+def merge_dataframes(df1, df2, merge_on, group_by, agg_dict, columns):
+    try:
+        merged_df = pd.merge(df1, df2, on=merge_on, how='inner')
+        result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+        result.columns = columns
+
+    except Exception as e:
+        raise Exception(f"An error occurred: {e}")
+    return set_values_for_first_row(result)
+
+
+def sags_aktiviteter_merge_df(sager_df, sags_aktivitet_df, borger_df, group_by, agg_dict, columns):
     sager_df = sager_df.rename(columns={'SagModel': 'Sager_SagModel'})
 
     merged_df = pd.merge(sager_df, sags_aktivitet_df, on='SagId', how='inner')
     merged_df = pd.merge(merged_df, borger_df[['BorgerId', 'CPR', 'Fornavn', 'Efternavn']], on='BorgerId', how='left')
 
-    result = merged_df.groupby('SagAktivitetId').agg({
-        'BorgerId': 'nunique',
-        'SagModel': 'first',
-        'FaseNavn': 'first',
-        'AktivitetNavn': 'first',
-        'AktivitetSvar': 'first',
-        'Deadline': 'first',
-        'UdførtDato': 'first',
-        'CPR': 'first',
-        'Fornavn': 'first',
-        'Efternavn': 'first',
-        'AfdelingNavn': 'first',
-        'PrimærAnsvarlig': 'first',
-    }).reset_index(drop=True)
+    result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+    result.columns = columns
 
-    result.columns = ['Counter', 'SagModel', 'FaseNavn', 'AktivitetNavn', 'AktivitetSvar', 'Deadline', 'UdførtDato', 'CPR', 'Fornavn', 'Efternavn',
-                      'AfdelingNavn', 'PrimærAnsvarlig']
-
-    if pd.isna(result.at[0, 'AktivitetSvar']):
-        result.at[0, 'AktivitetSvar'] = pd.Timestamp('1900-01-01')
-    if pd.isna(result.at[0, 'Deadline']):
-        result.at[0, 'Deadline'] = pd.Timestamp('1900-01-01')
-    if pd.isna(result.at[0, 'UdførtDato']):
-        result.at[0, 'UdførtDato'] = pd.Timestamp('1900-01-01')
-
-    return result
+    return set_values_for_first_row(result)
 
 
-def sensum_data_merge_df(sager_df, indsatser_df, borger_df):
+def sensum_data_merge_df(sager_df, indsatser_df, borger_df, group_by, agg_dict, columns):
     merged_df = pd.merge(indsatser_df, sager_df, on='SagId', how='inner')
     merged_df = pd.merge(merged_df, borger_df, on='BorgerId', how='inner')
 
-    result = merged_df.groupby('IndsatsId').agg({
-        'BorgerId': 'nunique',
-        'IndsatsStatus': 'first',
-        'Indsats': 'first',
-        'CPR': 'first',
-        'Fornavn': 'first',
-        'Efternavn': 'first',
-        'IndsatsStartDato': 'first',
-        'IndsatsSlutDato': 'first',
-        'OprettetDato': 'first',
-        'OpholdsKommune': 'first',
-        'SagNavn': 'first',
-        'SagType': 'first',
-        'Status': 'first',
-        'PrimærAnsvarlig': 'first',
-        'Akut': 'first',
-        'AfslutningsÅrsag': 'first',
-        'LeverandørIndsats': 'first',
-        'PrimærBy': 'first',
-        'LeverandørNavn': 'first',
-        'Primær målgruppe': 'first',
-        'Sekundær målgruppe': 'first',
-
-    }).reset_index(drop=True)
-
-    result.columns = ['Counter', 'IndsatsStatus', 'Indsats', 'CPR', 'Fornavn', 'Efternavn', 'IndsatsStartDato', 'IndsatsSlutDato',
-                      'OprettetDato', 'OpholdsKommune', 'SagNavn', 'SagType', 'Status',
-                      'PrimærAnsvarlig', 'Akut', 'AfslutningsÅrsag', 'LeverandørIndsats', 'PrimærBy', 'LeverandørNavn',
-                      'Primær målgruppe', 'Sekundær målgruppe']
-
-    if pd.isna(result.at[0, 'OprettetDato']):
-        result.at[0, 'OprettetDato'] = pd.Timestamp('1900-01-01')
-    if pd.isna(result.at[0, 'Sekundær målgruppe']):
-        result.at[0, 'Sekundær målgruppe'] = 'Ikke angivet'
+    result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+    result.columns = columns
 
     result['OprettetDato'] = pd.to_datetime(result['OprettetDato'])
+    return set_values_for_first_row(result)
 
-    return result
 
-
-def merge_df_sensum_mål(mål_df, delmål_df, borger_information_df):
+def merge_df_sensum_mål(mål_df, delmål_df, borger_information_df, group_by, agg_dict, columns):
     merged_df = pd.merge(mål_df, delmål_df, on='MålId', how='inner', suffixes=('_mål', '_delmål'))
     merged_df = pd.merge(merged_df, borger_information_df, on='BorgerId', how='inner')
 
-    result = merged_df.groupby('MålId').agg({
-        "BorgerId": "nunique",
-        'MålNavn': 'first',
-        'Ansvarlig_mål': 'first',
-        'StartDato_mål': 'first',
-        'SlutDato_mål': 'first',
-        'OprettetDato_mål': 'first',
-        'OprettetAf_mål': 'first',
-        'Lukket_mål': 'first',
-        'SamarbejdeMedBorger': 'first',
-        'DelmålNavn': 'first',
-        'Samarbejdspartner': 'first',
-        'EvalueringsDato': 'first',
-        'Fornavn': 'first',
-        'Efternavn': 'first',
-        'CPR': 'first',
-        'Afdeling': 'first'
-    }).reset_index(drop=True)
+    result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+    result.columns = columns
 
-    result.columns = ['Counter', 'MålNavn', 'Ansvarlig', 'StartDato', 'SlutDato', 'OprettetDato', 'OprettetAf', 'Lukket',
-                      'SamarbejdeMedBorger', 'DelmålNavn', 'Samarbejdspartner', 'EvalueringsDato', 'Fornavn', 'Efternavn', 'CPR', 'Afdeling']
-
-    if pd.isna(result.at[0, 'SlutDato']):
-        result.at[0, 'SlutDato'] = pd.Timestamp('1900-01-01')
-    if pd.isna(result.at[0, 'Samarbejdspartner']):
-        result.at[0, 'Samarbejdspartner'] = 'Ikke angivet'
-
-    return result
+    return set_values_for_first_row(result)
 
 
-def merge_df_ydelse(ydelse_df, borger_information_df, afdeling_df):
+def merge_df_ydelse(ydelse_df, borger_information_df, afdeling_df, group_by, agg_dict, columns):
     ydelse_df = pd.merge(ydelse_df, afdeling_df[['AfdelingId', 'Navn']], on='AfdelingId', how='left')
     merged_df = pd.merge(ydelse_df, borger_information_df, on='BorgerId', how='inner')
 
-    result = merged_df.groupby('YdelseId').agg({
-        "BorgerId": "nunique",
-        'YdelseNavn': 'first',
-        'StartDato': 'first',
-        'SlutDato': 'first',
-        'CPR': 'first',
-        'Fornavn': 'first',
-        'Efternavn': 'first',
-        'Navn': 'first',
-        'Afdeling': 'first',
-    }).reset_index(drop=True)
+    result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+    result.columns = columns
 
-    result.columns = ['Counter', 'YdelseNavn', 'StartDato', 'SlutDato', 'CPR', 'Fornavn', 'Efternavn', 'AfdelingNavn', 'Afdeling']
-
-    if pd.isna(result.at[0, 'CPR']):
-        result.at[0, 'CPR'] = 000000000.0
-
-    return result
+    return set_values_for_first_row(result)
