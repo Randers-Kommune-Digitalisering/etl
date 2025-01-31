@@ -116,6 +116,13 @@ def set_values_for_first_row(df):
     return df
 
 
+def set_string_dates_to_datetime(df):
+    for col in df.columns:
+        if df[col].dtype == 'object' and 'Dato' in col:
+            df[col] = pd.to_datetime(df[col])
+    return df
+
+
 def create_merge_lambda(config):
     merge_func = globals().get(config['merge_func'])
     if all(key in config for key in ['merge_on', 'group_by', 'agg_columns', 'columns']):
@@ -134,10 +141,10 @@ def merge_dataframes(df1, df2, merge_on, group_by, agg_dict, columns):
         merged_df = pd.merge(df1, df2, on=merge_on, how='inner')
         result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
         result.columns = columns
-
+        result = set_string_dates_to_datetime(result)
+        return set_values_for_first_row(result)
     except Exception as e:
         raise Exception(f"An error occurred: {e}")
-    return set_values_for_first_row(result)
 
 
 def sags_aktiviteter_merge_df(sager_df, sags_aktivitet_df, borger_df, group_by, agg_dict, columns):
@@ -149,6 +156,7 @@ def sags_aktiviteter_merge_df(sager_df, sags_aktivitet_df, borger_df, group_by, 
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
+    result = set_string_dates_to_datetime(result)
     return set_values_for_first_row(result)
 
 
@@ -159,7 +167,7 @@ def sensum_data_merge_df(sager_df, indsatser_df, borger_df, group_by, agg_dict, 
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
-    result['OprettetDato'] = pd.to_datetime(result['OprettetDato'])
+    result = set_string_dates_to_datetime(result)
     return set_values_for_first_row(result)
 
 
@@ -170,6 +178,7 @@ def merge_df_sensum_mål(mål_df, delmål_df, borger_information_df, group_by, a
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
+    result = set_string_dates_to_datetime(result)
     return set_values_for_first_row(result)
 
 
@@ -180,4 +189,5 @@ def merge_df_ydelse(ydelse_df, borger_information_df, afdeling_df, group_by, agg
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
+    result = set_string_dates_to_datetime(result)
     return set_values_for_first_row(result)
