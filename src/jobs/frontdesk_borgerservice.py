@@ -193,13 +193,15 @@ def prophet(data, forecastModel):
     })
 
     data_model = data.rename(columns={'dato': 'ds', 'antal': 'y'})
-    model = Prophet(changepoints=['2023-11-23'], yearly_seasonality=True, weekly_seasonality=True, seasonality_mode='multiplicative', holidays=holidays)
-
+    model = Prophet(changepoints=['2023-11-23'], yearly_seasonality=True, weekly_seasonality=True, seasonality_mode='multiplicative', holidays=holidays, growth='logistic')
+    data_model['cap'] = 500
+    data_model['floor'] = 0
     model.fit(data_model)
 
     future = model.make_future_dataframe(periods=365)
+    future['cap'] = 500
     future['floor'] = 0
-    future = future[future['ds'].dt.weekday.isin([0, 1, 2, 3, 4])]
+    future = future[future['ds'].dt.weekday.isin([0, 1, 3, 4])]
     forecast = model.predict(future)
 
     # data = pd.merge(data,forecast[['ds','yhat','yhat_lower','yhat_upper']], left_on='dato', right_on='ds', how='left')
