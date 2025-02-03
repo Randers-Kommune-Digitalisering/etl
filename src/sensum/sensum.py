@@ -61,7 +61,6 @@ def handle_files(files, connection):
             with connection.open(filename) as f:
                 df = pd.read_csv(f, sep=";", header=0, decimal=",")
                 df_list.append(df)
-
         if df_list:
             df = pd.concat(df_list, ignore_index=True)
             df = df.drop_duplicates()
@@ -117,9 +116,20 @@ def set_values_for_first_row(df):
 
 
 def set_string_dates_to_datetime(df):
+
+    def clean_date(date_str):
+        try:
+            return pd.to_datetime(date_str, format='%d-%m-%Y')
+        except ValueError:
+            try:
+                return pd.to_datetime(date_str.split(' ')[0], format='%d-%m-%Y')
+            except ValueError:
+                return pd.NaT
+
     for col in df.columns:
         if df[col].dtype == 'object' and 'Dato' in col:
-            df[col] = pd.to_datetime(df[col])
+            df[col] = df[col].apply(clean_date)
+
     return df
 
 
