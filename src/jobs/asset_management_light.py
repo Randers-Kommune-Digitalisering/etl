@@ -1,29 +1,29 @@
 import logging
 from utils.database_client import DatabaseClient
 from utils.config import (
-    ASSET_MANAGEMENT_LIGHT_DB_HOST,
-    ASSET_MANAGEMENT_LIGHT_DB_USER,
-    ASSET_MANAGEMENT_LIGHT_DB_PASS,
-    ASSET_MANAGEMENT_LIGHT_DB_DATABASE,
-    ASSET_DB_DATABASE,
-    ASSET_DB_USER,
-    ASSET_DB_PASS,
-    ASSET_DB_HOST
+    CAPA_DB_HOST,
+    CAPA_DB_USER,
+    CAPA_DB_PASS,
+    CAPA_DB_DATABASE,
+    SSHW_DB_DATABASE,
+    SSHW_DB_HOST,
+    SSHW_DB_PASS,
+    SSHW_DB_USER,
 )
 
 capa_db_client = DatabaseClient(
-    database=ASSET_MANAGEMENT_LIGHT_DB_DATABASE,
-    username=ASSET_MANAGEMENT_LIGHT_DB_USER,
-    password=ASSET_MANAGEMENT_LIGHT_DB_PASS,
-    host=ASSET_MANAGEMENT_LIGHT_DB_HOST,
+    database=CAPA_DB_DATABASE,
+    username=CAPA_DB_USER,
+    password=CAPA_DB_PASS,
+    host=CAPA_DB_HOST,
     db_type='mssql'
 )
 
 sshw_db_client = DatabaseClient(
-    database=ASSET_DB_DATABASE,
-    username=ASSET_DB_USER,
-    password=ASSET_DB_PASS,
-    host=ASSET_DB_HOST,
+    database=SSHW_DB_DATABASE,
+    username=SSHW_DB_USER,
+    password=SSHW_DB_PASS,
+    host=SSHW_DB_HOST,
     db_type='mysql'
 )
 
@@ -34,6 +34,9 @@ def job():
     try:
         logger.info("Starting Asset-Management-Light job")
 
+        # Create ComputerAssets table if not exists
+        create_computer_assets_table_if_not_exists(sshw_db_client)
+
         # Get serial numbers and Unitname from CAPA DB and insert to new DB
         serial_number_result = get_serial_number(capa_db_client)
         if serial_number_result:
@@ -43,7 +46,7 @@ def job():
         else:
             logger.info("No serial numbers found.")
 
-        # Insert/Update Producent
+        # # Insert/Update Producent
         producent_result = get_producent(capa_db_client)
         if producent_result:
             for row in producent_result:
@@ -52,7 +55,7 @@ def job():
         else:
             logger.info("No producent data found.")
 
-        # Insert/Update Device Type
+        # # Insert/Update Device Type
         device_type_result = get_device_type(capa_db_client)
         if device_type_result:
             for row in device_type_result:
@@ -61,7 +64,7 @@ def job():
         else:
             logger.info("No device type data found.")
 
-        # Insert/Update OS
+        # # Insert/Update OS
         os_deployment_result = get_os(capa_db_client)
         if os_deployment_result:
             for row in os_deployment_result:
@@ -70,7 +73,7 @@ def job():
         else:
             logger.info("No OS data found.")
 
-        # Insert/Update Last Online
+        # # Insert/Update Last Online
         last_online_result = get_last_online(capa_db_client)
         if last_online_result:
             for row in last_online_result:
@@ -79,7 +82,7 @@ def job():
         else:
             logger.info("No last online data found.")
 
-        # Insert/Update Primary User
+        # # Insert/Update Primary User
         primary_user_result = get_primary_user(capa_db_client)
         if primary_user_result:
             for row in primary_user_result:
@@ -88,7 +91,7 @@ def job():
         else:
             logger.info("No primary user data found.")
 
-        # Insert/Update Last Install Date
+        # # Insert/Update Last Install Date
         last_install_dateresult = get_last_install_date(capa_db_client)
         if last_install_dateresult:
             for row in last_install_dateresult:
@@ -97,7 +100,7 @@ def job():
         else:
             logger.info("No last install date data found.")
 
-        # Insert/Update MAC Addresses
+        # # Insert/Update MAC Addresses
         mac_addresses_result = get_mac_addresses(capa_db_client)
         if mac_addresses_result:
             for row in mac_addresses_result:
@@ -142,7 +145,7 @@ def job():
         else:
             logger.info("No BitLocker status data found.")
 
-        # Insert/Update Model
+        # # Insert/Update Model
         model_result = get_model(capa_db_client)
         if model_result:
             for row in model_result:
@@ -164,6 +167,36 @@ def job():
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
         return False
+
+
+def create_computer_assets_table_if_not_exists(sshw_db_client):
+    check_table_sql = """
+    CREATE TABLE IF NOT EXISTS ComputerAssets (
+        UnitName VARCHAR(255) PRIMARY KEY,
+        Producent VARCHAR(255),
+        Model VARCHAR(255),
+        Enhedstype VARCHAR(255),
+        Serienummer VARCHAR(255),
+        PrimaryFullName VARCHAR(255),
+        PrimaryUser VARCHAR(255),
+        Afdeling VARCHAR(255),
+        SidsteLoginDato VARCHAR(255),
+        SidsteRul VARCHAR(255),
+        BitlockerKode VARCHAR(255),
+        BitlockerStatus VARCHAR(255),
+        BitlockerKrypteringProcent VARCHAR(255),
+        OSVersion VARCHAR(255),
+        MACAdresse VARCHAR(255),
+        DeviceLicense VARCHAR(255),
+        LaanePC BIT
+    );
+    """
+    try:
+        sshw_db_client.execute_sql(check_table_sql)
+        sshw_db_client.get_connection().commit()
+        logger.info("Checked and created ComputerAssets table if not exists.")
+    except Exception as e:
+        logger.error(f"Error creating ComputerAssets table: {e}")
 
 
 def get_serial_number(capa_db_client):
