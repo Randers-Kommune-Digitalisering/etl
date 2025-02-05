@@ -1,9 +1,8 @@
 import logging
-from sensum.sensum import process_sensum, handle_files, merge_dataframes
-from sensum.sensum_data import get_sensum_data
-from sensum.sensum_sags_aktiviteter import get_sensum_sags_aktiviteter
+import urllib.parse
 from utils.api_requests import APIClient
-from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_URL, SENSUM_CONFIG_LIBRARY_PATH
+from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_BASE_PATH, SENSUM_CONFIG_FILE
+from sensum.sensum import create_merge_lambda, process_sensum
 
 logger = logging.getLogger(__name__)
 
@@ -13,24 +12,25 @@ config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_L
 def job():
     try:
         logger.info('Starting Sensum ETL job!')
+        config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, SENSUM_CONFIG_FILE)
 
-        sensum_jobs_config = config_library_client.make_request(path=SENSUM_CONFIG_LIBRARY_PATH)
+        logger.info(f'Config path: {config_path}')
+        sensum_jobs_config = config_library_client.make_request(path=config_path)
+
         if sensum_jobs_config is None:
-            logging.error(f"Failed to load config file from path: {SENSUM_CONFIG_LIBRARY_PATH}")
+            logging.error(f"Failed to load config file from path: {config_path}")
             return False
 
         results = []
         for config in sensum_jobs_config:
+            merge_lambda = create_merge_lambda(config)
+
             results.append(process_sensum(
                 config['patterns'],
-                handle_files,
-                lambda *dfs: merge_dataframes(
-                    *dfs, config['merge_on'], config['group_by'], config['agg_columns'], config['columns']
-                ),
+                config['directories'],
+                merge_lambda,
                 config['name']
             ))
-        results.append(get_sensum_sags_aktiviteter())
-        results.append(get_sensum_data())
         return all(results)
     except Exception as e:
         logger.error(f'An error occurred: {e}')
