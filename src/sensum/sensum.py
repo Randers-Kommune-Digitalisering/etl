@@ -181,9 +181,35 @@ def sensum_data_merge_df(sager_df, indsatser_df, borger_df, group_by, agg_dict, 
     return set_values_for_first_row(result)
 
 
-def merge_df_sensum_mål(mål_df, delmål_df, borger_information_df, group_by, agg_dict, columns):
-    merged_df = pd.merge(mål_df, delmål_df, on='MålId', how='inner', suffixes=('_mål', '_delmål'))
+def merge_df_sensum_mål_and_delmål(
+    mål_indikator_df, mål_df, borger_information_df, indikator_df,
+    indikator_katalog_df, indikator_kategori_df, indikator_underkategori_df,
+    indikator_svar_df, indikator_variabel_df, indikator_værdisæt_df,
+    indikator_værdi_df, delmål_df, group_by,
+    agg_dict, columns
+):
+    indikator_katalog_df = indikator_katalog_df.rename(columns={'Navn': 'IndikatorKatalogNavn', 'Aktiv': 'IndikatorKatalogAktiv'})
+    indikator_df = indikator_df.rename(columns={'Navn': 'IndikatorNavn', 'Aktiv': 'IndikatorAktiv'})
+    indikator_kategori_df = indikator_kategori_df.rename(columns={'IndikatorKategoriNavn': 'IndikatorKategoriNavn', 'Aktiv': 'IndikatorKategoriAktiv'})
+    indikator_underkategori_df = indikator_underkategori_df.rename(columns={'Aktiv': 'IndikatorUnderKategoriAktiv'})
+    indikator_variabel_df = indikator_variabel_df.rename(columns={'Navn': 'IndikatorVariabelNavn'})
+    indikator_svar_df = indikator_svar_df.rename(columns={'OprettetDato': 'IndikatorSvarOprettetDato'})
+    indikator_værdisæt_df = indikator_værdisæt_df.rename(columns={'Navn': 'IndikatorVærdisætNavn'})
+    indikator_værdi_df = indikator_værdi_df.rename(columns={'Navn': 'IndikatorVærdiNavn'})
+    mål_df = mål_df.rename(columns={'OprettetDato': 'MålDato'})
+
+    merged_df = pd.merge(mål_indikator_df, mål_df, on='MålId', how='inner')
+    merged_df = pd.merge(merged_df, indikator_df, on='IndikatorId', how='inner')
     merged_df = pd.merge(merged_df, borger_information_df, on='BorgerId', how='inner')
+    merged_df = merged_df.drop(columns=['IndikatorKatalogId_y'])
+    merged_df = pd.merge(merged_df, indikator_katalog_df, left_on='IndikatorKatalogId_x', right_on='IndikatorKatalogId', how='inner')
+    merged_df = pd.merge(merged_df, indikator_kategori_df, on='IndikatorKategoriId', how='inner')
+    merged_df = pd.merge(merged_df, indikator_underkategori_df, on='IndikatorUnderKategoriId', how='inner')
+    merged_df = pd.merge(merged_df, indikator_variabel_df, on='IndikatorVariabelId', how='inner')
+    merged_df = pd.merge(merged_df, indikator_svar_df[['IndikatorSvarId', 'IndikatorSvarOprettetDato', 'IndikatorVariabelId']], on='IndikatorVariabelId', how='inner')
+    merged_df = pd.merge(merged_df, indikator_værdisæt_df, on='IndikatorVærdiSætId', how='inner')
+    merged_df = pd.merge(merged_df, indikator_værdi_df, on='IndikatorVærdiSætId', how='inner')
+    merged_df = pd.merge(merged_df, delmål_df[['MålId', 'EvalueringsDato', 'DelmålNavn']], on='MålId', how='left')
 
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
