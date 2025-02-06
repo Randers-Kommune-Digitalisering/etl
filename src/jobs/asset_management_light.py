@@ -1,5 +1,8 @@
 import logging
+import pandas as pd
 from utils.database_client import DatabaseClient
+from utils.sftp_connection import get_sftp_client, download_csv_from_sftp
+from io import StringIO
 from utils.config import (
     CAPA_DB_HOST,
     CAPA_DB_USER,
@@ -9,6 +12,7 @@ from utils.config import (
     SSHW_DB_HOST,
     SSHW_DB_PASS,
     SSHW_DB_USER,
+    ASSET_SFTP_FILE_PATH
 )
 
 capa_db_client = DatabaseClient(
@@ -29,6 +33,8 @@ sshw_db_client = DatabaseClient(
 
 logger = logging.getLogger(__name__)
 
+sftp_client = get_sftp_client()
+
 
 def job():
     try:
@@ -37,21 +43,14 @@ def job():
         # Create ComputerAssets table if not exists
         create_computer_assets_table_if_not_exists(sshw_db_client)
 
-        # Get Computer Unit Names from CAPA DB and insert to new DB
-        unit_name_result = get_unit_name(capa_db_client)
-        if unit_name_result:
-            insert_unit_name(sshw_db_client, unit_name_result)
-        else:
-            logger.info("No unit names found.")
-
-        # Get serial numbers
+        # Get serial numbers and Unitname from CAPA DB and insert to new DB
         serial_number_result = get_serial_number(capa_db_client)
         if serial_number_result:
             insert_serial_numbers(sshw_db_client, serial_number_result)
         else:
             logger.info("No serial numbers found.")
 
-        # # # Insert/Update Producent
+        # # Insert/Update Producent
         producent_result = get_producent(capa_db_client)
         if producent_result:
             update_producent(sshw_db_client, producent_result)
@@ -142,6 +141,9 @@ def job():
         else:
             logger.info("No Fullname data found")
 
+        # Insert/Update Device License
+        update_device_license_for_computers(sshw_db_client, ASSET_SFTP_FILE_PATH)
+
         return True
     except Exception as e:
         logger.error(f"Error in Asset-Management-Light job: {e}")
@@ -178,55 +180,6 @@ def create_computer_assets_table_if_not_exists(sshw_db_client):
         logger.error(f"Error creating ComputerAssets table: {e}")
 
 
-def get_unit_name(capa_db_client):
-    sql_command = """
-    SELECT UNIT.NAME
-    FROM UNIT
-    """
-
-    logger.info(f"Executing SQL command: {sql_command}")
-
-    try:
-        result = capa_db_client.execute_sql(sql_command)
-        if result:
-            filtered_result = []
-            for row in result:
-                unit_name = row[0]
-                if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
-                    logger.info(f"Unit Name: {unit_name}")
-                    filtered_result.append(unit_name)
-            logger.info(f"Total elements: {len(filtered_result)}")
-            return filtered_result
-        else:
-            logger.error("No results found.")
-            return "NONE"
-    except Exception as e:
-        capa_db_client.logger.error(f"Error retrieving capa data: {e}")
-        return None
-
-
-def insert_unit_name(sshw_db_client, data):
-    check_sql_command = """
-    SELECT COUNT(*)
-    FROM ComputerAssets
-    WHERE UnitName = %s
-    """
-    insert_sql_command = """
-    INSERT INTO ComputerAssets (UnitName)
-    VALUES (%s)
-    """
-    try:
-        for row in data:
-            unit_name = row
-            result = sshw_db_client.execute_sql(check_sql_command, (unit_name,))
-            if result[0][0] == 0:
-                sshw_db_client.execute_sql(insert_sql_command, (unit_name,))
-        sshw_db_client.get_connection().commit()
-        logger.info("Unit Name Data inserted successfully into ComputerAssets table.")
-    except Exception as e:
-        logger.error(f"Error inserting data into ComputerAssets table: {e}")
-
-
 def get_serial_number(capa_db_client):
     sql_command = """
     SELECT UNIT.NAME, UNIT.SERIALNUMBER
@@ -254,17 +207,23 @@ def get_serial_number(capa_db_client):
 
 
 def insert_serial_numbers(sshw_db_client, data):
-    sql_command = """
-    UPDATE ComputerAssets
-    SET Serienummer = %s
+    check_sql_command = """
+    SELECT COUNT(*)
+    FROM ComputerAssets
     WHERE UnitName = %s
+    """
+    insert_sql_command = """
+    INSERT INTO ComputerAssets (UnitName, Serienummer)
+    VALUES (%s, %s)
     """
     try:
         for row in data:
             unit_name, serial_number = row
-            sshw_db_client.execute_sql(sql_command, (serial_number, unit_name))
+            result = sshw_db_client.execute_sql(check_sql_command, (unit_name,))
+            if result[0][0] == 0:
+                sshw_db_client.execute_sql(insert_sql_command, (unit_name, serial_number))
         sshw_db_client.get_connection().commit()
-        logger.info("Serial Number Data updated successfully in ComputerAssets table.")
+        logger.info("Data inserted successfully into ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error inserting data into ComputerAssets table: {e}")
 
@@ -903,3 +862,53 @@ def update_fullname(sshw_db_client, data):
         logger.info("Full Name Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error updating data in ComputerAssets table: {e}")
+
+
+def get_all_unit_names(sshw_db_client):
+    try:
+        sql_command = "SELECT UnitName FROM ComputerAssets"
+        result = sshw_db_client.execute_sql(sql_command)
+        unit_names = [row[0] for row in result]
+        return unit_names
+    except Exception as e:
+        logger.error(f"Error retrieving unit names: {e}")
+        return []
+
+
+def update_device_license(sshw_db_client, unit_name):
+    try:
+        sql_command = """
+        UPDATE ComputerAssets
+        SET DeviceLicense = 'TRUE'
+        WHERE UnitName = %s
+        """
+        sshw_db_client.execute_sql(sql_command, (unit_name,))
+        logger.info(f"Updated Device License for Unit Name: {unit_name}")
+    except Exception as e:
+        logger.error(f"Error updating device license for {unit_name}: {e}")
+
+
+def update_device_license_for_computers(sshw_db_client, sftp_file_path):
+    try:
+        csv_data = download_csv_from_sftp(sftp_file_path)
+        computer_names = get_computer_names_from_csv(csv_data)
+        all_unit_names = get_all_unit_names(sshw_db_client)
+
+        if all_unit_names:
+            for computer_name in computer_names:
+                if computer_name in all_unit_names:
+                    update_device_license(sshw_db_client, computer_name)
+                else:
+                    logger.info(f"No matching Unit Name found for Computer Name: {computer_name}")
+        else:
+            logger.info("No unit names found in ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error updating data  : {e}")
+        return False
+
+
+def get_computer_names_from_csv(csv_data):
+    df = pd.read_csv(StringIO(csv_data))
+    computer_names = [name for name in df['ComputerName'].tolist() if name]
+    logger.info(f"Computer Names With Device License: {computer_names}")
+    return computer_names

@@ -61,3 +61,8 @@ SSHW_DB_USER = os.environ['SSHW_DB_USER'].rstrip()
 SSHW_DB_PASS = os.environ['SSHW_DB_PASS'].rstrip()
 SSHW_DB_HOST = os.environ['SSHW_DB_HOST'].rstrip()
 SSHW_DB_DATABASE = os.environ['SSHW_DB_DATABASE'].rstrip()
+
+ASSET_SFTP_HOST = os.environ['ASSET_SFTP_HOST'].rstrip()
+ASSET_SFTP_USER = os.environ['ASSET_SFTP_USER'].rstrip()
+ASSET_SFTP_PASS = os.environ['ASSET_SFTP_PASS'].rstrip()
+ASSET_SFTP_FILE_PATH = 'Computers.csv'
