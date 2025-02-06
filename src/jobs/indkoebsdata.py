@@ -57,10 +57,10 @@ def route_files(filelist, connection):
     for tt in track_types:
         match tt['route']:
             case Routes.CLIMATE_DB:
-                status.append({'type': tt['keyword'], 'status': handle_climate_db(tt['files'], connection, tt['prefix'], tt['keyword'])})
+                status.append(handle_climate_db(tt['files'], connection, tt['prefix'], tt['keyword']))
                 pass
             case Routes.BI_SYS:
-                status.append({'type': tt['keyword'], 'status': handle_bi_sys(tt['files'], connection, tt['prefix'])})
+                status.append(handle_bi_sys(tt['files'], connection, tt['prefix']))
                 pass
             case _:
                 raise TypeError('Unknown route')
@@ -76,40 +76,43 @@ def handle_bi_sys(files, connection, prefix):
 
         # Assume just ONE csv file
         csv_file = [f for f in zip.namelist() if f.endswith(('.csv'))][0]
-        with zip.open(csv_file, 'r') as f:
-            all_lines = f.readlines()
+        if 'test' in csv_file:
+            with zip.open(csv_file, 'r') as f:
+                all_lines = f.readlines()
 
-        for i in range(len(all_lines)):
-            line = all_lines[i].decode('cp1252')
+            for i in range(len(all_lines)):
+                line = all_lines[i].decode('cp1252')
 
-            # Strips leading equal signs from all lines
-            if (line[0] == '='):
-                line = line[1:]
-            line = line.replace(';=', ';')
-            line = line.replace('"', '')
+                # Strips leading equal signs from all lines
+                if (line[0] == '='):
+                    line = line[1:]
+                line = line.replace(';=', ';')
+                line = line.replace('"', '')
 
-            # Adds 'n/a' to empty columns in first row - assumes empty columns should be strings
-            if i == 1:
-                first_line_arr = line.split(';')
-                line = ';'.join(['"n/a"' if not e.strip() else e for e in first_line_arr]) + '\n'
+                # Adds 'n/a' to empty columns in first row - assumes empty columns should be strings
+                if i == 1:
+                    first_line_arr = line.split(';')
+                    line = ';'.join(['"n/a"' if not e.strip() else e for e in first_line_arr]) + '\n'
 
-            all_lines[i] = line.strip()
+                all_lines[i] = line.strip()
 
-        with io.BytesIO() as outfile:
-            encoded_outfile = io.TextIOWrapper(outfile, 'utf-8', newline='')
-            encoded_outfile.write('\n'.join(all_lines))
+            with io.BytesIO() as outfile:
+                encoded_outfile = io.TextIOWrapper(outfile, 'utf-8', newline='')
+                encoded_outfile.write('\n'.join(all_lines))
 
-            new_filename = Path(filename).stem.replace(' ', '_')
+                new_filename = Path(filename).stem.replace(' ', '_')
 
-            ok = post_data_to_custom_data_connector(prefix + new_filename, outfile.getbuffer())
-            status.append(ok)
+                ok = post_data_to_custom_data_connector(prefix + new_filename, outfile.getbuffer())
+                status.append(ok)
 
-            if ok:
-                logger.info(f'Updated {prefix + new_filename}')
-            else:
-                logger.error(f'Failed to update {prefix + new_filename}')
+                if ok:
+                    logger.info(f'Updated {prefix + new_filename}')
+                else:
+                    logger.error(f'Failed to update {prefix + new_filename}')
+        else:
+            logger.info(f'File {csv_file} is old format, skipping')
 
-        return all(status)
+    return all(status)
 
 
 def handle_climate_db(files, connection, prefix, keyword):

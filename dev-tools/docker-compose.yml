@@ -30,6 +30,8 @@ services:
     image: atmoz/sftp:latest
     restart: always
     command: demo:pass:::CustomData
+    ports:
+      - "22:22"
     # volumes:
     #     - ./CustomData/:/home/demo/CustomData/
     networks:
