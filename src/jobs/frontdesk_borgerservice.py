@@ -193,7 +193,7 @@ def prophet(data, forecastModel):
     })
 
     data_model = data.rename(columns={'dato': 'ds', 'antal': 'y'})
-    model = Prophet(changepoints=['2023-11-23'], yearly_seasonality=True, weekly_seasonality=True, seasonality_mode='multiplicative', holidays=holidays, growth='logistic')
+    model = Prophet(changepoints=['2023-11-23'], yearly_seasonality=True, weekly_seasonality=True, seasonality_mode='multiplicative', holidays=holidays, growth='flat')
     data_model['cap'] = 500
     data_model['floor'] = 0
     model.fit(data_model)
