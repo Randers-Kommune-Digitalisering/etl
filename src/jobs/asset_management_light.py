@@ -37,20 +37,23 @@ def job():
         # Create ComputerAssets table if not exists
         create_computer_assets_table_if_not_exists(sshw_db_client)
 
-        # Get serial numbers and Unitname from CAPA DB and insert to new DB
+        # Get Computer Unit Names from CAPA DB and insert to new DB
+        unit_name_result = get_unit_name(capa_db_client)
+        if unit_name_result:
+            insert_unit_name(sshw_db_client, unit_name_result)
+        else:
+            logger.info("No unit names found.")
+
+        # Get serial numbers
         serial_number_result = get_serial_number(capa_db_client)
         if serial_number_result:
-            for row in serial_number_result:
-                logger.info(f"Serial Number: {row}")
             insert_serial_numbers(sshw_db_client, serial_number_result)
         else:
             logger.info("No serial numbers found.")
 
-        # # Insert/Update Producent
+        # # # Insert/Update Producent
         producent_result = get_producent(capa_db_client)
         if producent_result:
-            for row in producent_result:
-                logger.info(f"Producent: {row}")
             update_producent(sshw_db_client, producent_result)
         else:
             logger.info("No producent data found.")
@@ -58,8 +61,6 @@ def job():
         # # Insert/Update Device Type
         device_type_result = get_device_type(capa_db_client)
         if device_type_result:
-            for row in device_type_result:
-                logger.info(f"Device Type: {row}")
             update_device_type(sshw_db_client, device_type_result)
         else:
             logger.info("No device type data found.")
@@ -67,8 +68,6 @@ def job():
         # # Insert/Update OS
         os_deployment_result = get_os(capa_db_client)
         if os_deployment_result:
-            for row in os_deployment_result:
-                logger.info(f"OS: {row}")
             update_os(sshw_db_client, os_deployment_result)
         else:
             logger.info("No OS data found.")
@@ -76,8 +75,6 @@ def job():
         # # Insert/Update Last Online
         last_online_result = get_last_online(capa_db_client)
         if last_online_result:
-            for row in last_online_result:
-                logger.info(f"Last Online: {row}")
             update_last_online(sshw_db_client, last_online_result)
         else:
             logger.info("No last online data found.")
@@ -85,8 +82,6 @@ def job():
         # # Insert/Update Primary User
         primary_user_result = get_primary_user(capa_db_client)
         if primary_user_result:
-            for row in primary_user_result:
-                logger.info(f"primary User: {row}")
             update_primary_user(sshw_db_client, primary_user_result)
         else:
             logger.info("No primary user data found.")
@@ -94,8 +89,6 @@ def job():
         # # Insert/Update Last Install Date
         last_install_dateresult = get_last_install_date(capa_db_client)
         if last_install_dateresult:
-            for row in last_install_dateresult:
-                logger.info(f"Last Install Date: {row}")
             update_last_install_date(sshw_db_client, last_install_dateresult)
         else:
             logger.info("No last install date data found.")
@@ -103,8 +96,6 @@ def job():
         # # Insert/Update MAC Addresses
         mac_addresses_result = get_mac_addresses(capa_db_client)
         if mac_addresses_result:
-            for row in mac_addresses_result:
-                logger.info(f"MAC Addresses: {row}")
             update_mac_addresses(sshw_db_client, mac_addresses_result)
         else:
             logger.info("No MAC addresses data found.")
@@ -112,8 +103,6 @@ def job():
         # Insert/Update Department
         department_result = get_department(capa_db_client)
         if department_result:
-            for row in department_result:
-                logger.info(f"Department: {row}")
             update_department(sshw_db_client, department_result)
         else:
             logger.info("No department data found.")
@@ -121,8 +110,6 @@ def job():
         # Insert/Update BitLocker Code
         bitlocker_code_result = get_bitlocker_code(capa_db_client)
         if bitlocker_code_result:
-            for row in bitlocker_code_result:
-                logger.info(f"BitLocker Code: {row}")
             update_bitlocker_code(sshw_db_client, bitlocker_code_result)
         else:
             logger.info("No BitLocker code data found.")
@@ -130,8 +117,6 @@ def job():
         # Insert/Update BitLocker Encryption
         bitlocker_encryption_result = get_bitlocker_encryption(capa_db_client)
         if bitlocker_encryption_result:
-            for row in bitlocker_encryption_result:
-                logger.info(f"BitLocker Encryption: {row}")
             update_bitlocker_encryption(sshw_db_client, bitlocker_encryption_result)
         else:
             logger.info("No BitLocker Encryption data found.")
@@ -139,8 +124,6 @@ def job():
         # Insert/Update BitLocker Status
         bitlocker_status_result = get_bitlocker_status(capa_db_client)
         if bitlocker_status_result:
-            for row in bitlocker_status_result:
-                logger.info(f"BitLocker Status: {row}")
             update_bitlocker_status(sshw_db_client, bitlocker_status_result)
         else:
             logger.info("No BitLocker status data found.")
@@ -148,8 +131,6 @@ def job():
         # # Insert/Update Model
         model_result = get_model(capa_db_client)
         if model_result:
-            for row in model_result:
-                logger.info(f"Model Status: {row}")
             update_model(sshw_db_client, model_result)
         else:
             logger.info("No Model data found")
@@ -157,8 +138,6 @@ def job():
         # Insert/Update FullName
         fullname_result = get_fullname(capa_db_client)
         if fullname_result:
-            for row in fullname_result:
-                logger.info(f"FullName Status: {row}")
             update_fullname(sshw_db_client, fullname_result)
         else:
             logger.info("No Fullname data found")
@@ -199,6 +178,55 @@ def create_computer_assets_table_if_not_exists(sshw_db_client):
         logger.error(f"Error creating ComputerAssets table: {e}")
 
 
+def get_unit_name(capa_db_client):
+    sql_command = """
+    SELECT UNIT.NAME
+    FROM UNIT
+    """
+
+    logger.info(f"Executing SQL command: {sql_command}")
+
+    try:
+        result = capa_db_client.execute_sql(sql_command)
+        if result:
+            filtered_result = []
+            for row in result:
+                unit_name = row[0]
+                if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
+                    logger.info(f"Unit Name: {unit_name}")
+                    filtered_result.append(unit_name)
+            logger.info(f"Total elements: {len(filtered_result)}")
+            return filtered_result
+        else:
+            logger.error("No results found.")
+            return "NONE"
+    except Exception as e:
+        capa_db_client.logger.error(f"Error retrieving capa data: {e}")
+        return None
+
+
+def insert_unit_name(sshw_db_client, data):
+    check_sql_command = """
+    SELECT COUNT(*)
+    FROM ComputerAssets
+    WHERE UnitName = %s
+    """
+    insert_sql_command = """
+    INSERT INTO ComputerAssets (UnitName)
+    VALUES (%s)
+    """
+    try:
+        for row in data:
+            unit_name = row
+            result = sshw_db_client.execute_sql(check_sql_command, (unit_name,))
+            if result[0][0] == 0:
+                sshw_db_client.execute_sql(insert_sql_command, (unit_name,))
+        sshw_db_client.get_connection().commit()
+        logger.info("Unit Name Data inserted successfully into ComputerAssets table.")
+    except Exception as e:
+        logger.error(f"Error inserting data into ComputerAssets table: {e}")
+
+
 def get_serial_number(capa_db_client):
     sql_command = """
     SELECT UNIT.NAME, UNIT.SERIALNUMBER
@@ -226,23 +254,17 @@ def get_serial_number(capa_db_client):
 
 
 def insert_serial_numbers(sshw_db_client, data):
-    check_sql_command = """
-    SELECT COUNT(*)
-    FROM ComputerAssets
+    sql_command = """
+    UPDATE ComputerAssets
+    SET Serienummer = %s
     WHERE UnitName = %s
-    """
-    insert_sql_command = """
-    INSERT INTO ComputerAssets (UnitName, Serienummer)
-    VALUES (%s, %s)
     """
     try:
         for row in data:
             unit_name, serial_number = row
-            result = sshw_db_client.execute_sql(check_sql_command, (unit_name,))
-            if result[0][0] == 0:
-                sshw_db_client.execute_sql(insert_sql_command, (unit_name, serial_number))
+            sshw_db_client.execute_sql(sql_command, (serial_number, unit_name))
         sshw_db_client.get_connection().commit()
-        logger.info("Data inserted successfully into ComputerAssets table.")
+        logger.info("Serial Number Data updated successfully in ComputerAssets table.")
     except Exception as e:
         logger.error(f"Error inserting data into ComputerAssets table: {e}")
 
