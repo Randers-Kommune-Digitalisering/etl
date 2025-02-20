@@ -9,7 +9,7 @@ from utils.api_requests import APIClient
 from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
-udddannels_stattistik_client = APIClient(UDDANNELSESSTATISTIK_URL, api_key=UDDANNELSESSTATISTIK_API_KEY)
+udddannels_stattistik_client = APIClient(UDDANNELSESSTATISTIK_URL, api_key=UDDANNELSESSTATISTIK_API_KEY, use_bearer=True)
 starting_year = 2022
 filename = 'BSelevtrivsel-4til9klasse.csv'
 
