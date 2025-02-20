@@ -31,7 +31,7 @@ def connectToFrontdeskDBtables():
     cursor = conn.cursor()
 
     # cursor.execute("SELECT * FROM information_schema.tables")
-    cursor.execute("SELECT * FROM Feedback")
+    cursor.execute("SELECT * FROM Operation")
     rows = cursor.fetchall()
     columns = [desc[0] for desc in cursor.description]
     tables = pd.DataFrame(rows, columns=columns)
