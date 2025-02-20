@@ -47,12 +47,12 @@ SENSUM_IT_SFTP_HOST = os.environ['SENSUM_IT_SFTP_HOST'].rstrip()
 SENSUM_IT_SFTP_USER = os.environ['SENSUM_IT_SFTP_USER'].rstrip()
 SENSUM_IT_SFTP_PASS = os.environ['SENSUM_IT_SFTP_PASS'].rstrip()
 
+CONFIG_LIBRARY_BASE_PATH = 'api/file/etl/'
 CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
 CONFIG_LIBRARY_PASS = os.environ['CONFIG_LIBRARY_PASS'].rstrip()
 CONFIG_LIBRARY_URL = os.environ['CONFIG_LIBRARY_URL'].rstrip()
-CONFIG_LIBRARY_PATH = os.environ['CONFIG_LIBRARY_PATH'].rstrip()
 
-BYGGESAGER_CONFIG_PATH = "/api/file/etl/umt_byggesager_config.json"
+BYGGESAGER_CONFIG_FILE = "umt_byggesager_config.json"
 UMT_SBSYS_SFTP_HOST = os.getenv('UMT_SBSYS_SFTP_HOST').rstrip()
 UMT_SBSYS_SFTP_USER = os.getenv('UMT_SBSYS_SFTP_USER').rstrip()
 UMT_SBSYS_SFTP_PASS = os.getenv('UMT_SBSYS_SFTP_PASS').rstrip()

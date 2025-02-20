@@ -1,11 +1,12 @@
 import io
 import csv
 import fnmatch
+import urllib.parse
 import pandas as pd
 
 from datetime import datetime, timedelta
 
-from utils.config import UMT_SBSYS_SFTP_HOST, UMT_SBSYS_SFTP_USER, UMT_SBSYS_SFTP_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, BYGGESAGER_CONFIG_PATH
+from utils.config import UMT_SBSYS_SFTP_HOST, UMT_SBSYS_SFTP_USER, UMT_SBSYS_SFTP_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, BYGGESAGER_CONFIG_FILE
 from utils.stfp import SFTPClient
 from utils.api_requests import APIClient
 from utils.logging import logging
@@ -14,13 +15,14 @@ from custom_data_connector import read_data_from_custom_data_connector, post_dat
 
 logger = logging.getLogger(__name__)
 
-config_library_client = APIClient(CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
+config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
 
 
 def job():
-    config = config_library_client.make_request(path=BYGGESAGER_CONFIG_PATH)
+    config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, BYGGESAGER_CONFIG_FILE)
+    config = config_library_client.make_request(path=config_path)
     if not config:
-        logging.error(f"Failed to load config file from path: {BYGGESAGER_CONFIG_PATH}")
+        logging.error(f"Failed to load config file: {BYGGESAGER_CONFIG_FILE}")
         return False
 
     last_month = (datetime.now().replace(day=1) - timedelta(days=1)).replace(day=1)
