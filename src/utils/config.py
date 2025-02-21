@@ -54,6 +54,11 @@ CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
 CONFIG_LIBRARY_PASS = os.environ['CONFIG_LIBRARY_PASS'].rstrip()
 CONFIG_LIBRARY_URL = os.environ['CONFIG_LIBRARY_URL'].rstrip()
 
+BYGGESAGER_CONFIG_FILE = "umt_byggesager_config.json"
+UMT_SBSYS_SFTP_HOST = os.getenv('UMT_SBSYS_SFTP_HOST').rstrip()
+UMT_SBSYS_SFTP_USER = os.getenv('UMT_SBSYS_SFTP_USER').rstrip()
+UMT_SBSYS_SFTP_PASS = os.getenv('UMT_SBSYS_SFTP_PASS').rstrip()
+
 FRONTDESK_DIR = 'Frontdesk'
 RANDERS_TEST_SFTP_USER = os.getenv('RANDERS_TEST_SFTP_USER', None)
 RANDERS_TEST_SFTP_PASS = os.getenv('RANDERS_TEST_SFTP_PASS', None)
