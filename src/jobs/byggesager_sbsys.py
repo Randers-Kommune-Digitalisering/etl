@@ -30,9 +30,14 @@ def job():
     files_updated = []
     for file_to_update in config['files_to_update']:
         old_file = read_data_from_custom_data_connector(file_to_update, path='in')
-        if check_up_to_date(old_file, [last_month, month_before_last]):
-            logger.info(f'{old_file.filename} already up to date')
-            files_updated.append(True)
+
+        if old_file:
+            if check_up_to_date(old_file, [last_month, month_before_last]):
+                logger.info(f'{old_file.filename} already up to date')
+                files_updated.append(True)
+        else:
+            # No old file in custom-data-connector - continue to update all
+            break
 
     if all(files_updated) and len(files_updated) == len(config['files_to_update']):
         logger.info('All files already up to date')
