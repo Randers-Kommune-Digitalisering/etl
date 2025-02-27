@@ -1,16 +1,17 @@
 import os
-import io
 import fnmatch
 import logging
 import pandas as pd
 from datetime import datetime, timedelta
 from utils.config import SENSUM_IT_SFTP_REMOTE_DIR
 from utils.sftp_connection import get_sftp_client
-from custom_data_connector import post_data_to_custom_data_connector
+from utils.database_connection import get_db_client
 
 logger = logging.getLogger(__name__)
 
 sftp_client = get_sftp_client()
+
+db_client = get_db_client()
 
 
 def process_sensum(file_patterns: list, directories: list, merge_func, output_filename):
@@ -29,7 +30,7 @@ def process_sensum(file_patterns: list, directories: list, merge_func, output_fi
                         raise Exception(f"No files found for pattern {pattern}")
 
                 if all(file_list_list):
-                    return process_and_post_files(file_list_list, conn, merge_func, output_filename)
+                    return process_and_save_files(file_list_list, conn, merge_func, output_filename)
         else:
             raise Exception("Directories or file patterns are missing")
     except Exception as e:
@@ -86,51 +87,24 @@ def get_files(connection, directory, subdirectory, pattern, only_latest=False):
         raise Exception(f"An error occurred while getting files: {e}")
 
 
-def process_and_post_files(file_list_list, conn, merge_func, output_filename):
+def process_and_save_files(file_list_list, conn, merge_func, output_filename):
     dfs = [handle_files(file_list, conn) for file_list in file_list_list]
 
     if all(df is not None and not df.empty for df in dfs):
         result = merge_func(*dfs)
-        file = io.BytesIO(result.to_csv(index=False, sep=';').encode('utf-8'))
-        if post_data_to_custom_data_connector(output_filename, file):
-            logger.info(f"Successfully updated {output_filename}")
-            return True
-        else:
-            logger.error(f"Failed to update {output_filename}")
+        try:
+            db_client.ensure_database_exists()
+            connection = db_client.get_connection()
+            if connection:
+                result.to_sql(output_filename.split('.')[0], con=connection, if_exists='replace', index=False)
+                logger.info(f"Successfully saved {output_filename} to the database")
+                return True
+            else:
+                raise Exception("Failed to get database connection")
+        except Exception as e:
+            logger.error(f"Failed to save {output_filename} to the database: {e}")
             return False
     return False
-
-
-def set_values_for_first_row(df):
-    for col in df.columns:
-        if pd.isna(df.at[0, col]):
-            if col == 'CPR' and df[col].dtype == 'float64':
-                df.at[0, col] = 000000000.0
-            elif df[col].dtype == 'datetime64[ns]':
-                df.at[0, col] = pd.Timestamp('1900-01-01')
-            elif df[col].dtype == 'object':
-                df.at[0, col] = 'Ikke angivet'
-            elif df[col].dtype == 'float64' or df[col].dtype == 'int64':
-                df.at[0, col] = 0
-    return df
-
-
-def set_string_dates_to_datetime(df):
-
-    def clean_date(date_str):
-        try:
-            return pd.to_datetime(date_str, format='%d-%m-%Y')
-        except ValueError:
-            try:
-                return pd.to_datetime(date_str.split(' ')[0], format='%d-%m-%Y')
-            except ValueError:
-                return pd.NaT
-
-    for col in df.columns:
-        if df[col].dtype == 'object' and 'Dato' in col:
-            df[col] = df[col].apply(clean_date)
-
-    return df
 
 
 def create_merge_lambda(config):
@@ -151,8 +125,7 @@ def merge_dataframes(df1, df2, merge_on, group_by, agg_dict, columns):
         merged_df = pd.merge(df1, df2, on=merge_on, how='inner')
         result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
         result.columns = columns
-        result = set_string_dates_to_datetime(result)
-        return set_values_for_first_row(result)
+        return result
     except Exception as e:
         raise Exception(f"An error occurred: {e}")
 
@@ -166,8 +139,7 @@ def sags_aktiviteter_merge_df(sager_df, sags_aktivitet_df, borger_df, group_by, 
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
-    result = set_string_dates_to_datetime(result)
-    return set_values_for_first_row(result)
+    return result
 
 
 def sensum_data_merge_df(sager_df, indsatser_df, borger_df, group_by, agg_dict, columns):
@@ -177,8 +149,7 @@ def sensum_data_merge_df(sager_df, indsatser_df, borger_df, group_by, agg_dict, 
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
-    result = set_string_dates_to_datetime(result)
-    return set_values_for_first_row(result)
+    return result
 
 
 def merge_df_sensum_mål_and_delmål(
@@ -214,8 +185,7 @@ def merge_df_sensum_mål_and_delmål(
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
-    result = set_string_dates_to_datetime(result)
-    return set_values_for_first_row(result)
+    return result
 
 
 def merge_df_ydelse(ydelse_df, borger_information_df, afdeling_df, group_by, agg_dict, columns):
@@ -225,5 +195,28 @@ def merge_df_ydelse(ydelse_df, borger_information_df, afdeling_df, group_by, agg
     result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
-    result = set_string_dates_to_datetime(result)
-    return set_values_for_first_row(result)
+    return result
+
+
+def sager_afdeling_medarbejder_merge_df(sager_df, afdeling_df, medarbejder_df, group_by, agg_dict, columns):
+    sager_df = sager_df.rename(columns={'SagModel': 'Sager_SagModel'})
+    afdeling_df = afdeling_df.rename(columns={'Navn': 'AfdelingNavn', 'AfdelingsId': 'AfdelingId'})
+    medarbejder_df = medarbejder_df.rename(columns={'Fornavn': 'MedarbejderFornavn', 'Efternavn': 'MedarbejderEfternavn'})
+    merged_df = pd.merge(sager_df, afdeling_df[['AfdelingId', 'AfdelingNavn']], on='AfdelingId', how='left')
+
+    merged_df = merged_df.rename(columns={'AfdelingNavn_y': 'AfdelingNavn'})
+    merged_df = pd.merge(merged_df, medarbejder_df[['MedarbejderId', 'MedarbejderFornavn', 'MedarbejderEfternavn', 'AfdelingId']], on='AfdelingId', how='left')
+
+    merged_df = merged_df[merged_df['Status'] == 'Igangværende']
+    result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+    result.columns = columns
+    return result
+
+
+def indsats_df(indsats_df, group_by, agg_dict, columns):
+    indsats_df = indsats_df.rename(columns={'StartDato': 'IndsatsStartDato', 'Id': 'IndsatsId', 'Status': 'IndsatsStatus'})
+
+    result = indsats_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+    result.columns = columns
+
+    return result
