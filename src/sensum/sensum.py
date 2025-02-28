@@ -96,13 +96,17 @@ def process_and_save_files(file_list_list, conn, merge_func, output_filename):
         result = merge_func(*dfs)
         try:
             db_client.ensure_database_exists()
-            connection = db_client.get_connection()
-            if connection:
-                result.to_sql(output_filename.split('.')[0], con=connection, if_exists='replace', index=False)
-                logger.info(f"Successfully saved {output_filename} to the database")
-                return True
-            else:
-                raise Exception("Failed to get database connection")
+            for file_list in file_list_list:
+                connection = db_client.get_connection()
+                if connection:
+                    logger.info(f"Processing file list: {file_list}")
+
+                    result.to_sql(output_filename.split('.')[0], con=connection, if_exists='replace', index=False)
+                    logger.info(f"Successfully saved {output_filename} to the database")
+                    connection.close()
+                else:
+                    raise Exception("Failed to get database connection")
+            return True
         except OperationalError as e:
             logger.error(f"Operational error while saving {output_filename} to the database: {e}")
             db_client.rollback_transaction()
@@ -112,9 +116,6 @@ def process_and_save_files(file_list_list, conn, merge_func, output_filename):
             logger.error(f"Failed to save {output_filename} to the database: {e}")
             db_client.rollback_transaction()
             return False
-        finally:
-            if connection:
-                connection.close()
     return False
 
 
