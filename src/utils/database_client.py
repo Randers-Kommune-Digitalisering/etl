@@ -27,7 +27,7 @@ class DatabaseClient:
                     raise ValueError(f"Unsupported database type: {self.db_type}")
                 self.logger.info(f"Connected to {self.db_type} database: {self.database} at {self.host}")
 
-            if not self.connection:
+            if not self.connection or not self.connection.closed:
                 self.connection = self.engine.connect()
             else:
                 try:
