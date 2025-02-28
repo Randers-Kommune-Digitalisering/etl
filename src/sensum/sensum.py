@@ -103,6 +103,7 @@ def process_and_save_files(file_list_list, conn, merge_func, output_filename):
                 raise Exception("Failed to get database connection")
         except Exception as e:
             logger.error(f"Failed to save {output_filename} to the database: {e}")
+            db_client.rollback_transaction()
             return False
     return False
 

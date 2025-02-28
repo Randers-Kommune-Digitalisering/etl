@@ -11,29 +11,50 @@ class DatabaseClient:
         self.db_type = db_type.lower()
         self.logger = logging.getLogger(__name__)
 
+        self.engine = None
         self.connection = None
         self.cursor = None
 
     def get_connection(self):
         try:
-            if not self.connection:
+            if not self.engine:
                 self.logger.info(f"Attempting to connect to {self.db_type} database: {self.database} at {self.host}")
                 if self.db_type == 'mssql':
-                    self.connection = create_engine(f'mssql+pymssql://{self.username}:{self.password}@{self.host}/{self.database}')
+                    self.engine = create_engine(f'mssql+pymssql://{self.username}:{self.password}@{self.host}/{self.database}')
                 elif self.db_type == 'mysql':
-                    self.connection = create_engine(f'mysql+pymysql://{self.username}:{self.password}@{self.host}/{self.database}')
+                    self.engine = create_engine(f'mysql+pymysql://{self.username}:{self.password}@{self.host}/{self.database}')
                 else:
                     raise ValueError(f"Unsupported database type: {self.db_type}")
                 self.logger.info(f"Connected to {self.db_type} database: {self.database} at {self.host}")
+
+            if not self.connection:
+                self.connection = self.engine.connect()
+            else:
+                try:
+                    self.connection.execute(text("SELECT 1"))
+                except Exception as e:
+                    self.logger.warning(f"Connection is invalid, attempting to reconnect: {e}")
+                    self.rollback_transaction()
+                    self.connection.close()
+                    self.connection = None
+                    return self.get_connection()
             return self.connection
         except Exception as e:
             self.logger.error(f"Error connecting to database: {e}")
             return None
 
+    def rollback_transaction(self):
+        try:
+            if self.connection:
+                self.connection.rollback()
+                self.logger.info("Rolled back the transaction")
+        except Exception as e:
+            self.logger.error(f"Error rolling back transaction: {e}")
+
     def get_cursor(self):
         try:
             if not self.cursor:
-                self.cursor = self.get_connection().raw_connection().cursor()
+                self.cursor = self.get_connection().connection.cursor()
             return self.cursor
         except Exception as e:
             self.logger.error(f"Error getting cursor: {e}")
@@ -51,11 +72,19 @@ class DatabaseClient:
             if cur.description:
                 return cur.fetchall()
             else:
-                self.connection.raw_connection().commit()
+                self.connection.commit()
                 return None
         except Exception as e:
             self.logger.error(f"Error executing SQL: {e}")
+            self.connection.rollback()
             return None
+        finally:
+            if self.cursor:
+                self.cursor.close()
+                self.cursor = None
+            if self.connection:
+                self.connection.close()
+                self.connection = None
 
     def ensure_database_exists(self):
         try:
