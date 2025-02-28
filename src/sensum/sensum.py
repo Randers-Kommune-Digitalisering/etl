@@ -94,13 +94,13 @@ def process_and_save_files(file_list_list, conn, merge_func, output_filename):
         result = merge_func(*dfs)
         try:
             db_client.ensure_database_exists()
-            connection = db_client.get_connection()
-            if connection:
-                result.to_sql(output_filename.split('.')[0], con=connection, if_exists='replace', index=False)
-                logger.info(f"Successfully saved {output_filename} to the database")
-                return True
-            else:
-                raise Exception("Failed to get database connection")
+            with db_client.get_connection() as connection:
+                if connection:
+                    result.to_sql(output_filename.split('.')[0], con=connection, if_exists='replace', index=False)
+                    logger.info(f"Successfully saved {output_filename} to the database")
+                    return True
+                else:
+                    raise Exception("Failed to get database connection")
         except Exception as e:
             logger.error(f"Failed to save {output_filename} to the database: {e}")
             db_client.rollback_transaction()
