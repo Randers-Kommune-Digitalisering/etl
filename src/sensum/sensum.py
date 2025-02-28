@@ -6,6 +6,8 @@ from datetime import datetime, timedelta
 from utils.config import SENSUM_IT_SFTP_REMOTE_DIR
 from utils.sftp_connection import get_sftp_client
 from utils.database_connection import get_db_client
+from sqlalchemy.exc import OperationalError
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -94,17 +96,25 @@ def process_and_save_files(file_list_list, conn, merge_func, output_filename):
         result = merge_func(*dfs)
         try:
             db_client.ensure_database_exists()
-            with db_client.get_connection() as connection:
-                if connection:
-                    result.to_sql(output_filename.split('.')[0], con=connection, if_exists='replace', index=False)
-                    logger.info(f"Successfully saved {output_filename} to the database")
-                    return True
-                else:
-                    raise Exception("Failed to get database connection")
+            connection = db_client.get_connection()
+            if connection:
+                result.to_sql(output_filename.split('.')[0], con=connection, if_exists='replace', index=False)
+                logger.info(f"Successfully saved {output_filename} to the database")
+                return True
+            else:
+                raise Exception("Failed to get database connection")
+        except OperationalError as e:
+            logger.error(f"Operational error while saving {output_filename} to the database: {e}")
+            db_client.rollback_transaction()
+            time.sleep(5)
+            return process_and_save_files(file_list_list, conn, merge_func, output_filename)
         except Exception as e:
             logger.error(f"Failed to save {output_filename} to the database: {e}")
             db_client.rollback_transaction()
             return False
+        finally:
+            if connection:
+                connection.close()
     return False
 
 

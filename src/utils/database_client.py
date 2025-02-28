@@ -82,9 +82,6 @@ class DatabaseClient:
             if self.cursor:
                 self.cursor.close()
                 self.cursor = None
-            if self.connection:
-                self.connection.close()
-                self.connection = None
 
     def ensure_database_exists(self):
         try:
