@@ -52,6 +52,7 @@ SENSUM_DB_USER = os.environ['SENSUM_DB_USER'].rstrip()
 SENSUM_DB_PASS = os.environ['SENSUM_DB_PASS'].rstrip()
 SENSUM_DB_HOST = os.environ['SENSUM_DB_HOST'].rstrip()
 SENSUM_DB_DATABASE = os.environ['SENSUM_DB_DATABASE'].rstrip()
+SENSUM_DB_PORT = os.environ['SENSUM_DB_PORT'].rstrip()
 
 CONFIG_LIBRARY_BASE_PATH = 'api/file/etl/'
 CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
