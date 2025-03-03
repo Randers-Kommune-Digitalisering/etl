@@ -7,7 +7,7 @@ from utils.config import SENSUM_IT_SFTP_REMOTE_DIR
 from utils.sftp_connection import get_sftp_client
 from utils.database_connection import get_db_client
 from sqlalchemy.exc import OperationalError
-import time
+
 
 logger = logging.getLogger(__name__)
 
@@ -109,12 +109,9 @@ def process_and_save_files(file_list_list, conn, merge_func, output_filename):
             return True
         except OperationalError as e:
             logger.error(f"Operational error while saving {output_filename} to the database: {e}")
-            db_client.rollback_transaction()
-            time.sleep(5)
             return process_and_save_files(file_list_list, conn, merge_func, output_filename)
         except Exception as e:
             logger.error(f"Failed to save {output_filename} to the database: {e}")
-            db_client.rollback_transaction()
             return False
     return False
 

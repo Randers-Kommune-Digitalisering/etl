@@ -1,102 +1,82 @@
+import sqlalchemy
 import logging
+from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 
 
 class DatabaseClient:
-    def __init__(self, database, username, password, host, db_type='mssql'):
+    def __init__(self, db_type, database, username, password, host, port=None):
+        self.db_type = db_type.lower()
         self.database = database
         self.username = username
         self.password = password
         self.host = host
-        self.db_type = db_type.lower()
+        self.port = port
         self.logger = logging.getLogger(__name__)
 
-        self.engine = None
-        self.connection = None
-        self.cursor = None
+        if self.db_type == 'mssql':
+            driver = 'mssql+pymssql'
+        elif self.db_type == 'mariadb':
+            driver = 'mariadb+mariadbconnector'
+        elif self.db_type == 'postgresql':
+            driver = 'postgresql+psycopg2'
+        else:
+            raise ValueError(f"Invalid database type {self.db_type}")
+
+        if port:
+            host = host + f':{port}'
+
+        self.engine = create_engine(f'{driver}://{username}:{password}@{host}/{database}')
+
+    def get_engine(self):
+        return self.engine
 
     def get_connection(self):
         try:
-            if not self.engine:
-                self.logger.info(f"Attempting to connect to {self.db_type} database: {self.database} at {self.host}")
-                if self.db_type == 'mssql':
-                    self.engine = create_engine(f'mssql+pymssql://{self.username}:{self.password}@{self.host}/{self.database}')
-                elif self.db_type == 'mysql':
-                    self.engine = create_engine(f'mysql+pymysql://{self.username}:{self.password}@{self.host}/{self.database}')
-                else:
-                    raise ValueError(f"Unsupported database type: {self.db_type}")
-                self.logger.info(f"Connected to {self.db_type} database: {self.database} at {self.host}")
-
-            if not self.connection or not self.connection.closed:
-                self.connection = self.engine.connect()
-            else:
-                try:
-                    self.connection.execute(text("SELECT 1"))
-                except Exception as e:
-                    self.logger.warning(f"Connection is invalid, attempting to reconnect: {e}")
-                    self.rollback_transaction()
-                    self.connection.close()
-                    self.connection = None
-                    return self.get_connection()
-            return self.connection
+            if self.engine:
+                return self.engine.connect()
+            self.logger.error("DatabaseClient not initialized properly. Engine is None. Check error from init.")
         except Exception as e:
             self.logger.error(f"Error connecting to database: {e}")
-            return None
 
-    def rollback_transaction(self):
+    def get_session(self):
         try:
-            if self.connection:
-                self.connection.rollback()
-                self.logger.info("Rolled back the transaction")
+            if self.engine:
+                return Session(self.get_engine())
+            self.logger.error("DatabaseClient not initialized properly. Engine is None. Check error from init.")
         except Exception as e:
-            self.logger.error(f"Error rolling back transaction: {e}")
+            self.logger.error(f"Error connecting to database: {e}")
 
-    def get_cursor(self):
+    def execute_sql(self, sql):
         try:
-            if not self.cursor:
-                self.cursor = self.get_connection().connection.cursor()
-            return self.cursor
-        except Exception as e:
-            self.logger.error(f"Error getting cursor: {e}")
-            return None
-
-    def execute_sql(self, sql, params=None):
-        try:
-            cur = self.get_cursor()
-            if cur is None:
-                raise Exception("Cursor is None, cannot execute SQL")
-            if params:
-                cur.execute(sql, params)
-            else:
-                cur.execute(sql)
-            if cur.description:
-                return cur.fetchall()
-            else:
-                self.connection.commit()
-                return None
+            with self.get_connection() as conn:
+                res = conn.execute(sqlalchemy.text(sql))
+                conn.commit()
+                return res
         except Exception as e:
             self.logger.error(f"Error executing SQL: {e}")
-            self.connection.rollback()
-            return None
-        finally:
-            if self.cursor:
-                self.cursor.close()
-                self.cursor = None
 
     def ensure_database_exists(self):
         try:
             if self.db_type == 'mssql':
-                engine = create_engine(f'mssql+pymssql://{self.username}:{self.password}@{self.host}')
+                driver = 'mssql+pymssql'
             elif self.db_type == 'mysql':
-                engine = create_engine(f'mysql+pymysql://{self.username}:{self.password}@{self.host}')
+                driver = 'mysql+pymysql'
+            elif self.db_type == 'postgresql':
+                driver = 'postgresql+psycopg2'
             else:
                 raise ValueError(f"Unsupported database type: {self.db_type}")
 
+            engine = create_engine(f'{driver}://{self.username}:{self.password}@{self.host}', isolation_level="AUTOCOMMIT")
             with engine.connect() as conn:
                 if self.db_type == 'mssql':
                     conn.execute(text(f"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{self.database}') CREATE DATABASE {self.database}"))
                 elif self.db_type == 'mysql':
                     conn.execute(text(f"CREATE DATABASE IF NOT EXISTS {self.database}"))
+                elif self.db_type == 'postgresql':
+                    result = conn.execute(text(f"SELECT 1 FROM pg_database WHERE datname = '{self.database}'"))
+                    if not result.scalar():
+                        conn.execute(text(f"CREATE DATABASE {self.database}"))
                 self.logger.info(f"Database {self.database} ensured to exist")
         except Exception as e:
             self.logger.error(f"Error ensuring database exists: {e}")
