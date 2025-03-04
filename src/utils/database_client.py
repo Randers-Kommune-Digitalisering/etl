@@ -70,7 +70,8 @@ class DatabaseClient:
             else:
                 raise ValueError(f"Unsupported database type: {self.db_type}")
 
-            engine = create_engine(f'{driver}://{self.username}:{self.password}@{self.host}', isolation_level="AUTOCOMMIT")
+            connection_string = f'{driver}://{urllib.parse.quote_plus(self.username)}:{urllib.parse.quote_plus(self.password)}@{urllib.parse.quote_plus(self.host)}:{urllib.parse.quote_plus(self.port)}/{urllib.parse.quote_plus(self.database)}'
+            engine = create_engine(connection_string, isolation_level="AUTOCOMMIT")
             with engine.connect() as conn:
                 if self.db_type == 'mssql':
                     conn.execute(text(f"IF NOT EXISTS (SELECT * FROM sys.databases WHERE name = '{self.database}') CREATE DATABASE {self.database}"))
