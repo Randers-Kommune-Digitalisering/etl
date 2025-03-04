@@ -48,11 +48,11 @@ SENSUM_IT_SFTP_HOST = os.environ['SENSUM_IT_SFTP_HOST'].rstrip()
 SENSUM_IT_SFTP_USER = os.environ['SENSUM_IT_SFTP_USER'].rstrip()
 SENSUM_IT_SFTP_PASS = os.environ['SENSUM_IT_SFTP_PASS'].rstrip()
 SENSUM_CONFIG_FILE = 'sensum_jobs_db_config.json'
-SENSUM_DB_USER = os.environ['SENSUM_DB_USER'].rstrip()
-SENSUM_DB_PASS = os.environ['SENSUM_DB_PASS'].rstrip()
-SENSUM_DB_HOST = os.environ['SENSUM_DB_HOST'].rstrip()
-SENSUM_DB_DATABASE = os.environ['SENSUM_DB_DATABASE'].rstrip()
-SENSUM_DB_PORT = os.environ['SENSUM_DB_PORT'].rstrip()
+SENSUM_DB_USER = os.environ['SENSUM_DB_USER']
+SENSUM_DB_PASS = os.environ['SENSUM_DB_PASS']
+SENSUM_DB_HOST = os.environ['SENSUM_DB_HOST']
+SENSUM_DB_DATABASE = os.environ['SENSUM_DB_DATABASE']
+SENSUM_DB_PORT = os.environ['SENSUM_DB_PORT']
 
 CONFIG_LIBRARY_BASE_PATH = 'api/file/etl/'
 CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
