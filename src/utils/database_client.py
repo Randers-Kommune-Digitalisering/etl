@@ -1,5 +1,6 @@
 import sqlalchemy
 import logging
+import urllib.parse
 from sqlalchemy.orm import Session
 from sqlalchemy import create_engine, text
 
@@ -25,10 +26,10 @@ class DatabaseClient:
         else:
             raise ValueError(f"Invalid database type {self.db_type}")
 
-        if port:
-            host = host + f':{port}'
+        connection_string = f'{driver}://{urllib.parse.quote_plus(username)}:{urllib.parse.quote_plus(password)}@{urllib.parse.quote_plus(host)}:{urllib.parse.quote_plus(port)}/{urllib.parse.quote_plus(database)}'
+        self.logger.info(f"Connection string: {connection_string}")
 
-        self.engine = create_engine(f'{driver}://{username}:{password}@{host}/{database}')
+        self.engine = create_engine(connection_string)
 
     def get_engine(self):
         return self.engine
