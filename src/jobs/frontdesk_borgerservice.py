@@ -62,7 +62,6 @@ def job():
         # logger.info(predictions.describe())
         # Create a connection to the PostgreSQL server
 
-
         # Upload forecasts to PostgreSQL
         try:
             db_client.ensure_database_exists()
