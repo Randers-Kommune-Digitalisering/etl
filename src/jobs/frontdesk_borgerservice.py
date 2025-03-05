@@ -82,6 +82,7 @@ def job():
         # Upload operations to PostgreSQL
         try:
             db_client.ensure_database_exists()
+            connection = db_client.get_connection()
             if connection:
                 logger.info("Attempting to upload forecasts to PostgreSQL")
                 predictions.to_sql('operations', con=connection, if_exists='replace', index=False)
