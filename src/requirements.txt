@@ -1,5 +1,6 @@
 Flask==3.0.3
 mariadb
+numpy<2
 pandas
 prophet
 prometheus-client==0.20.0
@@ -12,3 +13,4 @@ requests==2.31.0 # requests-pkcs12 breaks with requests 2.32.*
 requests-pkcs12
 SQLAlchemy
 zipfile36
+pymysql
