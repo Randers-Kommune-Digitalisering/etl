@@ -1,22 +1,18 @@
 import pymssql
 import pandas as pd
 import logging
-import urllib.parse
 import io
-from sqlalchemy import create_engine, text
-
 from prophet import Prophet
 from datetime import datetime
-
-from utils.config import POSTGRES_DB_USER, POSTGRES_DB_PASS, POSTGRES_DB_HOST, POSTGRES_DB_DATABASE, POSTGRES_DB_PORT
 from utils.config import FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_HOST, FRONTDESK_DB_DATABASE
+from utils.database_connection import get_db_frontdesk
 
 from custom_data_connector import post_data_to_custom_data_connector
 
 
 logger = logging.getLogger(__name__)
 
-db_client = create_engine(f'postgresql+psycopg2://{urllib.parse.quote_plus(POSTGRES_DB_USER)}:{urllib.parse.quote_plus(POSTGRES_DB_PASS)}@{urllib.parse.quote_plus(POSTGRES_DB_HOST)}:{urllib.parse.quote_plus(str(POSTGRES_DB_PORT))}/{urllib.parse.quote_plus(POSTGRES_DB_DATABASE)}', isolation_level="AUTOCOMMIT")
+db_client = get_db_frontdesk()
 
 
 def job():
@@ -66,23 +62,19 @@ def job():
         # logger.info(predictions.describe())
         # Create a connection to the PostgreSQL server
 
-        # Check if the database exists
-        with db_client.connect() as conn:
-            result = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :dbname"), {'dbname': POSTGRES_DB_DATABASE})
-            exists = result.fetchone()
-
-            # Create the database if it does not exist
-            if not exists:
-                conn.execute(text(f"CREATE DATABASE {POSTGRES_DB_DATABASE}"))
-                logger.info(f"Database '{POSTGRES_DB_DATABASE}' created successfully.")
-            else:
-                logger.info(f"Database '{POSTGRES_DB_DATABASE}' already exists.")
 
         # Upload forecasts to PostgreSQL
         try:
-            logger.info("Attempting to upload forecasts to PostgreSQL")
-            predictions.to_sql('forecasts', db_client, if_exists='replace', index=False)
-            logger.info("Updated Frontdesk Borgerservice forecasts successfully in PostgreSQL")
+            db_client.ensure_database_exists()
+            connection = db_client.get_connection()
+            if connection:
+                logger.info("Attempting to upload forecasts to PostgreSQL")
+                predictions.to_sql('forecasts', db_client, if_exists='replace', index=False)
+                logger.info("Updated Frontdesk Borgerservice forecasts successfully in PostgreSQL")
+                connection.close()
+            else:
+                logger.error("Failed to connect to PostgreSQL")
+                return False
         except Exception as e:
             logger.error(e)
             logger.error("Failed to update Frontdesk Borgerservice forecasts in PostgreSQL")
@@ -90,12 +82,18 @@ def job():
 
         # Upload operations to PostgreSQL
         try:
-            logger.info("Attempting to upload operations to PostgreSQL")
-            workdata.to_sql('operations', db_client, if_exists='replace', index=False)
-            logger.info("Updated Frontdesk Borgerservice operations successfully in PostgreSQL")
+            db_client.ensure_database_exists()
+            if connection:
+                logger.info("Attempting to upload forecasts to PostgreSQL")
+                predictions.to_sql('operations', db_client, if_exists='replace', index=False)
+                logger.info("Updated Frontdesk Borgerservice operations successfully in PostgreSQL")
+                connection.close()
+            else:
+                logger.error("Failed to connect to PostgreSQL")
+                return False
         except Exception as e:
             logger.error(e)
-            logger.error("Failed to update Frontdesk Borgerservice forecasts in PostgreSQL")
+            logger.error("Failed to update Frontdesk Borgerservice operations in PostgreSQL")
             return False
 
         # Upload forcasts
