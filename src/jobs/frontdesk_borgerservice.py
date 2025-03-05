@@ -1,15 +1,22 @@
 import pymssql
 import pandas as pd
 import logging
+import urllib.parse
 import io
+from sqlalchemy import create_engine, text
 
 from prophet import Prophet
 from datetime import datetime
 
+from utils.config import POSTGRES_DB_USER, POSTGRES_DB_PASS, POSTGRES_DB_HOST, POSTGRES_DB_DATABASE, POSTGRES_DB_PORT
 from utils.config import FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_HOST, FRONTDESK_DB_DATABASE
+
 from custom_data_connector import post_data_to_custom_data_connector
 
+
 logger = logging.getLogger(__name__)
+
+db_client = create_engine(f'postgresql+psycopg2://{urllib.parse.quote_plus(POSTGRES_DB_USER)}:{urllib.parse.quote_plus(POSTGRES_DB_PASS)}@{urllib.parse.quote_plus(POSTGRES_DB_HOST)}:{urllib.parse.quote_plus(POSTGRES_DB_PORT)}/{urllib.parse.quote_plus(POSTGRES_DB_DATABASE)}')
 
 
 def job():
@@ -17,6 +24,7 @@ def job():
 
     try:
         workdata = connectToFrontdeskDB()
+        # workdata = pd.read_csv('data/FrontdeskBorgerserviceTables.csv', sep=';')
     except Exception as e:
         logger.error(e)
         logger.error("Failed to connect to Frontdesk Borgerservice database")
@@ -40,6 +48,7 @@ def job():
                   'Andet', 'Beboerindskud og boligstøtte', 'Skat', 'Flytning og Folkeregister',
                   'Sundhedskort og lægevalg', 'Legitimationskort', 'Sundhedskort og lægevalg',
                   'Tilflytning fra udlandet', 'Fritagelse for digitalpost']
+
         for queue in queues:
             workdata_temp = workdata.drop(workdata[workdata.QueuesGrouped != queue].index)
             workdata_grouped = dailyVisitors(workdata_temp)
@@ -55,8 +64,42 @@ def job():
 
         # logger.info(predictions.info())
         # logger.info(predictions.describe())
+        # Create a connection to the PostgreSQL server
+
+        # Check if the database exists
+        with db_client.connect() as conn:
+            result = conn.execute(text("SELECT 1 FROM pg_database WHERE datname = :dbname"), {'dbname': POSTGRES_DB_DATABASE})
+            exists = result.fetchone()
+
+            # Create the database if it does not exist
+            if not exists:
+                conn.execute(text(f"CREATE DATABASE {POSTGRES_DB_DATABASE}"))
+                logger.info(f"Database '{POSTGRES_DB_DATABASE}' created successfully.")
+            else:
+                logger.info(f"Database '{POSTGRES_DB_DATABASE}' already exists.")
+
+        # Upload forecasts to PostgreSQL
+        try:
+            logger.info("Attempting to upload forecasts to PostgreSQL")
+            predictions.to_sql('forecasts', db_client, if_exists='replace', index=False)
+            logger.info("Updated Frontdesk Borgerservice forecasts successfully in PostgreSQL")
+        except Exception as e:
+            logger.error(e)
+            logger.error("Failed to update Frontdesk Borgerservice forecasts in PostgreSQL")
+            return False
+
+        # Upload operations to PostgreSQL
+        try:
+            logger.info("Attempting to upload operations to PostgreSQL")
+            workdata.to_sql('operations', db_client, if_exists='replace', index=False)
+            logger.info("Updated Frontdesk Borgerservice operations successfully in PostgreSQL")
+        except Exception as e:
+            logger.error(e)
+            logger.error("Failed to update Frontdesk Borgerservice forecasts in PostgreSQL")
+            return False
 
         # Upload forcasts
+        # predictions.to_csv('data/Forecasts.csv', index=False, sep=';')
         file = io.BytesIO(predictions.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "FrontdeskBorgerserviceForecasts" + ".csv"
 
@@ -65,10 +108,11 @@ def job():
         else:
             logger.error("Failed to update Frontdesk Borgerservice forecasts")
             return False
-       
+
         # save_data(predictions,'FrontdeskBorgerserviceForecasts')
         workdata = transformationsBeforeUpload(workdata)
-        
+        # workdata.to_csv('data/Operation.csv', index=False, sep=';')
+
         file = io.BytesIO(workdata.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "FrontdeskBorgerservice" + ".csv"
 
@@ -125,7 +169,7 @@ def groupQueues(row):
 def transformations(data):
     # Drop columns
     data = data.drop(columns=['MunicipalityID', 'QueueId', 'QueueCategoryId', 'State', 'StateId', 'CounterId', 'EmployeeId', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'EmployeeInitials'])
-    
+
     # Transform data types
     data['CreatedAt'] = pd.to_datetime(data['CreatedAt']).dt.tz_localize(None)
     data['CalledAt'] = pd.to_datetime(data['CalledAt']).dt.tz_localize(None)
@@ -135,7 +179,7 @@ def transformations(data):
     # Dropper rækker
     # Data ikke fra borgerservice
     data.drop(data[data.CounterName.isin(['Jobcenter', 'Ydelseskontoret', 'Integration'])].index, inplace=True)
-    
+
     # data ældre end to år eller før 1/1/2023
     dateTwoYearsBefore = datetime(datetime.now().year - 2, datetime.now().month, datetime.now().day)
     data.drop(data[(data.CreatedAt < datetime(2023, 1, 1)) | (data.CreatedAt < dateTwoYearsBefore)].index, inplace=True)
@@ -155,7 +199,7 @@ def transformations(data):
     # AggregatedWaitingTime giver ikke rigtig mening
     # data['VentetidMinutterDecimal'] = (data['AggregatedWaitingTime'] / (10**7 * 60)).round(2)
     data['VentetidMinutterDecimal'] = (data['VentetidMinutter'].dt.total_seconds() / 60).round(2)
-                  
+
     return data
 
 
@@ -167,7 +211,7 @@ def transformationsBeforeUpload(data):
 def dailyVisitors(data):
     data = data.groupby(['dato']).size().reset_index()
     data.columns = ['dato', 'antal']
-    
+
     return data
 
 
@@ -195,13 +239,13 @@ def prophet(data, forecastModel):
     data_model = data.rename(columns={'dato': 'ds', 'antal': 'y'})
     model = Prophet(changepoints=['2023-11-23'], yearly_seasonality=True, weekly_seasonality=True, seasonality_mode='multiplicative', holidays=holidays, growth='logistic')
     data_model['cap'] = 500
-    data_model['floor'] = 0
+    data_model['floor'] = 1
     model.fit(data_model)
 
     future = model.make_future_dataframe(periods=365)
     future['cap'] = 500
-    future['floor'] = 0
-    future = future[future['ds'].dt.weekday.isin([0, 1, 3, 4])]
+    future['floor'] = 1
+    future = future[future['ds'].dt.weekday.isin([0, 1, 2, 3, 4])]
     forecast = model.predict(future)
 
     # data = pd.merge(data,forecast[['ds','yhat','yhat_lower','yhat_upper']], left_on='dato', right_on='ds', how='left')
