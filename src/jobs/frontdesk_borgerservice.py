@@ -62,7 +62,6 @@ def job():
         # logger.info(predictions.describe())
         # Create a connection to the PostgreSQL server
 
-        # Upload forecasts to PostgreSQL
         try:
             db_client.ensure_database_exists()
             connection = db_client.get_connection()
@@ -70,6 +69,7 @@ def job():
                 logger.info("Attempting to upload forecasts to PostgreSQL")
                 predictions.to_sql('forecasts', con=connection, if_exists='replace', index=False)
                 logger.info("Updated Frontdesk Borgerservice forecasts successfully in PostgreSQL")
+                logger.info(f"Forecasts columns: {predictions.columns.tolist()}")
                 connection.close()
             else:
                 logger.error("Failed to connect to PostgreSQL")
@@ -84,9 +84,10 @@ def job():
             db_client.ensure_database_exists()
             connection = db_client.get_connection()
             if connection:
-                logger.info("Attempting to upload forecasts to PostgreSQL")
+                logger.info("Attempting to upload operations to PostgreSQL")
                 predictions.to_sql('operations', con=connection, if_exists='replace', index=False)
                 logger.info("Updated Frontdesk Borgerservice operations successfully in PostgreSQL")
+                logger.info(f"Operations columns: {predictions.columns.tolist()}")
                 connection.close()
             else:
                 logger.error("Failed to connect to PostgreSQL")
