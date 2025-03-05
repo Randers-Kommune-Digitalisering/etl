@@ -16,7 +16,7 @@ from custom_data_connector import post_data_to_custom_data_connector
 
 logger = logging.getLogger(__name__)
 
-db_client = create_engine(f'postgresql+psycopg2://{urllib.parse.quote_plus(POSTGRES_DB_USER)}:{urllib.parse.quote_plus(POSTGRES_DB_PASS)}@{urllib.parse.quote_plus(POSTGRES_DB_HOST)}:{urllib.parse.quote_plus(POSTGRES_DB_PORT)}/{urllib.parse.quote_plus(POSTGRES_DB_DATABASE)}')
+db_client = create_engine(f'postgresql+psycopg2://{urllib.parse.quote_plus(POSTGRES_DB_USER)}:{urllib.parse.quote_plus(POSTGRES_DB_PASS)}@{urllib.parse.quote_plus(POSTGRES_DB_HOST)}:{urllib.parse.quote_plus(str(POSTGRES_DB_PORT))}/{urllib.parse.quote_plus(POSTGRES_DB_DATABASE)}', isolation_level="AUTOCOMMIT")
 
 
 def job():
