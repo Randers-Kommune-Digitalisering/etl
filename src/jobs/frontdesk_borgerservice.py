@@ -68,7 +68,7 @@ def job():
             connection = db_client.get_connection()
             if connection:
                 logger.info("Attempting to upload forecasts to PostgreSQL")
-                predictions.to_sql('forecasts', db_client, if_exists='replace', index=False)
+                predictions.to_sql('forecasts', con=connection, if_exists='replace', index=False)
                 logger.info("Updated Frontdesk Borgerservice forecasts successfully in PostgreSQL")
                 connection.close()
             else:
@@ -84,7 +84,7 @@ def job():
             db_client.ensure_database_exists()
             if connection:
                 logger.info("Attempting to upload forecasts to PostgreSQL")
-                predictions.to_sql('operations', db_client, if_exists='replace', index=False)
+                predictions.to_sql('operations', con=connection, if_exists='replace', index=False)
                 logger.info("Updated Frontdesk Borgerservice operations successfully in PostgreSQL")
                 connection.close()
             else:
