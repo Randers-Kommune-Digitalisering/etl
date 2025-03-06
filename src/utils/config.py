@@ -40,35 +40,36 @@ UDDANNELSESSTATISTIK_API_KEY = os.environ['UDDANNELSESSTATISTIK_API_KEY'].rstrip
 CUSTOM_DATA_CONNECTOR_HOST = os.environ['CUSTOM_DATA_CONNECTOR_HOST'].rstrip()
 
 
-JOBINDSATS_API_KEY = os.environ['JOBINDSATS_API_KEY'].rstrip()
-JOBINDSATS_URL = os.environ['JOBINDSATS_URL'].rstrip()
-JOBINDSATS_CONFIG_FILE = 'jobindsats_jobs_config.json'
+# JOBINDSATS_API_KEY = os.environ['JOBINDSATS_API_KEY'].rstrip()
+# JOBINDSATS_URL = os.environ['JOBINDSATS_URL'].rstrip()
+# JOBINDSATS_CONFIG_FILE = 'jobindsats_jobs_config.json'
 
-SENSUM_IT_SFTP_REMOTE_DIR = '/D:/SFTP-EGDW/'
-SENSUM_IT_SFTP_HOST = os.environ['SENSUM_IT_SFTP_HOST'].rstrip()
-SENSUM_IT_SFTP_USER = os.environ['SENSUM_IT_SFTP_USER'].rstrip()
-SENSUM_IT_SFTP_PASS = os.environ['SENSUM_IT_SFTP_PASS'].rstrip()
-SENSUM_CONFIG_FILE = 'sensum_jobs_db_config.json'
-SENSUM_DB_USER = os.environ['SENSUM_DB_USER']
-SENSUM_DB_PASS = os.environ['SENSUM_DB_PASS']
-SENSUM_DB_HOST = os.environ['SENSUM_DB_HOST']
-SENSUM_DB_DATABASE = os.environ['SENSUM_DB_DATABASE']
-SENSUM_DB_PORT = os.environ['SENSUM_DB_PORT']
+# SENSUM_IT_SFTP_REMOTE_DIR = '/D:/SFTP-EGDW/'
+# SENSUM_IT_SFTP_HOST = os.environ['SENSUM_IT_SFTP_HOST'].rstrip()
+# SENSUM_IT_SFTP_USER = os.environ['SENSUM_IT_SFTP_USER'].rstrip()
+# SENSUM_IT_SFTP_PASS = os.environ['SENSUM_IT_SFTP_PASS'].rstrip()
+# SENSUM_CONFIG_FILE = 'sensum_jobs_db_config.json'
+# SENSUM_DB_USER = os.environ['SENSUM_DB_USER']
+# SENSUM_DB_PASS = os.environ['SENSUM_DB_PASS']
+# SENSUM_DB_HOST = os.environ['SENSUM_DB_HOST']
+# SENSUM_DB_DATABASE = os.environ['SENSUM_DB_DATABASE']
+# SENSUM_DB_PORT = os.environ['SENSUM_DB_PORT']
 
-CONFIG_LIBRARY_BASE_PATH = 'api/file/etl/'
-CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
-CONFIG_LIBRARY_PASS = os.environ['CONFIG_LIBRARY_PASS'].rstrip()
-CONFIG_LIBRARY_URL = os.environ['CONFIG_LIBRARY_URL'].rstrip()
+# CONFIG_LIBRARY_BASE_PATH = 'api/file/etl/'
+# CONFIG_LIBRARY_USER = os.environ['CONFIG_LIBRARY_USER'].rstrip()
+# CONFIG_LIBRARY_PASS = os.environ['CONFIG_LIBRARY_PASS'].rstrip()
+# CONFIG_LIBRARY_URL = os.environ['CONFIG_LIBRARY_URL'].rstrip()
 
-BYGGESAGER_CONFIG_FILE = "umt_byggesager_config.json"
-UMT_SBSYS_SFTP_HOST = os.getenv('UMT_SBSYS_SFTP_HOST').rstrip()
-UMT_SBSYS_SFTP_USER = os.getenv('UMT_SBSYS_SFTP_USER').rstrip()
-UMT_SBSYS_SFTP_PASS = os.getenv('UMT_SBSYS_SFTP_PASS').rstrip()
+# BYGGESAGER_CONFIG_FILE = "umt_byggesager_config.json"
+# UMT_SBSYS_SFTP_HOST = os.getenv('UMT_SBSYS_SFTP_HOST').rstrip()
+# UMT_SBSYS_SFTP_USER = os.getenv('UMT_SBSYS_SFTP_USER').rstrip()
+# UMT_SBSYS_SFTP_PASS = os.getenv('UMT_SBSYS_SFTP_PASS').rstrip()
 
-FRONTDESK_DIR = 'Frontdesk'
-RANDERS_TEST_SFTP_USER = os.getenv('RANDERS_TEST_SFTP_USER', None)
-RANDERS_TEST_SFTP_PASS = os.getenv('RANDERS_TEST_SFTP_PASS', None)
-RANDERS_TEST_SFTP_HOST = os.getenv('RANDERS_TEST_SFTP_HOST', None)
+# FRONTDESK_DIR = 'Frontdesk'
+# RANDERS_TEST_SFTP_USER = os.getenv('RANDERS_TEST_SFTP_USER', None)
+# RANDERS_TEST_SFTP_PASS = os.getenv('RANDERS_TEST_SFTP_PASS', None)
+# RANDERS_TEST_SFTP_HOST = os.getenv('RANDERS_TEST_SFTP_HOST', None)
+
 # POSTGRES
 POSTGRES_DB_HOST = os.environ.get('POSTGRES_DB_HOST')
 POSTGRES_DB_USER = os.environ.get('POSTGRES_DB_USER')
