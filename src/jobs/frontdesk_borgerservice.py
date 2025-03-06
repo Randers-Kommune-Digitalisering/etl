@@ -85,7 +85,7 @@ def job():
             connection = db_client.get_connection()
             if connection:
                 logger.info("Attempting to upload operations to PostgreSQL")
-                predictions.to_sql('operations', con=connection, if_exists='replace', index=False)
+                workdata.to_sql('operations', con=connection, if_exists='replace', index=False)
                 logger.info("Updated Frontdesk Borgerservice operations successfully in PostgreSQL")
                 logger.info(f"Operations columns: {predictions.columns.tolist()}")
                 connection.close()
