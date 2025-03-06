@@ -87,7 +87,7 @@ def job():
                 logger.info("Attempting to upload operations to PostgreSQL")
                 workdata.to_sql('operations', con=connection, if_exists='replace', index=False)
                 logger.info("Updated Frontdesk Borgerservice operations successfully in PostgreSQL")
-                logger.info(f"Operations columns: {predictions.columns.tolist()}")
+                logger.info(f"Operations columns: {workdata.columns.tolist()}")
                 connection.close()
             else:
                 logger.error("Failed to connect to PostgreSQL")
