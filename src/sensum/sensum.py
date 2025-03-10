@@ -197,17 +197,8 @@ def merge_df_sensum_mål_and_delmål(
     return result
 
 
-def merge_df_ydelse(ydelse_df, borger_information_df, afdeling_df, group_by, agg_dict, columns):
+def merge_df_ydelse(ydelse_df, afdeling_df, group_by, agg_dict, columns):
     ydelse_df = pd.merge(ydelse_df, afdeling_df[['AfdelingId', 'Navn']], on='AfdelingId', how='left')
-    merged_df = pd.merge(ydelse_df, borger_information_df, on='BorgerId', how='inner')
-
-    result = merged_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
-    result.columns = columns
-
-    return result
-
-
-def process_ydelse_df(ydelse_df, group_by, agg_dict, columns):
     result = ydelse_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
     result.columns = columns
 
