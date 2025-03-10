@@ -207,6 +207,13 @@ def merge_df_ydelse(ydelse_df, borger_information_df, afdeling_df, group_by, agg
     return result
 
 
+def process_ydelse_df(ydelse_df, group_by, agg_dict, columns):
+    result = ydelse_df.groupby(group_by).agg(agg_dict).reset_index(drop=True)
+    result.columns = columns
+
+    return result
+
+
 def sager_afdeling_medarbejder_merge_df(sager_df, afdeling_df, medarbejder_df, group_by, agg_dict, columns):
     sager_df = sager_df.rename(columns={'SagModel': 'Sager_SagModel'})
     afdeling_df = afdeling_df.rename(columns={'Navn': 'AfdelingNavn', 'AfdelingsId': 'AfdelingId'})
