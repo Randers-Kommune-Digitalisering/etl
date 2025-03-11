@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 class ElasticSearchClient:
     def __init__(self, host, port, scheme, username, password):
         self.es = Elasticsearch(
-            hosts=[{'host': host, 'port': port, 'scheme': scheme}],
+            hosts=[{'host': host, 'port': int(port), 'scheme': scheme}],
             http_auth=(username, password)
         )
         self.logger = logging.getLogger(__name__)
