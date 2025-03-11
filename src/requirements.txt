@@ -14,3 +14,4 @@ requests-pkcs12
 SQLAlchemy
 zipfile36
 pymysql
+Elasticsearch
