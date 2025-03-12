@@ -10,7 +10,7 @@ def insert_data_to_db(db_client, data):
         if connection:
             logger.info("Inserting data into PostgreSQL database")
             df = pd.DataFrame(data)
-            df.to_sql('zylinc', con=connection, if_exists='append', index=False)
+            df.to_sql('zylinc', con=connection, if_exists='replace', index=False)
             logger.info("Data successfully inserted into PostgreSQL database")
             connection.close()
         else:
