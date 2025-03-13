@@ -6,13 +6,21 @@ logger = logging.getLogger(__name__)
 
 def insert_data_to_db(db_client, data):
     try:
+        logger.info("Ensuring database exists")
+        db_client.ensure_database_exists()
+        logger.info("Database exists or created successfully")
+
+        logger.info("Attempting to get database connection")
         connection = db_client.get_connection()
         if connection:
-            logger.info("Inserting data into PostgreSQL database")
+            logger.info("Database connection established")
+            logger.info("Converting data to DataFrame")
             df = pd.DataFrame(data)
+            logger.info("DataFrame created, inserting data into PostgreSQL database")
             df.to_sql('zylinc', con=connection, if_exists='replace', index=False)
             logger.info("Data successfully inserted into PostgreSQL database")
             connection.close()
+            logger.info("Database connection closed")
         else:
             raise Exception("Failed to get database connection")
     except Exception as e:
