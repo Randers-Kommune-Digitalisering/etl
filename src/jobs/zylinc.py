@@ -50,18 +50,18 @@ def job():
                 logger.info("Ensuring database exists")
                 db_client.ensure_database_exists()
                 logger.info("Database exists or created successfully")
-
+                connection = db_client.get_connection()
                 logger.info("Attempting to get database connection")
-                with db_client.get_connection() as connection:
-                    if connection:
-                        logger.info("Database connection established")
-                        logger.info("Converting data to DataFrame")
-                        df = pd.DataFrame(data_to_insert)
-                        logger.info("DataFrame created, inserting data into PostgreSQL database")
-                        df.to_sql('zylinc', con=connection, if_exists='replace', index=False, chunksize=1000)
-                        logger.info("Data successfully inserted into PostgreSQL database")
-                    else:
-                        raise Exception("Failed to get database connection")
+                if connection:
+                    logger.info("Database connection established")
+                    logger.info("Converting data to DataFrame")
+                    df = pd.DataFrame(data_to_insert)
+                    logger.info("DataFrame created, inserting data into PostgreSQL database")
+                    df.to_sql('zylinc', con=connection, if_exists='replace', index=False, chunksize=1000)
+                    logger.info("Data successfully inserted into PostgreSQL database")
+                    connection.close()
+                else:
+                    raise Exception("Failed to get database connection")
             except Exception as e:
                 logger.error(f"Error inserting data into PostgreSQL: {e}")
                 return False
