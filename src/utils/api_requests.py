@@ -119,7 +119,7 @@ class APIClient:
         if not any(ele in kwargs for ele in ['method', 'json', 'data', 'files']):
             method = requests.get
         elif 'method' in kwargs:
-            method = getattr(requests, kwargs['method'])
+            method = getattr(requests, kwargs['method'].lower())
         else:
             method = requests.post
 

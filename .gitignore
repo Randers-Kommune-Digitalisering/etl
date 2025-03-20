@@ -161,5 +161,12 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
+# ignore all csv files except for the ones in the config directory
 **/*.csv
+!src/config/*.csv
+
+# ignore all xlsx files
+*.xlsx
+**/*.xlsx
+
 src/utils/certs/*

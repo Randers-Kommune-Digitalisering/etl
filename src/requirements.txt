@@ -1,6 +1,8 @@
 Flask==3.0.3
+lxml
 mariadb
 numpy<2
+openpyxl
 pandas
 prophet
 prometheus-client==0.20.0

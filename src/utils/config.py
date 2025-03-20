@@ -86,3 +86,13 @@ ZYLINC_POSTGRES_DB_USER = os.getenv("ZYLINC_POSTGRES_DB_USER")
 ZYLINC_POSTGRES_DB_PASS = os.getenv("ZYLINC_POSTGRES_DB_PASS")
 ZYLINC_POSTGRES_DB_DATABASE = os.getenv("ZYLINC_POSTGRES_DB_DATABASE")
 ZYLINC_POSTGRES_DB_PORT = os.getenv("ZYLINC_POSTGRES_DB_PORT")
+
+SD_URL = os.environ['SD_URL'].rstrip()
+SD_USER = os.environ['SD_USER'].rstrip()
+SD_PASS = os.environ['SD_PASS'].rstrip()
+
+LOGIVA_URL = os.environ['LOGIVA_URL'].rstrip()
+LOGIVA_USER = os.environ['LOGIVA_USER'].rstrip()
+LOGIVA_PASS = os.environ['LOGIVA_PASS'].rstrip()
+
+SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE = "sd_delta_excluded_units.csv"
