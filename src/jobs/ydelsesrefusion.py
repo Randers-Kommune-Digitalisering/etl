@@ -8,7 +8,7 @@ import pandas as pd
 
 from datetime import timedelta
 
-from config.config import SERVICEPLATFORM_SFTP_REMOTE_DIR, SERVICEPLATFORM_SFTP_HOST, SERVICEPLATFORM_SFTP_USER, SERVICEPLATFORM_SSH_KEY_BASE64, SERVICEPLATFORM_SSH_KEY_PASS
+from utils.config import SERVICEPLATFORM_SFTP_REMOTE_DIR, SERVICEPLATFORM_SFTP_HOST, SERVICEPLATFORM_SFTP_USER, SERVICEPLATFORM_SSH_KEY_BASE64, SERVICEPLATFORM_SSH_KEY_PASS
 from utils.stfp import SFTPClient
 from custom_data_connector import post_data_to_custom_data_connector
 

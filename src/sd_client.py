@@ -84,8 +84,11 @@ class SDClient(APIClient):
             if all(x in df['JobPositionLevelCode'].unique() for x in [0, 2]):
                 return (f"{df.loc[df['JobPositionLevelCode'] == 0, 'JobPositionName'].iloc[0]} ({'RG'}_{profession_id})",
                         f"{df.loc[df['JobPositionLevelCode'] == 2, 'JobPositionName'].iloc[0]} ({'RG'}_{df.loc[df['JobPositionLevelCode'] == 2, 'JobPositionIdentifier'].iloc[0].astype(str).zfill(4)})")
+            elif 0 in df['JobPositionLevelCode'].unique():
+                logger.warning(f'niveau 2 not found for profession {profession_id} - setting it to "Basispersonale (RG_0005)"')
+                return (f"{df.loc[df['JobPositionLevelCode'] == 0, 'JobPositionName'].iloc[0]} ({'RG'}_{profession_id})", 'Basispersonale (RG_0005)')
             else:
-                raise Exception('niveau 0 or niveau 2 not found for profession')
+                raise Exception(f'niveau 0 not found for profession {profession_id}')
 
         except Exception as e:
             logger.error(e)
@@ -119,14 +122,14 @@ class SDClient(APIClient):
             return None
 
     # Returns a tuple with the department id and the profession id
-    def get_employment_details(self, institution_id, cpr_id, employee_id, effective_date=datetime.now()):
+    def get_employment_details(self, institution_id, cpr_id, employee_id, effective_date=datetime.now(), include_status=False):
         try:
-            effective_date = datetime.now().strftime("%Y-%m-%d") if effective_date is None else effective_date
+            # effective_date = datetime.now().strftime("%Y-%m-%d") if effective_date is None else effective_date
             params = {
                 'InstitutionIdentifier': institution_id,
                 'EmploymentIdentifier': employee_id,
                 'PersonCivilRegistrationIdentifier': cpr_id,
-                'EffectiveDate': effective_date,
+                'EffectiveDate': "01.01.5000",  # effective_date,
                 'StatusActiveIndicator': True,
                 'StatusPassiveIndicator': True,
                 'ProfessionIndicator': True,
@@ -153,8 +156,9 @@ class SDClient(APIClient):
                 job_position = p.find('Employment/Profession/JobPositionIdentifier')
                 employment['job_position'] = job_position.text if job_position is not None else None
 
-                status_code = p.find('Employment/EmploymentStatus/EmploymentStatusCode')
-                employment['status_code'] = status_code.text if status_code is not None else None
+                if include_status:
+                    status_code = p.find('Employment/EmploymentStatus/EmploymentStatusCode')
+                    employment['employement_status_code'] = status_code.text if status_code is not None else None
 
                 start_date = p.find('Employment/EmploymentStatus/ActivationDate')
                 employment['start_date'] = start_date.text if start_date is not None else None
@@ -186,7 +190,8 @@ class SDClient(APIClient):
                 'DeactivationTime': end_time,
                 'DepartmentIndicator': True,
                 'EmploymentStatusIndicator': True,
-                'ProfessionIndicator': True
+                'ProfessionIndicator': True,
+                'FutureInformationIndicator': True
             }
 
             res = self.make_request(method='POST', path='GetEmploymentChangedAtDate20070401', params=params)
@@ -198,8 +203,9 @@ class SDClient(APIClient):
                 cpr = e.find('PersonCivilRegistrationIdentifier').text
                 employment = e.find('Employment/EmploymentIdentifier').text
                 date = e.find('Employment/EmploymentStatus/ActivationDate').text if e.find('Employment/EmploymentStatus/ActivationDate') is not None else None
+                employment_status_code = e.find('Employment/EmploymentStatus/EmploymentStatusCode').text if e.find('Employment/EmploymentStatus/EmploymentStatusCode') is not None else None
 
-                employments.append({'cpr': cpr, 'employment_id': employment, 'effective_date': date})
+                employments.append({'cpr': cpr, 'employment_id': employment, 'effective_date': date, 'employement_status_code': employment_status_code})
 
             return employments
 

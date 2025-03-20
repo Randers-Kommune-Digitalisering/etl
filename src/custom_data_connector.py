@@ -2,7 +2,7 @@ import io
 import logging
 import urllib.parse
 
-from config.config import CUSTOM_DATA_CONNECTOR_HOST
+from utils.config import CUSTOM_DATA_CONNECTOR_HOST
 from utils.api_requests import APIClient
 
 

@@ -4,7 +4,7 @@ import logging
 import datetime
 import pandas as pd
 
-from config.config import UDDANNELSESSTATISTIK_URL, UDDANNELSESSTATISTIK_API_KEY
+from utils.config import UDDANNELSESSTATISTIK_URL, UDDANNELSESSTATISTIK_API_KEY
 from utils.api_requests import APIClient
 from custom_data_connector import post_data_to_custom_data_connector
 

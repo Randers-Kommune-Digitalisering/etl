@@ -5,7 +5,7 @@ import re
 from werkzeug import serving
 from prometheus_client import Gauge
 
-from config.config import DEBUG
+from utils.config import DEBUG
 
 # Prometheus
 APP_RUNNING = Gauge('up', '1 - app is running, 0 - app is down', labelnames=['name'])
