@@ -2,12 +2,11 @@ import time
 import base64
 import logging
 
-
 logger = logging.getLogger(__name__)
 
 
 class APIClient:
-    def __init__(self, base_url, api_key=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None):
+    def __init__(self, base_url, api_key=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None, use_bearer=None):
         self.base_url = base_url
         self.api_key = api_key
         self.realm = realm
@@ -15,6 +14,7 @@ class APIClient:
         self.client_secret = client_secret
         self.username = username
         self.password = password
+        self.use_bearer = use_bearer
 
         self.access_token = None
         self.refresh_token = None
@@ -29,7 +29,10 @@ class APIClient:
         try:
             import requests
             if self.api_key:
-                return {'Authorization': f'Bearer {self.api_key}'}
+                if self.use_bearer:
+                    return {'Authorization': f'Bearer {self.api_key}'}
+                else:
+                    return {'Authorization': f'{self.api_key}'}
             elif self.client_id and self.client_secret:
                 if not self.realm:
                     raise ValueError('Realm is required for client_id and client_secret authentication')
@@ -80,11 +83,14 @@ class APIClient:
 
                 return {'Authorization': f'Bearer {self.access_token}'}
             elif self.username and self.password:
-                return {'Authorization': 'Basic ' + base64.b64encode(str.encode(f'{self.username}:{self.password}')).decode()}
+                auth_str = f"{self.username}:{self.password}"
+                b64_auth_str = base64.b64encode(auth_str.encode()).decode()
+                return {'Authorization': f'Basic {b64_auth_str}'}
             else:
                 return {}
         except Exception as e:
             logger.error(e)
+            return {}
 
     def make_request(self, **kwargs):
         if 'path' in kwargs:
@@ -123,6 +129,8 @@ class APIClient:
             kwargs['headers']['Content-Type'] = 'application/json'
 
         response = method(url, **kwargs)
+        if response.status_code != 200:
+            logger.info(response.content)
         response.raise_for_status()
 
         if 'application/json' in response.headers.get('Content-Type', ''):
