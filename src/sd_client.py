@@ -58,7 +58,7 @@ class SDClient(APIClient):
             res = self.make_request(method='POST', path='GetDepartment20080201', params=params)
 
             root = etree.fromstring(res)
-            
+
             departments = root.xpath("//Department")
 
             if len(departments) == 1:
@@ -109,7 +109,7 @@ class SDClient(APIClient):
             res = self.make_request(method='POST', path='GetPerson', params=params)
 
             root = etree.fromstring(res)
-            
+
             persons = root.xpath("//Person")
 
             if len(persons) == 1:
@@ -120,6 +120,33 @@ class SDClient(APIClient):
         except Exception as e:
             logger.error(e)
             return None
+
+    # Returns a string with the person full name
+    # In the form of: PersonGivenName PersonSurnameName
+    def person_exist(self, institution_id, cpr_id, effective_date=datetime.now()):
+        try:
+            params = {
+                'InstitutionIdentifier': institution_id,
+                'PersonCivilRegistrationIdentifier': cpr_id,
+                'EffectiveDate': effective_date.strftime("%Y-%m-%d"),
+                'StatusActiveIndicator': True,
+                'StatusPassiveIndicator': True
+            }
+
+            res = self.make_request(method='POST', path='GetPerson', params=params)
+
+            res_string = res.decode()
+
+            if '<Fault>' in res_string:
+                if 'PersonCivilRegistrationIdentifier' in res_string:
+                    return False
+                else:
+                    raise Exception('api error')
+            else:
+                return True
+
+        except Exception as e:
+            logger.error(e)
 
     # Returns a tuple with the department id and the profession id
     def get_employment_details(self, institution_id, cpr_id, employee_id, effective_date=datetime.now(), include_status=False):
@@ -205,7 +232,7 @@ class SDClient(APIClient):
                 date = e.find('Employment/EmploymentStatus/ActivationDate').text if e.find('Employment/EmploymentStatus/ActivationDate') is not None else None
                 employment_status_code = e.find('Employment/EmploymentStatus/EmploymentStatusCode').text if e.find('Employment/EmploymentStatus/EmploymentStatusCode') is not None else None
 
-                employments.append({'cpr': cpr, 'employment_id': employment, 'effective_date': date, 'employement_status_code': employment_status_code})
+                employments.append({'institution': institution_id, 'cpr': cpr, 'employment_id': employment, 'effective_date': date, 'employement_status_code': employment_status_code})
 
             return employments
 
