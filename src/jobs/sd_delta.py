@@ -12,8 +12,7 @@ from utils.api_requests import APIClient
 from sd_client import SDClient
 from delta_client import DeltaClient
 from logiva_signflow import LogivaSignflowClient
-from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, \
-      SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE, DELTA_URL, DELTA_CERT_BASE64, DELTA_CERT_PASS
+from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE, DELTA_URL, DELTA_CERT_BASE64, DELTA_CERT_PASS
 
 EMPLOYMENT_STATUS = {'0': 'Ansat ikke i løn', '1': 'Aktiv', '3': 'Midlertidig ude af løn', '4': 'Ansat i konflikt', '7': 'Emigreret eller død', '8': 'Fratrådt', '9': 'Pensioneret', 'S': 'Slettet', None: None}
 
