@@ -97,10 +97,7 @@ def get_employments_generate_excel_file(excluded_institutions_df, excluded_depar
             ])
 
             for inst in institutions_to_check:
-                # employees = sd_client.get_employments_with_changes(inst[0], datetime.now() - timedelta(days=1), datetime.now())
-
-                # TEST
-                employees = sd_client.get_employments_with_changes(inst[0], datetime(2025, 3, 19, 0, 0, 0), datetime(2025, 3, 19, 23, 59, 59))
+                employees = sd_client.get_employments_with_changes(inst[0], datetime.now() - timedelta(days=1), datetime.now())
 
                 if employees:
                     # Get departments to exclude for this institution
