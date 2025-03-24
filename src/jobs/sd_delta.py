@@ -6,7 +6,7 @@ import urllib.parse
 import pandas as pd
 
 from io import StringIO
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from utils.api_requests import APIClient
 from sd_client import SDClient
