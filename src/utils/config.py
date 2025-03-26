@@ -96,3 +96,21 @@ LOGIVA_USER = os.environ['LOGIVA_USER'].rstrip()
 LOGIVA_PASS = os.environ['LOGIVA_PASS'].rstrip()
 
 SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE = "sd_delta_excluded_units.csv"
+
+
+ASSET_DB_HOST = os.getenv("ASSET_DB_HOST")
+ASSET_DB_USER = os.getenv("ASSET_DB_USER")
+ASSET_DB_PASS = os.getenv("ASSET_DB_PASS")
+ASSET_DB_DATABASE = os.getenv("ASSET_DB_DATABASE")
+ASSET_DB_PORT = os.getenv("ASSET_DB_PORT")
+
+CAPA_CMS_DB_HOST = os.getenv("CAPA_CMS_DB_HOST")
+CAPA_CMS_DB_USER = os.getenv("CAPA_CMS_DB_USER")
+CAPA_CMS_DB_PASS = os.getenv("CAPA_CMS_DB_PASS")
+CAPA_CMS_DB_DATABASE = os.getenv("CAPA_CMS_DB_DATABASE")
+CAPA_CMS_DB_PORT = os.getenv("CAPA_CMS_DB_PORT")
+
+ASSET_SFTP_HOST = os.getenv("ASSET_SFTP_HOST")
+ASSET_SFTP_USER = os.getenv("ASSET_SFTP_USER")
+ASSET_SFTP_PASS = os.getenv("ASSET_SFTP_PASS")
+ASSET_SFTP_FILE_PATH = 'Computers.csv'
