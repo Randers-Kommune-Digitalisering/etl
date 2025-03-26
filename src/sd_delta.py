@@ -90,37 +90,44 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                             handle_deleted_employment(employee)
                             continue
 
+                        has_active = False
+
                         for date in employee['effective_dates']:
                             extra_employee_details = sd_client.get_employment_details(inst[0], employee['cpr'], employee['employment_id'], date)
+
                             if extra_employee_details:
-                                employee = employee | extra_employee_details
-                                department_name = sd_client.get_department_name(inst[0], employee['department'])
-                                stripped_department_name = re.sub(r'\(.*\)', '', department_name).strip()
+                                if not has_active and extra_employee_details['employement_status_code'] in ['0', '1', '3']:
+                                    has_active = True
 
-                                if excluded_departments.loc[(excluded_departments['DepartmentIdentifier'] == employee['department']) & (excluded_departments['DepartmentName'] == stripped_department_name)].empty:
-                                    niveau0, niveau2 = sd_client.get_profession_names(employee['job_position'])
-                                    employment_status = EMPLOYMENT_STATUS.get(employee['employement_status_code'])
-                                    employee_name = sd_client.get_person_names(inst[0], employee['cpr'])
-                                    if employment_status and employee_name:
-                                        row = {
-                                            'Institutions-niveau': f'{inst[1]} ({inst[0]})',
-                                            'Stamafdeling': department_name,
-                                            'CPR-nummer': employee['cpr'],
-                                            'Navn (for-/efternavn)': employee_name,
-                                            'Stillingskode nuværende': niveau0,
-                                            'Stillingskode niveau 2': niveau2,
-                                            'Startdato': ".".join(reversed(employee['start_date'].split("-"))),
-                                            'Slutdato': ".".join(reversed(employee['end_date'].split("-"))),
-                                            'Ansættelsesstatus': employment_status,
-                                            'Tjenestenummer': employee['employment_id'],
-                                            'Afdeling': employee['department'],
-                                            'Handling': 'x' if int(employee['cpr']) in filtered_signflow_df['CPR'].values and employee['employement_status_code'] in ['0', '1', '3'] else None
-                                        }
+                                if has_active and extra_employee_details['employement_status_code'] not in ['7', '8', '9'] or not has_active:
+                                    employee = employee | extra_employee_details
+                                    department_name = sd_client.get_department_name(inst[0], employee['department'])
+                                    stripped_department_name = re.sub(r'\(.*\)', '', department_name).strip()
 
-                                        all_rows.append(row)
-                                        changes_found += 1
-                                    else:
-                                        logger.warning(f'Employee {employee["employment_id"]} has an unknown status code or name')
+                                    if excluded_departments.loc[(excluded_departments['DepartmentIdentifier'] == employee['department']) & (excluded_departments['DepartmentName'] == stripped_department_name)].empty:
+                                        niveau0, niveau2 = sd_client.get_profession_names(employee['job_position'])
+                                        employment_status = EMPLOYMENT_STATUS.get(employee['employement_status_code'])
+                                        employee_name = sd_client.get_person_names(inst[0], employee['cpr'])
+                                        if employment_status and employee_name:
+                                            row = {
+                                                'Institutions-niveau': f'{inst[1]} ({inst[0]})',
+                                                'Stamafdeling': department_name,
+                                                'CPR-nummer': employee['cpr'],
+                                                'Navn (for-/efternavn)': employee_name,
+                                                'Stillingskode nuværende': niveau0,
+                                                'Stillingskode niveau 2': niveau2,
+                                                'Startdato': ".".join(reversed(employee['start_date'].split("-"))),
+                                                'Slutdato': ".".join(reversed(employee['end_date'].split("-"))),
+                                                'Ansættelsesstatus': employment_status,
+                                                'Tjenestenummer': employee['employment_id'],
+                                                'Afdeling': employee['department'],
+                                                'Handling': 'x' if int(employee['cpr']) in filtered_signflow_df['CPR'].values and employee['employement_status_code'] in ['0', '1', '3'] else None
+                                            }
+
+                                            all_rows.append(row)
+                                            changes_found += 1
+                                        else:
+                                            logger.warning(f'Employee {employee["employment_id"]} has an unknown status code or name')
                             else:
                                 logger.warning(f'Failed to get extra employee details for employee {employee["employment_id"]} in institution {inst[0]} at {date}')
 
