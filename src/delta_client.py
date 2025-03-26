@@ -43,7 +43,6 @@ class DeltaClient(APIClient):
         if len(res['queryResults']) == 1:
             if len(res['queryResults'][0]['instances']) == 1 and res['queryResults'][0]['instancesCount'] == 1:
                 person = res['queryResults'][0]['instances'][0]
-                # active = person['state'] == 'STATE_ACTIVE'
                 no_realated_objects = len(person['inTypeRefs']) == 0
 
                 return no_realated_objects, person['identity']['uuid']

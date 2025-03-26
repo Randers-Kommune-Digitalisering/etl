@@ -96,7 +96,11 @@ LOGIVA_USER = os.environ['LOGIVA_USER'].rstrip()
 LOGIVA_PASS = os.environ['LOGIVA_PASS'].rstrip()
 
 SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE = "sd_delta_excluded_units.csv"
+SD_DELTA_TO_MAIL = os.environ['SD_DELTA_TO_MAIL'].rstrip()
+SD_DELTA_FROM_MAIL = os.environ['SD_DELTA_FROM_MAIL'].rstrip()
 
 DELTA_URL = os.environ['DELTA_URL'].rstrip()
 DELTA_CERT_BASE64 = os.environ['DELTA_CERT_BASE64'].rstrip()
 DELTA_CERT_PASS = os.environ['DELTA_CERT_PASS'].rstrip()
+
+MAIL_SERVER_URL = os.environ['MAIL_SERVER_URL'].rstrip()
