@@ -1,7 +1,7 @@
 import logging
 from utils.database_connection import get_asset_db, get_capa_cms_db
 from capa.capa_data import (
-    create_capa_table_if_not_exists, get_serial_number, insert_serial_numbers,
+    get_serial_number, insert_serial_numbers,
     get_primary_user, update_primary_user, get_department, update_department,
     get_fullname, update_fullname, update_device_license_for_computers
 )
@@ -16,8 +16,6 @@ logger = logging.getLogger(__name__)
 def job():
     try:
         logger.info("Starting Capa data job")
-
-        create_capa_table_if_not_exists(asset_db_client)
 
         serial_number_result = get_serial_number(capa_cms_db_client)
         if serial_number_result:
