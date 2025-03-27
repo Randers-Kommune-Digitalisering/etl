@@ -1,5 +1,5 @@
 import logging
-from utils.sftp_connection import download_csv_from_asset_sftp
+from utils.sftp_connection import get_asset_sftp_client
 from io import StringIO
 import pandas as pd
 
@@ -278,3 +278,11 @@ def get_computer_names_from_csv(csv_data):
     computer_names = [name for name in df['ComputerName'].tolist() if name]
     logger.info(f"Computer Names With Device License: {computer_names}")
     return computer_names
+
+
+def download_csv_from_asset_sftp(sftp_file_path):
+    sftp_client = get_asset_sftp_client()
+    with sftp_client.get_connection() as conn:
+        with conn.open(sftp_file_path, 'r') as file:
+            csv_data = file.read().decode('utf-8')
+    return csv_data
