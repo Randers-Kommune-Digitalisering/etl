@@ -52,15 +52,11 @@ class DatabaseClient:
     def execute_sql(self, sql, params=None):
         try:
             with self.get_connection() as conn:
-                if params:
-                    res = conn.execute(text(sql), params)
-                else:
-                    res = conn.execute(text(sql))
+                res = conn.execute(text(sql), params)
                 if res.returns_rows:
                     return res.fetchall()
                 else:
                     conn.commit()
-                    return None
         except Exception as e:
             self.logger.error(f"Error executing SQL: {e}")
 
