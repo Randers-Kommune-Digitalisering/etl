@@ -3,7 +3,7 @@ import logging
 import re
 import pandas as pd
 
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS
 from sd_client import SDClient
