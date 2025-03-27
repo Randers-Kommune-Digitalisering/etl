@@ -54,13 +54,13 @@ def fetch_data_from_elasticsearch(queue_name, es_client, scroll_size=1000):
 
 def get_queue_names():
     queue_names = [
-            "IT_Digitalisering_1818",
-            "Jobcenter Randers",
-            "Jobcenter_Fleksgruppen_7734",
-            "Jobcenter_Jobservice_7733",
-            "Jobcenter_JobogTilknytning_7732",
-            "Jobcenter_Udviklingshuset_7735",
-            "Jobcenter_Sygedagpenge_7732",
-            "Jobcenter_Team Integration_7738"
-        ]
+        "IT_Digitalisering_1818",
+        "Jobcenter Randers",
+        "Jobcenter_Fleksgruppen_7734",
+        "Jobcenter_Jobservice_7733",
+        "Jobcenter_JobogTilknytning_7732",
+        "Jobcenter_Udviklingshuset_7735",
+        "Jobcenter_Sygedagpenge_7732",
+        "Jobcenter_Team Integration_7738"
+    ]
     return queue_names
