@@ -4,14 +4,14 @@ import logging
 import pandas as pd
 from datetime import datetime, timedelta
 from utils.config import SENSUM_IT_SFTP_REMOTE_DIR
-from utils.sftp_connection import get_sftp_client
+from utils.sftp_connection import get_sensum_sftp_client
 from utils.database_connection import get_db_client
 from sqlalchemy.exc import OperationalError
 
 
 logger = logging.getLogger(__name__)
 
-sftp_client = get_sftp_client()
+sftp_client = get_sensum_sftp_client()
 
 db_client = get_db_client()
 
