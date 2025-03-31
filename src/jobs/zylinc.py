@@ -2,7 +2,7 @@ import logging
 import pandas as pd
 from utils.elastic_search_client import ElasticSearchClient
 from utils.config import ELASTICSEARCH_HOST, ELASTICSEARCH_PORT, ELASTICSEARCH_USER, ELASTICSEARCH_PASS
-from zylinc.zylinc import query_elasticsearch
+from zylinc.zylinc import fetch_data_from_elasticsearch, get_queue_names
 from utils.database_connection import get_db_zylinc
 
 logger = logging.getLogger(__name__)
@@ -26,51 +26,37 @@ def job():
             logger.error("Failed to connect to Elasticsearch")
             return False
 
-        scroll_size = 1000
-        body = {
-            "_source": ["QueueName", "Result", "AgentDisplayName", "ConversationEventType", "TotalDurationInMilliseconds", "EventDurationInMilliseconds", "ConversationEventType"],
-            "query": {
-                "match": {
-                    "QueueName": "IT_Digitalisering_1818"
-                }
-            },
-            "script_fields": {
-                "FormattedStartTimeUtc": {
-                    "script": {
-                        "source": "SimpleDateFormat format = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss'); return format.format(new Date(doc['StartTimeUtc'].value.toInstant().toEpochMilli()));"
-                    }
-                }
-            }
-        }
+        queue_names = get_queue_names()
 
-        try:
-            data_to_insert = query_elasticsearch(es_client, scroll_size, body)
-
+        for queue_name in queue_names:
             try:
-                logger.info("Ensuring database exists")
+                logger.info(f"Processing queue: {queue_name}")
+
+                data_to_insert = fetch_data_from_elasticsearch(queue_name, es_client)
+                if not data_to_insert:
+                    logger.error(f"No data fetched for queue: {queue_name}")
+                    return False
+
+                logger.info(f"Inserting data into database for queue: {queue_name}")
                 db_client.ensure_database_exists()
-                logger.info("Database exists or created successfully")
                 connection = db_client.get_connection()
-                logger.info("Attempting to get database connection")
                 if connection:
                     logger.info("Database connection established")
-                    logger.info("Converting data to DataFrame")
                     df = pd.DataFrame(data_to_insert)
-                    logger.info("DataFrame created, inserting data into PostgreSQL database")
-                    df.to_sql('zylinc', con=connection, if_exists='replace', index=False, chunksize=1000)
-                    logger.info("Data successfully inserted into PostgreSQL database")
+                    table_name = f"zylinc_{queue_name.lower()}"
+                    df.to_sql(table_name, con=connection, if_exists='replace', index=False, chunksize=1000)
+                    logger.info(f"Data successfully inserted into PostgreSQL table: {table_name}")
                     connection.close()
                 else:
                     raise Exception("Failed to get database connection")
+
+                logger.info(f"Queue {queue_name} processed successfully")
             except Exception as e:
-                logger.error(f"Error inserting data into PostgreSQL: {e}")
+                logger.error(f"Error processing queue {queue_name}: {e}")
                 return False
 
-            logger.info("Data saved to PostgreSQL database")
-            return True
-        except Exception as e:
-            logger.error(f"Error querying Elasticsearch: {e}")
-            return False
+        logger.info("All queues processed successfully")
+        return True
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         return False
