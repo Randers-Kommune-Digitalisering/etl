@@ -1,8 +1,8 @@
 import pymssql
 import pandas as pd
 import logging
-import io
-import os
+# import io
+# import os
 # from prophet import Prophet
 from datetime import datetime
 from utils.config import FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_HOST, FRONTDESK_DB_DATABASE
@@ -17,9 +17,9 @@ def job():
     logger.info("Initializing Frontdesk j obcenter job")
 
     try:
-        # workdata = connectToFrontdeskDB()
-        logger.info(os.getcwd())
-        workdata = pd.read_csv('C:\\Users\\dqa8511\\Desktop\\Github\\etl\\src\\jobs\\data\\FrontdeskBorgerserviceTables.csv', sep=';')
+        workdata = connectToFrontdeskDB()
+        # logger.info(os.getcwd())
+        # workdata = pd.read_csv('C:\\Users\\dqa8511\\Desktop\\Github\\etl\\src\\jobs\\data\\FrontdeskBorgerserviceTables.csv', sep=';')
 
     except Exception as e:
         logger.error(e)
@@ -37,17 +37,17 @@ def job():
         db_client.ensure_database_exists()
         connection = db_client.get_connection()
         if connection:
-            logger.info("Attempting to upload Frontdesk jobcenter operations to PostgreSQL")
+            logger.info("Attempting to upload Frontdesk Jobcenter operations to PostgreSQL")
             workdata.to_sql('operationsjobcenter', con=connection, if_exists='replace', index=False)
-            logger.info("Updated Frontdesk jobcenter operations successfully in PostgreSQL")
-            logger.info(f"Frontdesk jobcenter operations columns: {workdata.columns.tolist()}")
+            logger.info("Updated Frontdesk Jobcenter operations successfully in PostgreSQL")
+            logger.info(f"Frontdesk Jobcenter operations columns: {workdata.columns.tolist()}")
             connection.close()
         else:
             logger.error("Failed to connect to PostgreSQL")
             return False
     except Exception as e:
         logger.error(e)
-        logger.error("Failed to update Frontdesk jobcenter operations in PostgreSQL")
+        logger.error("Failed to update Frontdesk Jobcenter operations in PostgreSQL")
         return False
 
     return True
@@ -75,8 +75,22 @@ def transformations(data):
     data = data.drop(columns=['QueueId', 'QueueName', 'MunicipalityID', 'DelayedUntil', 'DelayedFrom', 'IsEmployeeAnonymized', 'QueueCategoryId', 'StateId', 'State'])
 
     # Gemmer data midlertidigt til CSV-fil
-    data.to_csv('C:\\Users\\dqa8511\\Desktop\\Github\\etl\\src\\jobs\\data\\FrontdeskJobcenter.csv', sep=',', index=False)
-
-    logger.info(data)
+    # data.to_csv('C:\\Users\\dqa8511\\Desktop\\Github\\etl\\src\\jobs\\data\\FrontdeskJobcenter.csv', sep=',', index=False)
+    # logger.info(data)
 
     return data
+
+
+def connectToFrontdeskDB():
+    conn = pymssql.connect(FRONTDESK_DB_HOST, FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_DATABASE)
+    cursor = conn.cursor()
+
+    tables = ["Operation"]
+    for table in tables:
+        cursor.execute(f"SELECT * FROM {table}")
+        rows = cursor.fetchall()
+        # logger.info(cursor.description)
+        columns = [desc[0] for desc in cursor.description]
+        df = pd.DataFrame(rows, columns=columns)
+
+    return df
