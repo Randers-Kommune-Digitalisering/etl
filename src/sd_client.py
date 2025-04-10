@@ -162,7 +162,10 @@ class SDClient(APIClient):
                 'StatusPassiveIndicator': True,
                 'ProfessionIndicator': True,
                 'DepartmentIndicator': True,
-                'EmploymentStatusIndicator': True
+                'SalaryCodeGroupIndicator': False,
+                'WorkingTimeIndicator': False,
+                'EmploymentStatusIndicator': True,
+                'SalaryAgreementIndicator': False
             }
 
             res = self.make_request(method='POST', path='GetEmployment20070401', params=params)
@@ -175,8 +178,9 @@ class SDClient(APIClient):
                 p = persons[0]
                 employment = {}
 
-                employment_date = p.find('Employment/EmploymentDate')
-                employment['employment_date'] = employment_date.text if employment_date is not None else None
+                # This is not used - but keeping it for now
+                # employment_date = p.find('Employment/EmploymentDate')
+                # employment['employment_date'] = employment_date.text if employment_date is not None else None
 
                 department = p.find('Employment/Department/DepartmentIdentifier')
                 employment['department'] = department.text if department is not None else None
@@ -184,15 +188,14 @@ class SDClient(APIClient):
                 job_position = p.find('Employment/Profession/JobPositionIdentifier')
                 employment['job_position'] = job_position.text if job_position is not None else None
 
-                # if include_status:
                 status_code = p.find('Employment/EmploymentStatus/EmploymentStatusCode')
                 employment['employement_status_code'] = status_code.text if status_code is not None else None
 
-                start_date = p.find('Employment/EmploymentStatus/ActivationDate')
-                employment['start_date'] = start_date.text if start_date is not None else None
+                start_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(p.xpath('.//ActivationDate/text()')))])]
+                employment['start_date'] = start_dates[-1]
 
-                end_date = p.find('Employment/EmploymentStatus/DeactivationDate')
-                employment['end_date'] = end_date.text if end_date is not None else None
+                end_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(p.xpath('.//DeactivationDate/text()')))])]
+                employment['end_date'] = end_dates[0]
 
                 return employment
             elif len(persons) == 0:
@@ -203,7 +206,7 @@ class SDClient(APIClient):
             logger.error(e)
             return None
 
-    def get_employments_with_changes(self, institution_id, start_datetime=datetime.now() - timedelta(minutes=5), end_datetime=datetime.now()):
+    def get_employments_with_changes(self, institution_id, start_datetime=datetime.now() - timedelta(hours=1), end_datetime=datetime.now()):
         try:
             start_date = start_datetime.strftime("%Y-%m-%d")
             start_time = start_datetime.strftime("%H:%M:%S")
@@ -216,11 +219,11 @@ class SDClient(APIClient):
                 'ActivationTime': start_time,
                 'DeactivationDate': end_date,
                 'DeactivationTime': end_time,
+                'EmploymentStatusIndicator': True,
                 'ProfessionIndicator': True,
                 'DepartmentIndicator': True,
                 'SalaryCodeGroupIndicator': False,
                 'WorkingTimeIndicator': False,
-                'EmploymentStatusIndicator': True,
                 'SalaryAgreementIndicator': False,
                 'FutureInformationIndicator': True
             }

@@ -8,6 +8,7 @@ from sd_client import SDClient
 from delta_client import DeltaClient
 from logiva_signflow import LogivaSignflowClient
 from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, MAIL_SERVER_URL, SD_DELTA_FROM_MAIL, SD_DELTA_TO_MAIL, DELTA_URL, DELTA_CERT_BASE64, DELTA_CERT_PASS
+from datetime import datetime
 
 EMPLOYMENT_STATUS = {'0': 'Ansat ikke i løn', '1': 'Aktiv', '3': 'Midlertidig ude af løn', '4': 'Ansat i konflikt', '7': 'Emigreret eller død', '8': 'Fratrådt', '9': 'Pensioneret', 'S': 'Slettet', None: None}
 
@@ -108,6 +109,12 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                         niveau0, niveau2 = sd_client.get_profession_names(employee['job_position'])
                                         employment_status = EMPLOYMENT_STATUS.get(employee['employement_status_code'])
                                         employee_name = sd_client.get_person_names(inst[0], employee['cpr'])
+                                        
+                                        old_start_date = None
+
+                                        if datetime.strptime(employee['start_date'], '%Y-%m-%d').date() < datetime.today().date():
+                                            old_start_date = delta_client.get_engagement_start_date_based_on_sd_dates(employee['employment_id'], employee['cpr'][:6], employee['start_date'], employee['end_date'])
+                                        
                                         if employment_status and employee_name:
                                             row = {
                                                 'Institutions-niveau': f'{inst[1]} ({inst[0]})',
@@ -116,7 +123,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                                 'Navn (for-/efternavn)': employee_name,
                                                 'Stillingskode nuværende': niveau0,
                                                 'Stillingskode niveau 2': niveau2,
-                                                'Startdato': ".".join(reversed(employee['start_date'].split("-"))),
+                                                'Startdato': ".".join(reversed(old_start_date.split("-"))) if old_start_date else ".".join(reversed(employee['start_date'].split("-"))),
                                                 'Slutdato': ".".join(reversed(employee['end_date'].split("-"))),
                                                 'Ansættelsesstatus': employment_status,
                                                 'Tjenestenummer': employee['employment_id'],

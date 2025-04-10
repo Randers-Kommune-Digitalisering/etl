@@ -3,6 +3,7 @@ import logging
 from urllib.parse import urlparse, urlunparse
 
 from utils.api_requests import APIClient
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +84,76 @@ class DeltaClient(APIClient):
             return True
         else:
             raise Exception(res)
+
+    # Takes and returns dates as strings in the format YYYY-MM-DD
+    def get_engagement_start_date_based_on_sd_dates(self, employment_id, date_of_birth, start_date, end_date):
+        query = {
+            "graphQueries": [
+                {
+                    "computeAvailablePages": False,
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "eng",
+                            "userKey": "APOS-Types-Engagement"
+                        },
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "LIKE",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "eng.$userKey"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": f"%{employment_id}%{date_of_birth}%"
+                                    }
+                                }
+                            ]
+                        },
+                        "projection": {
+                            "identity": True,
+                            "state": True,
+                            "timeline": "FULL"
+                        }
+                    },
+                    "validDate": "NOW",
+                    "limit": 10
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=query)
+
+        if len(res['graphQueryResult']) == 1:
+            start_date = datetime.strptime(start_date, "%Y-%m-%d").date()
+            end_date = datetime.strptime(end_date, "%Y-%m-%d").date()
+            today = datetime.today().date()
+
+            if len(res['graphQueryResult'][0]['instances']) == 1:
+                engagement = res['graphQueryResult'][0]['instances'][0]
+                engagement_timeline = engagement['timeline']
+
+                engagement_timeline = [{**p, 'to': '9999-12-31'} if p['to'] == 'PLUS_INF' else p for p in engagement_timeline]
+
+                dates_between_start_and_end = [datetime.strptime(p['from'], "%Y-%m-%d").date() for p in engagement_timeline if datetime.strptime(p['from'], "%Y-%m-%d").date() >= start_date and datetime.strptime(p['from'], "%Y-%m-%d").date() <= today and datetime.strptime(p['to'], "%Y-%m-%d").date() <= end_date]
+
+                if len(dates_between_start_and_end) == 0:
+                    # No dates which are not in the future and newer than start_date - keeping start_date
+                    return start_date.strftime("%Y-%m-%d")
+                elif len(dates_between_start_and_end) == 1:
+                    d = dates_between_start_and_end[0].strftime("%Y-%m-%d")
+                    return d
+                elif len(dates_between_start_and_end) > 1:
+                    d = sorted(dates_between_start_and_end)
+                    return d[-1].strftime("%Y-%m-%d")
+            elif len(res['graphQueryResult'][0]['instances']) == 0:
+                # No results - probably a new employement
+                return None
+            else:
+                logger.warning("Many engagements returned from Delta for employment_id: %s", employment_id)
 
     def upload_sd_file(self, file_name, file):
         multipart_form_data = {'file': (file_name, file, 'application/vnd.ms-excel')}
