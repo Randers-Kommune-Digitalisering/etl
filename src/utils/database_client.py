@@ -1,4 +1,3 @@
-import sqlalchemy
 import logging
 import urllib.parse
 from sqlalchemy.orm import Session
@@ -50,12 +49,14 @@ class DatabaseClient:
         except Exception as e:
             self.logger.error(f"Error connecting to database: {e}")
 
-    def execute_sql(self, sql):
+    def execute_sql(self, sql, params=None):
         try:
             with self.get_connection() as conn:
-                res = conn.execute(sqlalchemy.text(sql))
-                conn.commit()
-                return res
+                res = conn.execute(text(sql), params)
+                if res.returns_rows:
+                    return res.fetchall()
+                else:
+                    conn.commit()
         except Exception as e:
             self.logger.error(f"Error executing SQL: {e}")
 
