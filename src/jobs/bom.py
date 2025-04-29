@@ -17,12 +17,15 @@ def job():
         url, headers, data = get_bom_data()
 
         response = requests.post(url, headers=headers, data=data,
-                                 auth=HTTPBasicAuth(BROWSERLESS_CLIENT_ID, BROWSERLESS_CLIENT_SECRET), timeout=180)
+                                 auth=HTTPBasicAuth(BROWSERLESS_CLIENT_ID, BROWSERLESS_CLIENT_SECRET), timeout=None)
         logger.info(f"Response content: {response.content}")
 
         if response.status_code == 200 and response.content:
             try:
                 response_json = response.json()
+                for response in response_json:
+                    logger.info(f"Response from json: {response}")
+
                 df = process_and_save_bom_data(response_json)
 
                 logger.info("Inserting data into the database...")
