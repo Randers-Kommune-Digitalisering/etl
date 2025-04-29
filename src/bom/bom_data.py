@@ -158,8 +158,10 @@ def get_bom_data():
                     return { success: false, error: "Failed to handle Servicemal" };
                 }
 
-                // Step 8: Handle date fields
+                // Step 8: Handle date fields for multiple months
                 try {
+                    console.log("Starting to iterate over months...");
+
                     console.log("Clicking on the button to make the date fields visible...");
                     await page.waitForSelector('#datepicker > input:nth-child(2)', { visible: true });
                     const dateButton = await page.$('#datepicker > input:nth-child(2)');
@@ -167,113 +169,143 @@ def get_bom_data():
                     console.log("Date button clicked.");
 
                     const today = new Date();
-                    const firstDayOfCurrentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-                    const lastDayOfPreviousMonth = new Date(firstDayOfCurrentMonth - 1);
-                    const firstDayOfPreviousMonth = new Date(lastDayOfPreviousMonth.getFullYear(), lastDayOfPreviousMonth.getMonth(), 1);
+                    let currentMonth = new Date(2025, 0, 1);
+                    let isFirstIteration = true;
 
-                    const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
-                    const fraDato = firstDayOfPreviousMonth.toLocaleDateString('da-DK', options).replace('\\.', '-');
-                    const tilDato = lastDayOfPreviousMonth.toLocaleDateString('da-DK', options).replace('\\.', '-');
+                    const allData = [];
 
-                    console.log(`Setting date range: Fra Dato = ${fraDato}, Til Dato = ${tilDato}`);
+                    while (currentMonth <= today) {
+                        const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+                        const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
-                    await page.waitForSelector('#datepicker > input:nth-child(1)', { visible: true });
-                    const fraDatoInput = await page.$('#datepicker > input:nth-child(1)');
-                    await fraDatoInput.click();
-                    await fraDatoInput.type(fraDato);
-                    console.log(`Fra Dato set to: ${fraDato}`);
+                        const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
+                        const fraDato = firstDayOfMonth.toLocaleDateString('da-DK', options).replace(/\./g, '-');
+                        const tilDato = lastDayOfMonth.toLocaleDateString('da-DK', options).replace(/\./g, '-');
 
-                    await page.waitForSelector('#datepicker > input:nth-child(2)', { visible: true });
-                    const tilDatoInput = await page.$('#datepicker > input:nth-child(2)');
-                    await tilDatoInput.click();
-                    await tilDatoInput.type(tilDato);
-                    console.log(`Til Dato set to: ${tilDato}`);
+                        console.log(`Setting date range: Fra Dato = ${fraDato}, Til Dato = ${tilDato}`);
 
-                } catch (error) {
-                    console.error("Failed to handle date fields:", error);
-                    return { success: false, error: "Failed to handle date fields" };
-                }
+                        await page.waitForSelector('#datepicker > input:nth-child(1)', { visible: true });
+                        const fraDatoInput = await page.$('#datepicker > input:nth-child(1)');
+                        await fraDatoInput.click({ clickCount: 3 });
+                        await fraDatoInput.type(fraDato);
+                        console.log(`Fra Dato set to: ${fraDato}`);
 
-                // Step 9: Click on the Nogletal button
-                try {
-                    console.log("Clicking on the Nogletal button...");
-                    await page.waitForSelector('#servicemaal-result-toggler > button:nth-child(2)', { visible: true });
-                    const noegtalButton = await page.$('#servicemaal-result-toggler > button:nth-child(2)');
-                    await noegtalButton.click();
-                    await page.waitForTimeout(5000);
-                    console.log("Nogletal button clicked.");
-                } catch (error) {
-                    console.error("Failed to click Nogletal button:", error);
-                    return { success: false, error: "Failed to click Nogletal button" };
-                }
+                        await page.waitForSelector('#datepicker > input:nth-child(2)', { visible: true });
+                        const tilDatoInput = await page.$('#datepicker > input:nth-child(2)');
+                        await tilDatoInput.click({ clickCount: 3 });
+                        await tilDatoInput.type(tilDato);
+                        console.log(`Til Dato set to: ${tilDato}`);
 
-                // Step 10: Extract data
-                try {
-                    console.log("Extracting data...");
+                        if (isFirstIteration) {
+                            // Step 9: Click on the Nogletal button (only for the first iteration)
+                            try {
+                                console.log("Clicking on the Nogletal button...");
+                                await page.waitForSelector('#servicemaal-result-toggler > button:nth-child(2)', { visible: true });
+                                const noegtalButton = await page.$('#servicemaal-result-toggler > button:nth-child(2)');
+                                await noegtalButton.click();
+                                await page.waitForTimeout(5000);
+                                console.log("Nogletal button clicked.");
+                            } catch (error) {
+                                console.error("Failed to click Nogletal button:", error);
+                                return { success: false, error: "Failed to click Nogletal button" };
+                            }
+                            isFirstIteration = false;
+                        } else {
+                            // Step 9: Click on the Sog button (for sub iterations)
+                            try {
+                                console.log("Clicking on the Sog button...");
+                                await page.waitForSelector('body > div > div.container > form > div:nth-child(3) > div > span > button.btn.btn-primary', { visible: true });
+                                const SogButton = await page.$('body > div > div.container > form > div:nth-child(3) > div > span > button.btn.btn-primary');
+                                await SogButton.click();
+                                await page.waitForTimeout(5000);
+                                console.log("Sog button clicked.");
+                            } catch (error) {
+                                console.error("Failed to click Sog button:", error);
+                                return { success: false, error: "Failed to click Sog button" };
+                            }
+                        }
 
-                    const fraDato = await page.$eval('#datepicker > input:nth-child(1)', el => el.value);
-                    const tilDato = await page.$eval('#datepicker > input:nth-child(2)', el => el.value);
+                        // Step 10: Extract data
+                        try {
+                            console.log("Extracting data...");
+                            const fraDato = await page.$eval('#datepicker > input:nth-child(1)', el => el.value);
+                            const tilDato = await page.$eval('#datepicker > input:nth-child(2)', el => el.value);
 
-                    const servicemaalGennemsnit = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(1) > td:nth-child(1)', el => el.textContent.trim());
-                    const sagsbehandlingGennemsnit = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(1) > td:nth-child(4)', el => el.textContent.trim());
-                    const servicemaalProcentGennemsnit = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(1) > td:nth-child(14)', el => el.textContent.trim());
+                            const servicemaalGennemsnit = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(1) > td:nth-child(1)', el => el.textContent.trim());
+                            const sagsbehandlingGennemsnit = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(1) > td:nth-child(4)', el => el.textContent.trim());
+                            const servicemaalProcentGennemsnit = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(1) > td:nth-child(14)', el => el.textContent.trim());
 
-                    const servicemaalSimple = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(2) > td:nth-child(1)', el => el.textContent.trim());
-                    const sagsbehandlingSimple = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(2) > td:nth-child(4)', el => el.textContent.trim());
-                    const servicemaalProcentSimple = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(2) > td:nth-child(14)', el => el.textContent.trim());
+                            const servicemaalSimple = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(2) > td:nth-child(1)', el => el.textContent.trim());
+                            const sagsbehandlingSimple = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(2) > td:nth-child(4)', el => el.textContent.trim());
+                            const servicemaalProcentSimple = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(2) > td:nth-child(14)', el => el.textContent.trim());
 
-                    const servicemaalEnfamilieshuse = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(3) > td:nth-child(1)', el => el.textContent.trim());
-                    const sagsbehandlingEnfamilieshuse = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(3) > td:nth-child(4)', el => el.textContent.trim());
-                    const servicemaalProcentEnfamilieshuse = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(3) > td:nth-child(14)', el => el.textContent.trim());
+                            const servicemaalEnfamilieshuse = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(3) > td:nth-child(1)', el => el.textContent.trim());
+                            const sagsbehandlingEnfamilieshuse = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(3) > td:nth-child(4)', el => el.textContent.trim());
+                            const servicemaalProcentEnfamilieshuse = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(3) > td:nth-child(14)', el => el.textContent.trim());
 
-                    const servicemaalIndustri = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(4) > td:nth-child(1)', el => el.textContent.trim());
-                    const sagsbehandlingIndustri = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(4) > td:nth-child(4)', el => el.textContent.trim());
-                    const servicemaalProcentIndustri = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(4) > td:nth-child(14)', el => el.textContent.trim());
+                            const servicemaalIndustri = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(4) > td:nth-child(1)', el => el.textContent.trim());
+                            const sagsbehandlingIndustri = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(4) > td:nth-child(4)', el => el.textContent.trim());
+                            const servicemaalProcentIndustri = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(4) > td:nth-child(14)', el => el.textContent.trim());
 
-                    const servicemaalEtageErhverv = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(5) > td:nth-child(1)', el => el.textContent.trim());
-                    const sagsbehandlingEtageErhverv = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(5) > td:nth-child(4)', el => el.textContent.trim());
-                    const servicemaalProcentEtageErhverv = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(5) > td:nth-child(14)', el => el.textContent.trim());
+                            const servicemaalEtageErhverv = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(5) > td:nth-child(1)', el => el.textContent.trim());
+                            const sagsbehandlingEtageErhverv = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(5) > td:nth-child(4)', el => el.textContent.trim());
+                            const servicemaalProcentEtageErhverv = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(5) > td:nth-child(14)', el => el.textContent.trim());
 
-                    const servicemaalEtageBoliger = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(6) > td:nth-child(1)', el => el.textContent.trim());
-                    const sagsbehandlingEtageBoliger = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(6) > td:nth-child(4)', el => el.textContent.trim());
-                    const servicemaalProcentEtageBoliger = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(6) > td:nth-child(14)', el => el.textContent.trim());
+                            const servicemaalEtageBoliger = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(6) > td:nth-child(1)', el => el.textContent.trim());
+                            const sagsbehandlingEtageBoliger = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(6) > td:nth-child(4)', el => el.textContent.trim());
+                            const servicemaalProcentEtageBoliger = await page.$eval('#servicemaal-noegletal-table > tbody > tr:nth-child(6) > td:nth-child(14)', el => el.textContent.trim());
 
-                    console.log("Data extracted successfully:");
-                    console.log(`Fra Dato: ${fraDato}, Til Dato: ${tilDato}`);
-                    console.log(`Servicemal Gennemsnit: ${servicemaalGennemsnit}, Sagsbehandling Gennemsnit: ${sagsbehandlingGennemsnit}, Servicemal Procent Gennemsnit: ${servicemaalProcentGennemsnit}`);
-                    console.log(`Servicemal Simple: ${servicemaalSimple}, Sagsbehandling Simple: ${sagsbehandlingSimple}, Servicemal Procent Simple: ${servicemaalProcentSimple}`);
-                    console.log(`Servicemal Enfamilieshuse: ${servicemaalEnfamilieshuse}, Sagsbehandling Enfamilieshuse: ${sagsbehandlingEnfamilieshuse}, Servicemal Procent Enfamilieshuse: ${servicemaalProcentEnfamilieshuse}`);
-                    console.log(`Servicemal Industri: ${servicemaalIndustri}, Sagsbehandling Industri: ${sagsbehandlingIndustri}, Servicemal Procent Industri: ${servicemaalProcentIndustri}`);
-                    console.log(`Servicemal Etage Erhverv: ${servicemaalEtageErhverv}, Sagsbehandling Etage Erhverv: ${sagsbehandlingEtageErhverv}, Servicemal Procent Etage Erhverv: ${servicemaalProcentEtageErhverv}`);
-                    console.log(`Servicemal Etage Boliger: ${servicemaalEtageBoliger}, Sagsbehandling Etage Boliger: ${sagsbehandlingEtageBoliger}, Servicemal Procent Etage Boliger: ${servicemaalProcentEtageBoliger}`);
+                            console.log("Data extracted successfully:");
+                            console.log(`Fra Dato: ${fraDato}, Til Dato: ${tilDato}`);
+                            console.log(`Servicemal Gennemsnit: ${servicemaalGennemsnit}, Sagsbehandling Gennemsnit: ${sagsbehandlingGennemsnit}, Servicemal Procent Gennemsnit: ${servicemaalProcentGennemsnit}`);
+                            console.log(`Servicemal Simple: ${servicemaalSimple}, Sagsbehandling Simple: ${sagsbehandlingSimple}, Servicemal Procent Simple: ${servicemaalProcentSimple}`);
+                            console.log(`Servicemal Enfamilieshuse: ${servicemaalEnfamilieshuse}, Sagsbehandling Enfamilieshuse: ${sagsbehandlingEnfamilieshuse}, Servicemal Procent Enfamilieshuse: ${servicemaalProcentEnfamilieshuse}`);
+                            console.log(`Servicemal Industri: ${servicemaalIndustri}, Sagsbehandling Industri: ${sagsbehandlingIndustri}, Servicemal Procent Industri: ${servicemaalProcentIndustri}`);
+                            console.log(`Servicemal Etage Erhverv: ${servicemaalEtageErhverv}, Sagsbehandling Etage Erhverv: ${sagsbehandlingEtageErhverv}, Servicemal Procent Etage Erhverv: ${servicemaalProcentEtageErhverv}`);
+                            console.log(`Servicemal Etage Boliger: ${servicemaalEtageBoliger}, Sagsbehandling Etage Boliger: ${sagsbehandlingEtageBoliger}, Servicemal Procent Etage Boliger: ${servicemaalProcentEtageBoliger}`);
+                            console.log("Data extraction completed for this month.");
 
-                    console.log("Data extraction completed.");
+                            allData.push({
+                                "Fra Dato": fraDato,
+                                "Til Dato": tilDato,
+                                "Kategori": [
+                                    servicemaalGennemsnit, servicemaalSimple, servicemaalEnfamilieshuse,
+                                    servicemaalIndustri, servicemaalEtageErhverv, servicemaalEtageBoliger
+                                ],
+                                "Sagsbehandling": [
+                                    sagsbehandlingGennemsnit, sagsbehandlingSimple, sagsbehandlingEnfamilieshuse,
+                                    sagsbehandlingIndustri, sagsbehandlingEtageErhverv, sagsbehandlingEtageBoliger
+                                ],
+                                "Servicemal Procent": [
+                                    servicemaalProcentGennemsnit, servicemaalProcentSimple, servicemaalProcentEnfamilieshuse,
+                                    servicemaalProcentIndustri, servicemaalProcentEtageErhverv, servicemaalProcentEtageBoliger
+                                ]
+                            });
+
+                            console.log("Data extracted successfully for this month.");
+
+                        } catch (error) {
+                            console.error("Failed to extract data:", error);
+                            return { success: false, error: "Failed to extract data" };
+                        }
+
+                        console.log("Moving to the next month...")
+                        currentMonth.setMonth(currentMonth.getMonth() + 1);
+                    }
+
+                    console.log("Finished iterating over all months.");
 
                     return {
                         data: {
-                            "Til Dato": tilDato.trim(),
-                            "Fra Dato": fraDato.trim(),
-                            "Kategori": [
-                                servicemaalGennemsnit, servicemaalSimple, servicemaalEnfamilieshuse,
-                                servicemaalIndustri, servicemaalEtageErhverv, servicemaalEtageBoliger
-                            ],
-                            "Sagsbehandling": [
-                                sagsbehandlingGennemsnit, sagsbehandlingSimple, sagsbehandlingEnfamilieshuse,
-                                sagsbehandlingIndustri, sagsbehandlingEtageErhverv, sagsbehandlingEtageBoliger
-                            ],
-                            "Servicemal Procent": [
-                                servicemaalProcentGennemsnit, servicemaalProcentSimple, servicemaalProcentEnfamilieshuse,
-                                servicemaalProcentIndustri, servicemaalProcentEtageErhverv, servicemaalProcentEtageBoliger
-                            ]
+                            allData
                         },
                         type: 'application/json'
                     };
 
                 } catch (error) {
-                    console.error("Failed to extract data:", error);
-                    return { success: false, error: "Failed to extract data" };
+                    console.error("Failed to handle date fields:", error);
+                    return { success: false, error: "Failed to handle date fields" };
                 }
-
             } catch (error) {
                 console.error("An unexpected error occurred:", error);
                 return { success: false, error: error.message };
@@ -285,25 +317,41 @@ def get_bom_data():
 
 def process_and_save_bom_data(response_json):
     try:
-        kategori = response_json.get("Kategori", [])
-        sagsbehandling = response_json.get("Sagsbehandling", [])
-        servicemaal_procent = response_json.get("Servicemal Procent", [])
-        fra_dato = response_json.get("Fra Dato", "")
-        til_dato = response_json.get("Til Dato", "")
+        all_data = response_json.get("allData", [])
 
-        logger.info(f"Fra Dato: {fra_dato}, Til Dato: {til_dato}")
-        logger.info(f"Kategori: {kategori}")
-        logger.info(f"Sagsbehandling: {sagsbehandling}")
-        logger.info(f"Servicemål i procent: {servicemaal_procent}")
+        if not all_data:
+            logger.info("No data found in response.")
+            return None
 
-        df = pd.DataFrame({
-            "Dato": fra_dato,
-            "Kategori": kategori,
-            "Sagsbehandlingstid": sagsbehandling,
-            "Servicemål i procent": servicemaal_procent
-        })
+        all_rows = []
 
+        for date_data in all_data:
+            logger.info(f"Processing Date data: {date_data}")
+
+            fra_dato = date_data.get("Fra Dato", "").strip()
+            til_dato = date_data.get("Til Dato", "").strip()
+            kategori = date_data.get("Kategori", [])
+            sagsbehandling = date_data.get("Sagsbehandling", [])
+            servicemaal_procent = date_data.get("Servicemal Procent", [])
+
+            logger.info(f"Fra Dato: {fra_dato}, Til Dato: {til_dato}")
+            logger.info(f"Kategori: {kategori}")
+            logger.info(f"Sagsbehandling: {sagsbehandling}")
+            logger.info(f"Servicemål i procent: {servicemaal_procent}")
+
+            for i in range(len(kategori)):
+                all_rows.append({
+                    "Fra Dato": fra_dato,
+                    "Kategori": kategori[i] if i < len(kategori) else None,
+                    "Sagsbehandlingstid": sagsbehandling[i] if i < len(sagsbehandling) else None,
+                    "Servicemål i procent": servicemaal_procent[i] if i < len(servicemaal_procent) else None
+                })
+
+        df = pd.DataFrame(all_rows)
+
+        logger.info("Data processed successfully.")
         return df
+
     except Exception as e:
         logger.error(f"Failed to process and save data: {e}")
         return None
