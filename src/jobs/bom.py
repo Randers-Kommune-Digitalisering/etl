@@ -34,7 +34,7 @@ def job():
                 if connection:
                     logger.info("Database connection established")
                     table_name = "bom_data"
-                    df.to_sql(table_name, con=connection, if_exists='replace', index=False)
+                    df.to_sql(table_name, con=connection, if_exists='append', index=False)
                     logger.info(f"Data successfully inserted into PostgreSQL table: {table_name}")
                     connection.close()
                 else:
