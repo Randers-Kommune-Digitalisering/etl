@@ -169,12 +169,12 @@ def get_bom_data():
                     console.log("Date button clicked.");
 
                     const today = new Date();
-                    let currentMonth = new Date(2024, 8, 1);
+                    let currentMonth = new Date(2023, 0, 1);
                     let isFirstIteration = true;
 
                     const allData = [];
 
-                    while (currentMonth.getMonth() < 12 && currentMonth.getFullYear() === 2024) {
+                    while (currentMonth.getMonth() < 4 && currentMonth.getFullYear() === 2023) {
                         const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
                         const lastDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 0);
 
