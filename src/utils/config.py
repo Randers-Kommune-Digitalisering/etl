@@ -100,8 +100,10 @@ SD_DELTA_TO_MAIL = os.environ['SD_DELTA_TO_MAIL'].rstrip()
 SD_DELTA_FROM_MAIL = os.environ['SD_DELTA_FROM_MAIL'].rstrip()
 
 DELTA_URL = os.environ['DELTA_URL'].rstrip()
-DELTA_CERT_BASE64 = os.environ['DELTA_CERT_BASE64'].rstrip()
-DELTA_CERT_PASS = os.environ['DELTA_CERT_PASS'].rstrip()
+DELTA_CLIENT_ID = os.environ["DELTA_CLIENT_ID"].strip()
+DELTA_CLIENT_SECRET = os.environ["DELTA_CLIENT_SECRET"].strip()
+DELTA_REALM = '730'
+DELTA_AUTH_URL = "https://idp.opus-universe.kmd.dk"
 
 MAIL_SERVER_URL = os.environ['MAIL_SERVER_URL'].rstrip()
 

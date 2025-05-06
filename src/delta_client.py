@@ -1,7 +1,5 @@
 import logging
 
-from urllib.parse import urlparse, urlunparse
-
 from utils.api_requests import APIClient
 from datetime import datetime
 
@@ -9,10 +7,8 @@ logger = logging.getLogger(__name__)
 
 
 class DeltaClient(APIClient):
-    def __init__(self, base_url, password, cert_base64):
-        parsed_url = urlparse(base_url)
-        cleaned_base_url = urlunparse((parsed_url.scheme, parsed_url.netloc, '', '', '', ''))
-        super().__init__(cleaned_base_url, password=password, cert_base64=cert_base64)
+    def __init__(self, base_url, auth_url, realm, client_id, client_secret, add_auth_to_path=False):
+        super().__init__(base_url=base_url, auth_url=auth_url, realm=realm, client_id=client_id, client_secret=client_secret, add_auth_to_path=add_auth_to_path)
 
     # returns a tuple with a boolean and the person uuid
     def person_can_deactivate(self, cpr):

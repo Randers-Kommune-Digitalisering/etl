@@ -35,7 +35,7 @@ class LogivaSignflowClient:
                 # returns csv on second request
                 res = session.get(endpoint, params=params)
                 res.raise_for_status()
-                
+
                 # parse csv to dataframe
                 colnames = ['Name', 'CPR', 'Assigned Login', 'DQ-number', 'From Date', 'LOS', 'Action', 'Creation time', 'Case Number', 'los1', 'los2', 'los3', 'los4', 'los5', 'los6', 'los7', 'los8', 'los9', 'manager email']
                 df = pd.read_csv(StringIO(res.content.decode('cp1252')), sep='\t', names=colnames, header=None, index_col=False)

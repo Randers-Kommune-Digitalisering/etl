@@ -7,14 +7,15 @@ from utils.api_requests import APIClient
 from sd_client import SDClient
 from delta_client import DeltaClient
 from logiva_signflow import LogivaSignflowClient
-from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, MAIL_SERVER_URL, SD_DELTA_FROM_MAIL, SD_DELTA_TO_MAIL, DELTA_URL, DELTA_CERT_BASE64, DELTA_CERT_PASS
+from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, MAIL_SERVER_URL, SD_DELTA_FROM_MAIL, SD_DELTA_TO_MAIL, \
+    DELTA_URL, DELTA_CLIENT_ID, DELTA_CLIENT_SECRET, DELTA_REALM, DELTA_AUTH_URL
 from datetime import datetime
 
 EMPLOYMENT_STATUS = {'0': 'Ansat ikke i løn', '1': 'Aktiv', '3': 'Midlertidig ude af løn', '4': 'Ansat i konflikt', '7': 'Emigreret eller død', '8': 'Fratrådt', '9': 'Pensioneret', 'S': 'Slettet', None: None}
 
 logger = logging.getLogger(__name__)
 sd_client = SDClient(SD_URL, SD_USER, SD_PASS)
-delta_client = DeltaClient(DELTA_URL, DELTA_CERT_PASS, DELTA_CERT_BASE64)
+delta_client = DeltaClient(base_url=DELTA_URL, auth_url=DELTA_AUTH_URL, realm=DELTA_REALM, client_id=DELTA_CLIENT_ID, client_secret=DELTA_CLIENT_SECRET)
 ls_client = LogivaSignflowClient(LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS)
 mail_client = APIClient(base_url=MAIL_SERVER_URL)
 
@@ -109,12 +110,12 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                         niveau0, niveau2 = sd_client.get_profession_names(employee['job_position'])
                                         employment_status = EMPLOYMENT_STATUS.get(employee['employement_status_code'])
                                         employee_name = sd_client.get_person_names(inst[0], employee['cpr'])
-                                        
+
                                         old_start_date = None
 
                                         if datetime.strptime(employee['start_date'], '%Y-%m-%d').date() < datetime.today().date():
                                             old_start_date = delta_client.get_engagement_start_date_based_on_sd_dates(employee['employment_id'], employee['cpr'][:6], employee['start_date'], employee['end_date'])
-                                        
+
                                         if employment_status and employee_name:
                                             row = {
                                                 'Institutions-niveau': f'{inst[1]} ({inst[0]})',
