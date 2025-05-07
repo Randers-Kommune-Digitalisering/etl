@@ -17,4 +17,4 @@ requests-pkcs12
 SQLAlchemy
 zipfile36
 pymysql
-Elasticsearch
+Elasticsearch==8.17.2
