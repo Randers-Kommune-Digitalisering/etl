@@ -1,4 +1,4 @@
-from elasticsearch import Elasticsearch
+from elasticsearch8 import Elasticsearch
 import logging
 
 
@@ -9,7 +9,7 @@ class ElasticSearchClient:
     def __init__(self, host, port, scheme, username, password):
         self.es = Elasticsearch(
             hosts=[{'host': host, 'port': int(port), 'scheme': scheme}],
-            http_auth=(username, password)
+            basic_auth=(username, password)
         )
         self.logger = logging.getLogger(__name__)
 
