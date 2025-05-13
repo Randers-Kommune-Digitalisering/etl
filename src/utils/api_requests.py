@@ -6,9 +6,10 @@ logger = logging.getLogger(__name__)
 
 
 class APIClient:
-    def __init__(self, base_url, api_key=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None, use_bearer=None):
+    def __init__(self, base_url, api_key=None, auth_url=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None, use_bearer=None, add_auth_to_path=True):
         self.base_url = base_url
         self.api_key = api_key
+        self.auth_url = auth_url
         self.realm = realm
         self.client_id = client_id
         self.client_secret = client_secret
@@ -21,6 +22,8 @@ class APIClient:
         self.token_expiry = None
         self.refresh_token_expiry = None
         self.cert_data = None
+
+        self.add_auth_to_path = add_auth_to_path
 
         if cert_base64:
             self.cert_data = base64.b64decode(cert_base64)
@@ -37,6 +40,8 @@ class APIClient:
                 if not self.realm:
                     raise ValueError('Realm is required for client_id and client_secret authentication')
 
+                refresh_token = False
+
                 if self.access_token:
                     if self.token_expiry:
                         if time.time() < self.token_expiry:
@@ -47,7 +52,12 @@ class APIClient:
                                     if time.time() < self.refresh_token_expiry:
                                         refresh_token = True
 
-                tmp_url = f'{self.base_url}/auth/realms/{self.realm}/protocol/openid-connect/token'
+                tmp_base_url = self.auth_url or self.base_url
+
+                if self.add_auth_to_path:
+                    tmp_url = f'{tmp_base_url}/auth/realms/{self.realm}/protocol/openid-connect/token'
+                else:
+                    tmp_url = f'{tmp_base_url}/realms/{self.realm}/protocol/openid-connect/token'
 
                 tmp_headers = {
                     'Content-Type': 'application/x-www-form-urlencoded'
@@ -70,7 +80,7 @@ class APIClient:
 
                 now = time.time()
 
-                response = requests.post(tmp_url, headers=tmp_headers, data=tmp_url)
+                response = requests.post(tmp_url, headers=tmp_headers, data=tmp_json_data)
                 response.raise_for_status()
                 data = response.json()
 
@@ -119,7 +129,7 @@ class APIClient:
         if not any(ele in kwargs for ele in ['method', 'json', 'data', 'files']):
             method = requests.get
         elif 'method' in kwargs:
-            method = getattr(requests, kwargs['method'])
+            method = getattr(requests, kwargs['method'].lower())
         else:
             method = requests.post
 
