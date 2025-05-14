@@ -40,7 +40,7 @@ def job():
             if delta_client.upload_sd_file(file_name, excel_file.read()):
                 # Only send mail if the job is run between 15:00 and 23:59
                 if time(15, 0) <= end_time.time() < time(23, 59, 59):
-                    action_only_df = all_df[all_df['Action'] == 'x']
+                    action_only_df = all_df[all_df['Handling'] == 'x']
                     action_only_excel_file = df_to_excel_bytes(action_only_df)
                     send_mail_with_attachment(file_name, action_only_excel_file, start_time, end_time)
                 return True
