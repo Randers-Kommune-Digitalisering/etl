@@ -61,6 +61,7 @@ def get_queue_names():
         "Jobcenter_JobogTilknytning_7732",
         "Jobcenter_Udviklingshuset_7735",
         "Jobcenter_Sygedagpenge_7732",
-        "Jobcenter_Team Integration_7738"
+        "Jobcenter_Team Integration_7738",
+        "Hovednummer_89151515"
     ]
     return queue_names
