@@ -23,7 +23,7 @@ mail_client = APIClient(base_url=MAIL_SERVER_URL)
 def send_mail_with_attachment(file_name, file_bytes, start_time, end_time):
     payload = {
         'from': SD_DELTA_FROM_MAIL,
-        'to': SD_DELTA_TO_MAIL,
+        'to': 'rune.aagaard.keena@randers.dk',
         'title': 'SD Delta Robot opdatering',
         'body': f'Vedhæftet er en liste over personer med ændringer i SD og har "nyansat" i Logiva/Signflow for perioden {start_time.strftime("%H:%M:%S %d/%m-%Y")} - {end_time.strftime("%H:%M:%S %d/%m-%Y")}',
         'attachments': {'filename': file_name, 'content': list(file_bytes.getvalue())}
