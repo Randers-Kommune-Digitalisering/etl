@@ -39,6 +39,17 @@ def get_data(name, years_back, dataset, period_format, data_to_get):
 
         df[f'Periode {name}'] = df['Periode'].apply(convert_to_datetime)
 
+        rename_map = {
+            "Area": "Område",
+            "Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Forventet antal": "Forventet antal",
+            "Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Faktisk antal": "Faktisk antal",
+            "Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Forskel mellem forventet og faktisk antal": "Forskel mellem forventet og faktisk antal",
+            "Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forventet andel (pct.)": "Forventet andel (pct.)",
+            "Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Faktisk andel (pct.)": "Faktisk andel (pct.)",
+            "Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forskel mellem forventet og faktisk andel (pct. point)": "Forskel mellem forventet og faktisk andel (pct. point)"
+        }
+        df.rename(columns=rename_map, inplace=True)
+
         output_table = f"jobindsats_{dataset.replace('_', '').lower()}"
 
         db_client.ensure_database_exists()
