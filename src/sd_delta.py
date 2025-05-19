@@ -23,10 +23,23 @@ mail_client = APIClient(base_url=MAIL_SERVER_URL)
 def send_mail_with_attachment(file_name, file_bytes, start_time, end_time):
     payload = {
         'from': SD_DELTA_FROM_MAIL,
-        'to': SD_DELTA_TO_MAIL,
+        # 'to': SD_DELTA_TO_MAIL,
+        'to': 'rune.aagaard.keena@randers.dk',
         'title': 'SD Delta Robot opdatering',
         'body': f'Vedhæftet er en liste over personer med ændringer i SD og har "nyansat" i Logiva/Signflow for perioden {start_time.strftime("%H:%M:%S %d/%m-%Y")} - {end_time.strftime("%H:%M:%S %d/%m-%Y")}',
         'attachments': {'filename': file_name, 'content': list(file_bytes.getvalue())}
+    }
+
+    mail_client.make_request(method='POST', json=payload)
+
+
+def send_mail():
+    payload = {
+        'from': SD_DELTA_FROM_MAIL,
+        # 'to': SD_DELTA_TO_MAIL,
+        'to': 'rune.aagaard.keena@randers.dk',
+        'title': 'SD Delta Robot opdatering',
+        'body': 'Ingen brugeroprettelser i SD Delta roboten.'
     }
 
     mail_client.make_request(method='POST', json=payload)
@@ -61,11 +74,12 @@ def handle_deleted_employment(employee):
         logger.warning(f'Failed to deactivated person with employment {employee["employment_id"]} with error: {e}')
 
 
-def get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_datetime, end_datetime):
+def get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_datetime, end_datetime, include_logiva=False):
     try:
         all_institutions_df = sd_client.get_all_institutions_df()
 
         if isinstance(all_institutions_df, pd.DataFrame) and not all_institutions_df.empty:
+            logger.info('Handling employments with changes in SD')
             merged_institutions = all_institutions_df.merge(excluded_institutions_df[["InstitutionIdentifier", "InstitutionName"]], on=['InstitutionIdentifier', 'InstitutionName'], how='left', indicator=True)
 
             # institutions_to_check is a list of tuples with the institution identifier and name
@@ -78,7 +92,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
             all_rows = []
 
             for inst in institutions_to_check:
-                employees = sd_client.get_employments_with_changes(inst[0], start_datetime=start_datetime, end_datetime=end_datetime)
+                employees = sd_client.get_employments_with_changes(inst[0], start_datetime=start_datetime, end_datetime=end_datetime)             
 
                 if employees:
                     # Get departments to exclude for this institution
@@ -141,11 +155,68 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
 
                     logger.info(f'{changes_found} changes found for institution {inst}')
 
-            return pd.DataFrame(all_rows)
+            # Handle logiva
+            if include_logiva:
+                logger.info('Handling Logiva signflow authorizations')
+                all_rows_cprs = {row['CPR-nummer'] for row in all_rows}
+                missing_signflow = filtered_signflow_df[~filtered_signflow_df['CPR'].isin(all_rows_cprs)][['CPR', 'From Date']]
+                missing_cprs_with_dates = set(missing_signflow.itertuples(index=False, name=None))
 
+                logiva_rows = []
+
+                for cpr, from_date in missing_cprs_with_dates:
+                    logiva_emp_details = delta_client.get_engagement(str(cpr))
+                    if logiva_emp_details:
+                        extra_employee_details = sd_client.get_employment_details(
+                            logiva_emp_details['institution_code'],
+                            logiva_emp_details['cpr'],
+                            logiva_emp_details['employment_id'],
+                            from_date
+                        )
+                        if extra_employee_details:
+                            department_name = sd_client.get_department_name(logiva_emp_details['institution_code'], extra_employee_details['department'])
+                            niveau0, niveau2 = sd_client.get_profession_names(extra_employee_details['job_position'])
+                            employment_status = EMPLOYMENT_STATUS.get(extra_employee_details['employement_status_code'])
+                            employee_name = sd_client.get_person_names(logiva_emp_details['institution_code'], logiva_emp_details['cpr'])
+
+                            old_start_date = None
+
+                            if datetime.strptime(extra_employee_details['start_date'], '%Y-%m-%d').date() < datetime.today().date():
+                                old_start_date = delta_client.get_engagement_start_date_based_on_sd_dates(logiva_emp_details['employment_id'], logiva_emp_details['cpr'][:6], extra_employee_details['start_date'], extra_employee_details['end_date'])
+
+                            institution_name = next((name for code, name in institutions_to_check if str(code) == str(logiva_emp_details['institution_code'])), None)
+                            if institution_name:
+                                if employment_status and employee_name:
+                                    row = {
+                                        'Institutions-niveau': f'{institution_name} ({logiva_emp_details["institution_code"]})',
+                                        'Stamafdeling': department_name,
+                                        'CPR-nummer': logiva_emp_details['cpr'],
+                                        'Navn (for-/efternavn)': employee_name,
+                                        'Stillingskode nuværende': niveau0,
+                                        'Stillingskode niveau 2': niveau2,
+                                        'Startdato': ".".join(reversed(old_start_date.split("-"))) if old_start_date else ".".join(reversed(extra_employee_details['start_date'].split("-"))),
+                                        'Slutdato': ".".join(reversed(extra_employee_details['end_date'].split("-"))),
+                                        'Ansættelsesstatus': employment_status,
+                                        'Tjenestenummer': logiva_emp_details['employment_id'],
+                                        'Afdeling': extra_employee_details['department'],
+                                        'Handling': 'x'
+                                    }
+
+                                    logiva_rows.append(row)
+                            else:
+                                raise Exception(f'Institution {logiva_emp_details["institution_code"]} not found in institutions_to_check')
+
+                all_rows.extend(logiva_rows)
+            return pd.DataFrame(all_rows)
         else:
             logger.error('Failed to get institutions from SD')
             return
     except Exception as e:
-        logger.error(e)
+        import traceback
+        tb = traceback.extract_tb(e.__traceback__)
+        if tb:
+            line_number = tb[-1].lineno
+            logger.error(f"Error on line {line_number}: {e}")
+        else:
+            logger.error(e)
         return

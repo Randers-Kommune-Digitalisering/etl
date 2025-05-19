@@ -199,7 +199,8 @@ class SDClient(APIClient):
 
                 return employment
             elif len(persons) == 0:
-                raise Exception('No results found')
+                # raise Exception('No results found')
+                logger.warning('No results found')
             else:
                 raise Exception('Multiple results found')
         except Exception as e:
