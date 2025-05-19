@@ -1,16 +1,16 @@
-import io
 import logging
 from datetime import datetime
-
 import pandas as pd
 from utils.api_requests import APIClient
 from utils.config import JOBINDSATS_API_KEY, JOBINDSATS_URL
-from custom_data_connector import post_data_to_custom_data_connector
+from utils.database_connection import get_jobindsats_db
 
 logger = logging.getLogger(__name__)
 
 base_url = JOBINDSATS_URL
 jobindsats_client = APIClient(base_url, JOBINDSATS_API_KEY)
+
+db_client = get_jobindsats_db()
 
 
 def get_data(name, years_back, dataset, period_format, data_to_get):
@@ -39,15 +39,28 @@ def get_data(name, years_back, dataset, period_format, data_to_get):
 
         df[f'Periode {name}'] = df['Periode'].apply(convert_to_datetime)
 
-        df.rename(columns={"Area": "Område"}, inplace=True)
+        rename_map = {
+            "Area": "Område",
+            "Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Forventet antal": "Forventet antal",
+            "Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Faktisk antal": "Faktisk antal",
+            "Forventet og faktisk antal fuldtidspersoner på offentlig forsørgelse: Forskel mellem forventet og faktisk antal": "Forskel mellem forventet og faktisk antal",
+            "Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forventet andel (pct.)": "Forventet andel (pct.)",
+            "Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Faktisk andel (pct.)": "Faktisk andel (pct.)",
+            "Forventet og faktisk andel fuldtidspersoner på offentlig forsørgelse: Forskel mellem forventet og faktisk andel (pct. point)": "Forskel mellem forventet og faktisk andel (pct. point)"
+        }
+        df.rename(columns=rename_map, inplace=True)
 
-        file = io.BytesIO(df.to_csv(index=False, sep=';').encode('utf-8'))
-        filename = f"SAJobindsats{dataset.replace('_', '').upper()}.csv"
+        output_table = f"jobindsats_{dataset.replace('_', '').lower()}"
 
-        if post_data_to_custom_data_connector(filename, file):
-            logger.info(f"Successfully updated {filename}")
+        db_client.ensure_database_exists()
+        connection = db_client.get_connection()
+        if connection:
+            df.to_sql(output_table, con=connection, if_exists='replace', index=False)
+            logger.info(f"Successfully saved {output_table} to the database")
+            connection.close()
             return True
         else:
+            logger.error("Failed to get database connection")
             return False
 
     except Exception as e:
