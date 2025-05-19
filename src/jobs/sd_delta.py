@@ -38,14 +38,6 @@ def job():
 
         file_name = f'sd-delta-robot_{end_time.strftime("%Y-%m-%d_%H-%M-%S")}.xlsx'
 
-        print(include_logiva)
-        print(start_time)
-        print(end_time)
-        print(all_df)
-        print('Handling' in all_df.columns and not all_df['Handling'].isnull().all())
-        print(time(8, 0) <= end_time.time() < time(11, 0))
-        return True
-
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
                 if 'Handling' in all_df.columns and not all_df['Handling'].isnull().all():

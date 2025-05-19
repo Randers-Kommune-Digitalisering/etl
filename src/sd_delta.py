@@ -87,6 +87,9 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
 
             # Signflow autherizations
             signflow_df = ls_client.get_it_department_authorizations_df()
+            if not signflow_df:
+                raise Exception('Failed to get signflow authorizations')
+
             filtered_signflow_df = signflow_df.loc[(signflow_df['Action'] == 'Nyansat') & (signflow_df['Assigned Login'].isnull())]
 
             all_rows = []
@@ -160,13 +163,11 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                 logger.info('Handling Logiva signflow authorizations')
                 all_rows_cprs = {row['CPR-nummer'] for row in all_rows}
                 missing_signflow = filtered_signflow_df[~filtered_signflow_df['CPR'].isin(all_rows_cprs)][['CPR', 'From Date']]
-                print(missing_signflow)
                 missing_cprs_with_dates = set(missing_signflow.itertuples(index=False, name=None))
 
                 logiva_rows = []
 
                 for cpr, from_date in missing_cprs_with_dates:
-                    print(cpr, from_date)
                     logiva_emp_details = delta_client.get_engagement(str(cpr))
                     if logiva_emp_details:
                         extra_employee_details = sd_client.get_employment_details(

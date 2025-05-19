@@ -267,30 +267,3 @@ class DeltaClient(APIClient):
                 logger.warning("Many engagements returned from Delta")
                 pass
 
-
-            # if has_apos_types_user:
-            #     user_refs = [ref for ref in in_type_refs if ref.get('refObjTypeUserKey') == 'APOS-Types-User']
-            #     print(len(user_refs))
-            #     for user_ref in user_refs:
-            #         if user_ref:
-            #             dqnummer = user_ref.get('targetObject', {}).get('identity', {}).get('userKey', None)
-            #             print(dqnummer)
-
-    # def get_current_valid_period_dict(timeline, today=None):
-    #     if today is None:
-    #         today = datetime.today().date()
-    #     for period in timeline:
-    #         from_date = datetime.strptime(period['from'], "%Y-%m-%d").date()
-    #         to_str = period['to']
-    #         if to_str == "PLUS_INF":
-    #             to_date = datetime(9999, 12, 31).date()
-    #             to_formatted = "31.12.9999"
-    #         else:
-    #             to_date = datetime.strptime(to_str, "%Y-%m-%d").date()
-    #             to_formatted = to_date.strftime("%d.%m.%Y")
-    #         if from_date <= today < to_date:
-    #             return {
-    #                 "Startdato": from_date.strftime("%d.%m.%Y"),
-    #                 "Slutdato": to_formatted
-    #             }
-    #     return None
