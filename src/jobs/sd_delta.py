@@ -30,7 +30,7 @@ def job():
         end_time = datetime.now(pytz.timezone("Europe/Copenhagen"))
         start_time = end_time - timedelta(days=1)
 
-        include_logiva = time(8, 0) <= end_time.time() < time(11, 0)
+        include_logiva = time(17, 0) <= end_time.time() < time(19, 0)
 
         all_df = get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_time, end_time, include_logiva)
 
@@ -41,7 +41,7 @@ def job():
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
                 if 'Handling' in all_df.columns and not all_df['Handling'].isnull().all():
-                    if time(8, 0) <= end_time.time() < time(11, 0):
+                    if time(17, 0) <= end_time.time() < time(19, 0):
                         action_only_df = all_df[all_df['Handling'] == 'x']
                         action_only_excel_file = df_to_excel_bytes(action_only_df)
                         send_mail_with_attachment(file_name, action_only_excel_file, start_time, end_time)
