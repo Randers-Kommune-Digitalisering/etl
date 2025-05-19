@@ -18,6 +18,7 @@ config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_L
 
 def job():
     try:
+        logger.info("Starting SD Delta job...")
         excluded_config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE)
         excluded_config_file = config_library_client.make_request(path=excluded_config_path)
         if not excluded_config_file:
@@ -47,7 +48,7 @@ def job():
                         send_mail_with_attachment(file_name, action_only_excel_file, start_time, end_time)
                 else:
                     send_mail()
-                    logger.info("No employees with 'Handling'. Skipping email sending.")
+                logger.info("SD Delta job done")
                 return True
         return False
     except Exception as e:

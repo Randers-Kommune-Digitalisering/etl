@@ -85,7 +85,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
 
             # Signflow autherizations
             signflow_df = ls_client.get_it_department_authorizations_df()
-            if not signflow_df:
+            if not isinstance(signflow_df, pd.DataFrame):
                 raise Exception('Failed to get signflow authorizations')
 
             filtered_signflow_df = signflow_df.loc[(signflow_df['Action'] == 'Nyansat') & (signflow_df['Assigned Login'].isnull())]

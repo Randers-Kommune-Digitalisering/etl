@@ -33,7 +33,7 @@ class LogivaSignflowClient:
                 res = session.get(endpoint, params=params)
                 res.raise_for_status()
 
-                if "ikke er i listen over godkendte" in res.content:
+                if "ikke er i listen over godkendte" in res.text:
                     raise ValueError("IP is not in the list of authorized IPs")
                 # returns csv on second request
                 res = session.get(endpoint, params=params)
