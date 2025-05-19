@@ -256,15 +256,15 @@ class DeltaClient(APIClient):
             if not has_apos_types_user:
                 return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
             else:
-                # logger.info("Engagement has user")
+                logger.info("Engagement has user")
                 pass
 
         else:
             if len(instances) == 0:
-                # logger.info("No engagement found in Delta")
+                logger.info("No engagement found in Delta")
                 pass
             else:
-                # logger.warning("Many engagements returned from Delta")
+                logger.warning("Many engagements returned from Delta")
                 pass
 
 

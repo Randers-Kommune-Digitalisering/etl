@@ -160,13 +160,13 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                 logger.info('Handling Logiva signflow authorizations')
                 all_rows_cprs = {row['CPR-nummer'] for row in all_rows}
                 missing_signflow = filtered_signflow_df[~filtered_signflow_df['CPR'].isin(all_rows_cprs)][['CPR', 'From Date']]
+                print(missing_signflow)
                 missing_cprs_with_dates = set(missing_signflow.itertuples(index=False, name=None))
 
                 logiva_rows = []
 
-                print(missing_cprs_with_dates)
-
                 for cpr, from_date in missing_cprs_with_dates:
+                    print(cpr, from_date)
                     logiva_emp_details = delta_client.get_engagement(str(cpr))
                     if logiva_emp_details:
                         extra_employee_details = sd_client.get_employment_details(
