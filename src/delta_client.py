@@ -266,4 +266,3 @@ class DeltaClient(APIClient):
             else:
                 logger.warning("Many engagements returned from Delta")
                 pass
-

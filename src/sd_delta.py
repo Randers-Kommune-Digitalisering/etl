@@ -23,8 +23,7 @@ mail_client = APIClient(base_url=MAIL_SERVER_URL)
 def send_mail_with_attachment(file_name, file_bytes, start_time, end_time):
     payload = {
         'from': SD_DELTA_FROM_MAIL,
-        # 'to': SD_DELTA_TO_MAIL,
-        'to': 'rune.aagaard.keena@randers.dk',
+        'to': SD_DELTA_TO_MAIL,
         'title': 'SD Delta Robot opdatering',
         'body': f'Vedhæftet er en liste over personer med ændringer i SD og har "nyansat" i Logiva/Signflow for perioden {start_time.strftime("%H:%M:%S %d/%m-%Y")} - {end_time.strftime("%H:%M:%S %d/%m-%Y")}',
         'attachments': {'filename': file_name, 'content': list(file_bytes.getvalue())}
@@ -36,8 +35,7 @@ def send_mail_with_attachment(file_name, file_bytes, start_time, end_time):
 def send_mail():
     payload = {
         'from': SD_DELTA_FROM_MAIL,
-        # 'to': SD_DELTA_TO_MAIL,
-        'to': 'rune.aagaard.keena@randers.dk',
+        'to': SD_DELTA_TO_MAIL,
         'title': 'SD Delta Robot opdatering',
         'body': 'Ingen brugeroprettelser i SD Delta roboten.'
     }
@@ -95,7 +93,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
             all_rows = []
 
             for inst in institutions_to_check:
-                employees = sd_client.get_employments_with_changes(inst[0], start_datetime=start_datetime, end_datetime=end_datetime)             
+                employees = sd_client.get_employments_with_changes(inst[0], start_datetime=start_datetime, end_datetime=end_datetime)
 
                 if employees:
                     # Get departments to exclude for this institution
