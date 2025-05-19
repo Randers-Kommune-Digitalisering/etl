@@ -38,6 +38,7 @@ def job():
 
         file_name = f'sd-delta-robot_{end_time.strftime("%Y-%m-%d_%H-%M-%S")}.xlsx'
 
+        print(include_logiva)
         print(start_time)
         print(end_time)
         print(all_df)

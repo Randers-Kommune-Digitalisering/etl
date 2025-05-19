@@ -1,4 +1,5 @@
 import logging
+import pytz
 import pandas as pd
 
 from lxml import etree
@@ -149,9 +150,9 @@ class SDClient(APIClient):
             logger.error(e)
 
     # Returns a tuple with the department id and the profession id
-    def get_employment_details(self, institution_id, cpr_id, employee_id, effective_date=datetime.now()):
+    def get_employment_details(self, institution_id, cpr_id, employee_id, effective_date=None):
         try:
-            effective_date = datetime.now().strftime("%Y-%m-%d") if effective_date is None else effective_date
+            effective_date = datetime.now(pytz.timezone("Europe/Copenhagen")).strftime("%Y-%m-%d") if effective_date is None else effective_date
 
             params = {
                 'InstitutionIdentifier': institution_id,
