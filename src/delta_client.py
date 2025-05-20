@@ -244,7 +244,10 @@ class DeltaClient(APIClient):
 
         instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
 
-        if len(instances) == 1:
+        if len(instances) == 0:
+            # logger.info("No engagement found in Delta")
+            return
+        elif len(instances) == 1:
             instance = instances[0]
             engagement_userkey = instance.get('identity', {}).get('userKey', '')
             employment_id = engagement_userkey.split('.')[1] if '.' in engagement_userkey else None
@@ -258,11 +261,20 @@ class DeltaClient(APIClient):
             else:
                 # logger.info("Engagement has user")
                 pass
-
         else:
-            if len(instances) == 0:
-                # logger.info("No engagement found in Delta")
-                pass
+            logger.info("Many engagements returned from Delta")
+            # Filter out instances that have an APOS-Types-User
+            filtered_instances = [
+                inst for inst in instances
+                if not any(ref.get('refObjTypeUserKey') == 'APOS-Types-User' for ref in inst.get('inTypeRefs', []))
+            ]
+            if len(filtered_instances) == 1:
+                instance = filtered_instances[0]
+                engagement_userkey = instance.get('identity', {}).get('userKey', '')
+                employment_id = engagement_userkey.split('.')[1] if '.' in engagement_userkey else None
+                institution_code = engagement_userkey[:2]
+                return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
+            elif len(filtered_instances) == 0:
+                logger.warning("All engagements have APOS-Types-User")
             else:
-                # logger.warning("Many engagements returned from Delta")
-                pass
+                logger.warning("Multiple engagements without APOS-Types-User")
