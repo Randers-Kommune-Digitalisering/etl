@@ -161,8 +161,16 @@ class DeltaClient(APIClient):
         else:
             raise Exception(res)
 
-    # Takes and returns dates as strings in the format YYYY-MM-DD
-    def get_engagement(self, cpr):
+    # Takes cpr and returns a dictionary with employment_id, institution_code and cpr
+    # or None if no engagement is found, or if the engagement has an APOS-Types-User, or if multiple engagements are found
+    def get_engagement_without_user(self, cpr, from_date):
+        if from_date and '.' in from_date:
+            try:
+                from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
+            except ValueError:
+                logger.warning("from_date format is invalid: %s", from_date)
+                return
+
         query = {
             "graphQueries": [
                 {
@@ -234,7 +242,7 @@ class DeltaClient(APIClient):
                             ]
                         }
                     },
-                    "validDate": "NOW",
+                    "validDate": f"{from_date}",
                     "limit": 10
                 }
             ]
@@ -245,7 +253,7 @@ class DeltaClient(APIClient):
         instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
 
         if len(instances) == 0:
-            # logger.info("No engagement found in Delta")
+            logger.info("No engagement found in Delta")
             return
         elif len(instances) == 1:
             instance = instances[0]
@@ -259,7 +267,7 @@ class DeltaClient(APIClient):
             if not has_apos_types_user:
                 return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
             else:
-                # logger.info("Engagement has user")
+                logger.info("Engagement has user")
                 pass
         else:
             logger.info("Many engagements returned from Delta")

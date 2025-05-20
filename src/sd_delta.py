@@ -166,7 +166,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                 logiva_rows = []
 
                 for cpr, from_date in missing_cprs_with_dates:
-                    logiva_emp_details = delta_client.get_engagement(str(cpr))
+                    logiva_emp_details = delta_client.get_engagement_without_user(cpr, from_date)
                     if logiva_emp_details:
                         extra_employee_details = sd_client.get_employment_details(
                             logiva_emp_details['institution_code'],
