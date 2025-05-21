@@ -32,13 +32,23 @@ class LogivaSignflowClient:
                 # returns html on first request - ignore response
                 res = session.get(endpoint, params=params)
                 res.raise_for_status()
+
+                if "ikke er i listen over godkendte" in res.text:
+                    raise ValueError("IP is not in the list of authorized IPs")
                 # returns csv on second request
                 res = session.get(endpoint, params=params)
                 res.raise_for_status()
 
                 # parse csv to dataframe
                 colnames = ['Name', 'CPR', 'Assigned Login', 'DQ-number', 'From Date', 'LOS', 'Action', 'Creation time', 'Case Number', 'los1', 'los2', 'los3', 'los4', 'los5', 'los6', 'los7', 'los8', 'los9', 'manager email']
-                df = pd.read_csv(StringIO(res.content.decode('cp1252')), sep='\t', names=colnames, header=None, index_col=False)
+                df = pd.read_csv(
+                    StringIO(res.content.decode('cp1252')),
+                    sep='\t',
+                    names=colnames,
+                    header=None,
+                    index_col=False,
+                    dtype={'CPR': str, 'From Date': str}
+                )
 
                 # logout
                 endpoint = f'{self.base_url}/usr/auth/logout'

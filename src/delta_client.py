@@ -160,3 +160,129 @@ class DeltaClient(APIClient):
             return True
         else:
             raise Exception(res)
+
+    # Takes cpr and returns a dictionary with employment_id, institution_code and cpr
+    # or None if no engagement is found, or if the engagement has an APOS-Types-User, or if multiple engagements are found
+    def get_engagement_without_user(self, cpr, from_date):
+        if from_date and '.' in from_date:
+            try:
+                from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
+            except ValueError:
+                logger.warning("from_date format is invalid: %s", from_date)
+                return
+
+        query = {
+            "graphQueries": [
+                {
+                    "computeAvailablePages": False,
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "eng",
+                            "userKey": "APOS-Types-Engagement",
+                            "relations": [
+                                {
+                                    "alias": "person",
+                                    "title": "APOS-Types-Engagement-TypeRelation-Person",
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-Person",
+                                    "typeUserKey": "APOS-Types-Person",
+                                    "direction": "OUT"
+                                },
+                                {
+                                    "alias": "user",
+                                    "title": "APOS-Types-User-TypeRelation-Engagement",
+                                    "userKey": "APOS-Types-User-TypeRelation-Engagement",
+                                    "typeUserKey": "APOS-Types-User",
+                                    "direction": "IN"
+                                }
+                            ]
+                        },
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "eng.person.$userKey"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": f"{cpr}"
+                                    }
+                                },
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "eng.$state"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": "STATE_ACTIVE"
+                                    }
+                                }
+                            ]
+                        },
+                        "projection": {
+                            "identity": True,
+                            "state": True,
+                            "timeline": "FULL",
+                            "attributes": [
+                                "APOS-Types-Engagement-Attribute-SDUnitCode"
+                            ],
+                            "incomingTypeRelations": [
+                                {
+                                    "userKey": "APOS-Types-User-TypeRelation-Engagement",
+                                    "projection": {
+                                        "identity": True
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "validDate": f"{from_date}",
+                    "limit": 10
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=query)
+
+        instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
+
+        if len(instances) == 0:
+            logger.info("No engagement found in Delta")
+            return
+        elif len(instances) == 1:
+            instance = instances[0]
+            engagement_userkey = instance.get('identity', {}).get('userKey', '')
+            employment_id = engagement_userkey.split('.')[1] if '.' in engagement_userkey else None
+            institution_code = engagement_userkey[:2]
+
+            in_type_refs = instance.get('inTypeRefs', [])
+            has_apos_types_user = any(ref.get('refObjTypeUserKey') == 'APOS-Types-User' for ref in in_type_refs)
+
+            if not has_apos_types_user:
+                return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
+            else:
+                logger.info("Engagement has user")
+                pass
+        else:
+            logger.info("Many engagements returned from Delta")
+            # Filter out instances that have an APOS-Types-User
+            filtered_instances = [
+                inst for inst in instances
+                if not any(ref.get('refObjTypeUserKey') == 'APOS-Types-User' for ref in inst.get('inTypeRefs', []))
+            ]
+            if len(filtered_instances) == 1:
+                instance = filtered_instances[0]
+                engagement_userkey = instance.get('identity', {}).get('userKey', '')
+                employment_id = engagement_userkey.split('.')[1] if '.' in engagement_userkey else None
+                institution_code = engagement_userkey[:2]
+                return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
+            elif len(filtered_instances) == 0:
+                logger.warning("All engagements have APOS-Types-User")
+            else:
+                logger.warning("Multiple engagements without APOS-Types-User")

@@ -6,7 +6,7 @@ import pandas as pd
 from io import StringIO
 from datetime import datetime, timedelta, time
 
-from sd_delta import delta_client, get_employments_with_changes_df, send_mail_with_attachment, df_to_excel_bytes
+from sd_delta import delta_client, get_employments_with_changes_df, send_mail_with_attachment, df_to_excel_bytes, send_mail
 from utils.api_requests import APIClient
 
 from utils.config import CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE
@@ -18,6 +18,7 @@ config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_L
 
 def job():
     try:
+        logger.info("Starting SD Delta job...")
         excluded_config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE)
         excluded_config_file = config_library_client.make_request(path=excluded_config_path)
         if not excluded_config_file:
@@ -30,7 +31,9 @@ def job():
         end_time = datetime.now(pytz.timezone("Europe/Copenhagen"))
         start_time = end_time - timedelta(days=1)
 
-        all_df = get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_time, end_time)
+        include_logiva = time(8, 0) <= end_time.time() < time(10, 0)
+
+        all_df = get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_time, end_time, include_logiva)
 
         excel_file = df_to_excel_bytes(all_df)
 
@@ -38,11 +41,14 @@ def job():
 
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
-                # Only send mail if the job is run between 15:00 and 23:59
-                if time(15, 0) <= end_time.time() < time(23, 59, 59):
-                    action_only_df = all_df[all_df['Handling'] == 'x']
-                    action_only_excel_file = df_to_excel_bytes(action_only_df)
-                    send_mail_with_attachment(file_name, action_only_excel_file, start_time, end_time)
+                if 'Handling' in all_df.columns and not all_df['Handling'].isnull().all():
+                    if time(8, 0) <= end_time.time() < time(10, 0):
+                        action_only_df = all_df[all_df['Handling'] == 'x']
+                        action_only_excel_file = df_to_excel_bytes(action_only_df)
+                        send_mail_with_attachment(file_name, action_only_excel_file, start_time, end_time)
+                else:
+                    send_mail()
+                logger.info("SD Delta job done")
                 return True
         return False
     except Exception as e:
