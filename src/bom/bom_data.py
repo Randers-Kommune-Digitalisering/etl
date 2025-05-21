@@ -174,7 +174,7 @@ def get_bom_data():
 
                     const allData = [];
 
-                    while (currentMonth.getMonth() < 4 && currentMonth.getFullYear() === 2023) {
+                    while (currentMonth.getMonth() < 4 && currentMonth.getFullYear() === 2024) {
                         const firstDayOfMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
                         const firstDayNextMonth = new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1, 1);
 
