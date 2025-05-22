@@ -169,7 +169,7 @@ def get_bom_data():
                     console.log("Date button clicked.");
 
                     const today = new Date();
-                    let currentMonth = new Date(2025, 8, 1);
+                    let currentMonth = new Date(2025, 0, 1);
                     let isFirstIteration = true;
 
                     const allData = [];
