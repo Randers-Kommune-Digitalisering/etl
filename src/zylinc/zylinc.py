@@ -62,6 +62,12 @@ def get_queue_names():
         "Jobcenter_Udviklingshuset_7735",
         "Jobcenter_Sygedagpenge_7732",
         "Jobcenter_Team Integration_7738",
-        "Hovednummer_89151515"
+        "Hovednummer_89151515",
+        "TM_Byggesag_5100",
+        "Borgerservice_Boliglån_1984",
+        "Borgerservice_Folkeregister_1978",
+        "Borgerservice_Pas_Korekort_89159000",
+        "Borgerservice_Pension_89151986",
+        "Borgerservice_Team Information_89159001"
     ]
     return queue_names
