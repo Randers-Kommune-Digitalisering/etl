@@ -144,7 +144,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                                 'Ansættelsesstatus': employment_status,
                                                 'Tjenestenummer': employee['employment_id'],
                                                 'Afdeling': employee['department'],
-                                                'Handling': 'x' if int(employee['cpr']) in filtered_signflow_df['CPR'].values and employee['employement_status_code'] in ['0', '1', '3'] else None
+                                                'Handling': 'x' if employee['cpr'] in filtered_signflow_df['CPR'].values and employee['employement_status_code'] in ['0', '1', '3'] else None
                                             }
 
                                             all_rows.append(row)

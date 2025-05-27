@@ -168,8 +168,11 @@ class DeltaClient(APIClient):
             try:
                 from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
             except ValueError:
-                logger.warning("from_date format is invalid: %s", from_date)
-                return
+                try:
+                    from_date = datetime.strptime(from_date, "%d.%m.%y").strftime("%Y-%m-%d")
+                except ValueError:
+                    logger.warning("from_date format is invalid: %s", from_date)
+                    return
 
         query = {
             "graphQueries": [
@@ -267,10 +270,9 @@ class DeltaClient(APIClient):
             if not has_apos_types_user:
                 return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
             else:
-                logger.info("Engagement has user")
+                logger.info("Only engagement has user")
                 pass
         else:
-            logger.info("Many engagements returned from Delta")
             # Filter out instances that have an APOS-Types-User
             filtered_instances = [
                 inst for inst in instances
@@ -283,6 +285,6 @@ class DeltaClient(APIClient):
                 institution_code = engagement_userkey[:2]
                 return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
             elif len(filtered_instances) == 0:
-                logger.warning("All engagements have APOS-Types-User")
+                logger.info("All engagements have APOS-Types-User")
             else:
                 logger.warning("Multiple engagements without APOS-Types-User")

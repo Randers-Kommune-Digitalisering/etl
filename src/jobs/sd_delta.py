@@ -41,11 +41,10 @@ def job():
 
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
-                if 'Handling' in all_df.columns and not all_df['Handling'].isnull().all():
-                    if time(8, 0) <= end_time.time() < time(10, 0):
-                        action_only_df = all_df[all_df['Handling'] == 'x']
-                        action_only_excel_file = df_to_excel_bytes(action_only_df)
-                        send_mail_with_attachment(file_name, action_only_excel_file, start_time, end_time)
+                if time(8, 0) <= end_time.time() < time(10, 0):
+                    # action_only_df = all_df[all_df['Handling'] == 'x']
+                    # action_only_excel_file = df_to_excel_bytes(action_only_df)
+                    send_mail_with_attachment(file_name, excel_file, start_time, end_time)
                 else:
                     send_mail()
                 logger.info("SD Delta job done")
