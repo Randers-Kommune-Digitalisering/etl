@@ -33,4 +33,14 @@ app = create_app()
 
 if __name__ == "__main__":  # pragma: no cover
     # initialize_db()
-    app.run(debug=DEBUG, host='0.0.0.0', port=PORT)
+    # app.run(debug=DEBUG, host='0.0.0.0', port=PORT)
+    import requests
+    from utils.config import DELTA_AUTH_URL
+    import time
+
+    while True:
+        try:
+            res = requests.get(DELTA_AUTH_URL, timeout=1)
+            time.sleep(3)
+        except Exception as e:
+            logger.error(f"Failed to connect to DELTA_AUTH_URL: {DELTA_AUTH_URL}, error: {e}")
