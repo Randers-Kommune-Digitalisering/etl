@@ -41,6 +41,8 @@ if __name__ == "__main__":  # pragma: no cover
     while True:
         try:
             res = requests.get(DELTA_AUTH_URL, timeout=1)
+            print(res.status_code)
+            print(res.content)
             time.sleep(3)
         except Exception as e:
             logger.error(f"Failed to connect to DELTA_AUTH_URL: {DELTA_AUTH_URL}, error: {e}")
