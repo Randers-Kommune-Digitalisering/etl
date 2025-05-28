@@ -80,7 +80,13 @@ class APIClient:
 
                 now = time.time()
 
+                logger.info(f"Requesting token from {tmp_url} with data: {tmp_json_data}")
+
                 response = requests.post(tmp_url, headers=tmp_headers, data=tmp_json_data)
+
+                logger.info(f"Response status code: {response.status_code}")
+                logger.info(f"Response content: {response.content}")
+
                 response.raise_for_status()
                 data = response.json()
 
@@ -138,7 +144,13 @@ class APIClient:
         if 'json' in kwargs:
             kwargs['headers']['Content-Type'] = 'application/json'
 
+        logger.info(f"Making request to {url} with kwargs: {kwargs}")
+
         response = method(url, **kwargs)
+
+        logger.info(f"Response status code: {response.status_code}")
+        logger.info(f"Response content: {response.content}")
+
         if response.status_code != 200:
             logger.info(response.content)
         response.raise_for_status()
