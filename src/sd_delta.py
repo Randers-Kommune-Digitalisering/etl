@@ -144,7 +144,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                                 'Ansættelsesstatus': employment_status,
                                                 'Tjenestenummer': employee['employment_id'],
                                                 'Afdeling': employee['department'],
-                                                'Handling': 'x' if int(employee['cpr']) in filtered_signflow_df['CPR'].values and employee['employement_status_code'] in ['0', '1', '3'] else None
+                                                'Handling': 'x' if employee['cpr'] in filtered_signflow_df['CPR'].values and employee['employement_status_code'] in ['0', '1', '3'] else None
                                             }
 
                                             all_rows.append(row)
@@ -166,46 +166,47 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                 logiva_rows = []
 
                 for cpr, from_date in missing_cprs_with_dates:
-                    logiva_emp_details = delta_client.get_engagement_without_user(cpr, from_date)
-                    if logiva_emp_details:
-                        extra_employee_details = sd_client.get_employment_details(
-                            logiva_emp_details['institution_code'],
-                            logiva_emp_details['cpr'],
-                            logiva_emp_details['employment_id'],
-                            from_date
-                        )
-                        if extra_employee_details:
-                            department_name = sd_client.get_department_name(logiva_emp_details['institution_code'], extra_employee_details['department'])
-                            niveau0, niveau2 = sd_client.get_profession_names(extra_employee_details['job_position'])
-                            employment_status = EMPLOYMENT_STATUS.get(extra_employee_details['employement_status_code'])
-                            employee_name = sd_client.get_person_names(logiva_emp_details['institution_code'], logiva_emp_details['cpr'])
+                    logiva_emp_list = delta_client.get_engagement_without_user(cpr, from_date)
+                    if logiva_emp_list:
+                        for logiva_emp_details in logiva_emp_list:
+                            extra_employee_details = sd_client.get_employment_details(
+                                logiva_emp_details['institution_code'],
+                                logiva_emp_details['cpr'],
+                                logiva_emp_details['employment_id'],
+                                from_date
+                            )
+                            if extra_employee_details:
+                                department_name = sd_client.get_department_name(logiva_emp_details['institution_code'], extra_employee_details['department'])
+                                niveau0, niveau2 = sd_client.get_profession_names(extra_employee_details['job_position'])
+                                employment_status = EMPLOYMENT_STATUS.get(extra_employee_details['employement_status_code'])
+                                employee_name = sd_client.get_person_names(logiva_emp_details['institution_code'], logiva_emp_details['cpr'])
 
-                            old_start_date = None
+                                old_start_date = None
 
-                            if datetime.strptime(extra_employee_details['start_date'], '%Y-%m-%d').date() < datetime.today().date():
-                                old_start_date = delta_client.get_engagement_start_date_based_on_sd_dates(logiva_emp_details['employment_id'], logiva_emp_details['cpr'][:6], extra_employee_details['start_date'], extra_employee_details['end_date'])
+                                if datetime.strptime(extra_employee_details['start_date'], '%Y-%m-%d').date() < datetime.today().date():
+                                    old_start_date = delta_client.get_engagement_start_date_based_on_sd_dates(logiva_emp_details['employment_id'], logiva_emp_details['cpr'][:6], extra_employee_details['start_date'], extra_employee_details['end_date'])
 
-                            institution_name = next((name for code, name in institutions_to_check if str(code) == str(logiva_emp_details['institution_code'])), None)
-                            if institution_name:
-                                if employment_status and employee_name:
-                                    row = {
-                                        'Institutions-niveau': f'{institution_name} ({logiva_emp_details["institution_code"]})',
-                                        'Stamafdeling': department_name,
-                                        'CPR-nummer': logiva_emp_details['cpr'],
-                                        'Navn (for-/efternavn)': employee_name,
-                                        'Stillingskode nuværende': niveau0,
-                                        'Stillingskode niveau 2': niveau2,
-                                        'Startdato': ".".join(reversed(old_start_date.split("-"))) if old_start_date else ".".join(reversed(extra_employee_details['start_date'].split("-"))),
-                                        'Slutdato': ".".join(reversed(extra_employee_details['end_date'].split("-"))),
-                                        'Ansættelsesstatus': employment_status,
-                                        'Tjenestenummer': logiva_emp_details['employment_id'],
-                                        'Afdeling': extra_employee_details['department'],
-                                        'Handling': 'x'
-                                    }
+                                institution_name = next((name for code, name in institutions_to_check if str(code) == str(logiva_emp_details['institution_code'])), None)
+                                if institution_name:
+                                    if employment_status and employee_name:
+                                        row = {
+                                            'Institutions-niveau': f'{institution_name} ({logiva_emp_details["institution_code"]})',
+                                            'Stamafdeling': department_name,
+                                            'CPR-nummer': logiva_emp_details['cpr'],
+                                            'Navn (for-/efternavn)': employee_name,
+                                            'Stillingskode nuværende': niveau0,
+                                            'Stillingskode niveau 2': niveau2,
+                                            'Startdato': ".".join(reversed(old_start_date.split("-"))) if old_start_date else ".".join(reversed(extra_employee_details['start_date'].split("-"))),
+                                            'Slutdato': ".".join(reversed(extra_employee_details['end_date'].split("-"))),
+                                            'Ansættelsesstatus': employment_status,
+                                            'Tjenestenummer': logiva_emp_details['employment_id'],
+                                            'Afdeling': extra_employee_details['department'],
+                                            'Handling': 'x'
+                                        }
 
-                                    logiva_rows.append(row)
-                            else:
-                                raise Exception(f'Institution {logiva_emp_details["institution_code"]} not found in institutions_to_check')
+                                        logiva_rows.append(row)
+                                else:
+                                    raise Exception(f'Institution {logiva_emp_details["institution_code"]} not found in institutions_to_check')
 
                 all_rows.extend(logiva_rows)
             return pd.DataFrame(all_rows)

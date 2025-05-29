@@ -81,6 +81,7 @@ class APIClient:
                 now = time.time()
 
                 response = requests.post(tmp_url, headers=tmp_headers, data=tmp_json_data)
+
                 response.raise_for_status()
                 data = response.json()
 
@@ -139,6 +140,7 @@ class APIClient:
             kwargs['headers']['Content-Type'] = 'application/json'
 
         response = method(url, **kwargs)
+
         if response.status_code != 200:
             logger.info(response.content)
         response.raise_for_status()
