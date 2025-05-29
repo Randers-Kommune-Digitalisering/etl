@@ -42,8 +42,6 @@ def job():
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
                 if include_logiva:
-                    with open(file_name, "wb") as f:
-                        f.write(excel_file.getbuffer())
                     send_mail_with_attachment(file_name, excel_file, start_time, end_time)
                 logger.info("SD Delta job done")
                 return True
