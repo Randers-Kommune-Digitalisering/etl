@@ -161,8 +161,7 @@ class DeltaClient(APIClient):
         else:
             raise Exception(res)
 
-    # Takes cpr and returns a dictionary with employment_id, institution_code and cpr
-    # or None if no engagement is found, or if the engagement has an APOS-Types-User, or if multiple engagements are found
+    # Takes cpr and returns a list of dictionaries with employment_id, institution_code and cpr
     def get_engagement_without_user(self, cpr, from_date):
         if from_date and '.' in from_date:
             try:
@@ -268,7 +267,7 @@ class DeltaClient(APIClient):
             has_apos_types_user = any(ref.get('refObjTypeUserKey') == 'APOS-Types-User' for ref in in_type_refs)
 
             if not has_apos_types_user:
-                return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
+                return [{'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}]
             else:
                 logger.info("Only engagement has user")
                 pass
@@ -278,13 +277,23 @@ class DeltaClient(APIClient):
                 inst for inst in instances
                 if not any(ref.get('refObjTypeUserKey') == 'APOS-Types-User' for ref in inst.get('inTypeRefs', []))
             ]
-            if len(filtered_instances) == 1:
+            if len(filtered_instances) == 0:
+                logger.info("All engagements have APOS-Types-User")
+                return []
+            elif len(filtered_instances) == 1:
                 instance = filtered_instances[0]
                 engagement_userkey = instance.get('identity', {}).get('userKey', '')
                 employment_id = engagement_userkey.split('.')[1] if '.' in engagement_userkey else None
                 institution_code = engagement_userkey[:2]
-                return {'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}
-            elif len(filtered_instances) == 0:
-                logger.info("All engagements have APOS-Types-User")
+                return [{'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr}]
+            elif len(filtered_instances) > 1:
+                logger.info("Multiple engagements without APOS-Types-User")
+                engagements_with_users = []
+                for inst in filtered_instances:
+                    engagement_userkey = inst.get('identity', {}).get('userKey', '')
+                    employment_id = engagement_userkey.split('.')[1] if '.' in engagement_userkey else None
+                    institution_code = engagement_userkey[:2]
+                    engagements_with_users.append({'employment_id': employment_id, 'institution_code': institution_code, 'cpr': cpr})
+                return engagements_with_users
             else:
-                logger.warning("Multiple engagements without APOS-Types-User")
+                logger.error("How can it be negative length?")

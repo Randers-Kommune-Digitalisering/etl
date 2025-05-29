@@ -6,7 +6,7 @@ import pandas as pd
 from io import StringIO
 from datetime import datetime, timedelta, time
 
-from sd_delta import delta_client, get_employments_with_changes_df, send_mail_with_attachment, df_to_excel_bytes, send_mail
+from sd_delta import delta_client, get_employments_with_changes_df, send_mail_with_attachment, df_to_excel_bytes
 from utils.api_requests import APIClient
 
 from utils.config import CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE
@@ -29,7 +29,7 @@ def job():
         excluded_departments_df = pd.read_csv(StringIO(excluded_config_file.decode("utf-8")), sep=';', skipinitialspace=True).map(lambda x: x.strip() if isinstance(x, str) else x).query('DepartmentIdentifier != "-"')
 
         end_time = datetime.now(pytz.timezone("Europe/Copenhagen"))
-        start_time = end_time - timedelta(days=1)
+        start_time = end_time - timedelta(days=2, hours=8)
 
         include_logiva = time(8, 0) <= end_time.time() < time(10, 0)
 
@@ -41,12 +41,10 @@ def job():
 
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
-                if time(8, 0) <= end_time.time() < time(10, 0):
-                    # action_only_df = all_df[all_df['Handling'] == 'x']
-                    # action_only_excel_file = df_to_excel_bytes(action_only_df)
+                if include_logiva:
+                    with open(file_name, "wb") as f:
+                        f.write(excel_file.getbuffer())
                     send_mail_with_attachment(file_name, excel_file, start_time, end_time)
-                else:
-                    send_mail()
                 logger.info("SD Delta job done")
                 return True
         return False
