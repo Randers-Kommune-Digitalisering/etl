@@ -29,7 +29,7 @@ def job():
         excluded_departments_df = pd.read_csv(StringIO(excluded_config_file.decode("utf-8")), sep=';', skipinitialspace=True).map(lambda x: x.strip() if isinstance(x, str) else x).query('DepartmentIdentifier != "-"')
 
         end_time = datetime.now(pytz.timezone("Europe/Copenhagen"))
-        start_time = end_time - timedelta(days=2, hours=8)
+        start_time = end_time - timedelta(days=1)
 
         include_logiva = time(8, 0) <= end_time.time() < time(10, 0)
 
