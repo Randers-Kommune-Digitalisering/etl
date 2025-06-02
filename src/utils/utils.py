@@ -1,4 +1,6 @@
 import logging
+import io
+import pandas as pd
 
 
 logger = logging.getLogger(__name__)
@@ -19,3 +21,14 @@ def flatten_xml(element):
             result[key] = value
             result.update(flatten_xml(child))
     return result
+
+
+def df_to_excel_bytes(df):
+    excel_file = io.BytesIO()
+
+    with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
+        df.to_excel(writer, index=False)
+
+    excel_file.seek(0)
+
+    return excel_file

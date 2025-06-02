@@ -122,8 +122,6 @@ class SDClient(APIClient):
             logger.error(e)
             return None
 
-    # Returns a string with the person full name
-    # In the form of: PersonGivenName PersonSurnameName
     def person_exist(self, institution_id, cpr_id, effective_date=datetime.now()):
         try:
             params = {
