@@ -297,3 +297,108 @@ class DeltaClient(APIClient):
                 return engagements_with_users
             else:
                 logger.error("How can it be negative length?")
+
+    def get_dq_numbers(self, cpr, from_date):
+        if from_date and '.' in from_date:
+            try:
+                from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
+            except ValueError:
+                try:
+                    from_date = datetime.strptime(from_date, "%d.%m.%y").strftime("%Y-%m-%d")
+                except ValueError:
+                    logger.warning("from_date format is invalid: %s", from_date)
+                    return
+
+        query = {
+            "graphQueries": [
+                {
+                    "computeAvailablePages": False,
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "person",
+                            "userKey": "APOS-Types-Person",
+                            "relations": [
+                                # {
+                                #     "alias": "person",
+                                #     "title": "APOS-Types-Engagement-TypeRelation-Person",
+                                #     "userKey": "APOS-Types-Engagement-TypeRelation-Person",
+                                #     "typeUserKey": "APOS-Types-Person",
+                                #     "direction": "OUT"
+                                # },
+                                {
+                                    "alias": "user",
+                                    "title": "APOS-Types-User-TypeRelation-Person",
+                                    "userKey": "APOS-Types-User-TypeRelation-Person",
+                                    "typeUserKey": "APOS-Types-User",
+                                    "direction": "IN"
+                                }
+                            ]
+                        },
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "person.$userKey"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": f"{cpr}"
+                                    }
+                                },
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "person.$state"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": "STATE_ACTIVE"
+                                    }
+                                }
+                            ]
+                        },
+                        "projection": {
+                            "identity": True,
+                            "state": True,
+                            "timeline": "FULL",
+                            "incomingTypeRelations": [
+                                {
+                                    "userKey": "APOS-Types-User-TypeRelation-Person",
+                                    "projection": {
+                                        "identity": True
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "validDate": f"{from_date}",
+                    "limit": 10
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=query)
+
+        instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
+
+        is_in_delta = False
+
+        if len(instances) > 0:
+            is_in_delta = True
+
+        user_keys = []
+        for inst in instances:
+            for ref in inst.get('inTypeRefs', []):
+                if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
+                    user_keys.append(ref.get('targetObject', {}).get('identity', {}).get('userKey', None))
+
+        if user_keys:
+            return is_in_delta, ",".join(user_keys)
+        else:
+            return is_in_delta, None

@@ -1,14 +1,11 @@
-import io
 import logging
 import re
 import pandas as pd
 
-from utils.api_requests import APIClient
 from sd_client import SDClient
 from delta_client import DeltaClient
 from logiva_signflow import LogivaSignflowClient
-from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, MAIL_SERVER_URL, SD_DELTA_FROM_MAIL, SD_DELTA_TO_MAIL, \
-    DELTA_URL, DELTA_CLIENT_ID, DELTA_CLIENT_SECRET, DELTA_REALM, DELTA_AUTH_URL
+from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, DELTA_URL, DELTA_CLIENT_ID, DELTA_CLIENT_SECRET, DELTA_REALM, DELTA_AUTH_URL
 from datetime import datetime
 
 EMPLOYMENT_STATUS = {'0': 'Ansat ikke i løn', '1': 'Aktiv', '3': 'Midlertidig ude af løn', '4': 'Ansat i konflikt', '7': 'Emigreret eller død', '8': 'Fratrådt', '9': 'Pensioneret', 'S': 'Slettet', None: None}
@@ -17,41 +14,6 @@ logger = logging.getLogger(__name__)
 sd_client = SDClient(SD_URL, SD_USER, SD_PASS)
 delta_client = DeltaClient(base_url=DELTA_URL, auth_url=DELTA_AUTH_URL, realm=DELTA_REALM, client_id=DELTA_CLIENT_ID, client_secret=DELTA_CLIENT_SECRET)
 ls_client = LogivaSignflowClient(LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS)
-mail_client = APIClient(base_url=MAIL_SERVER_URL)
-
-
-def send_mail_with_attachment(file_name, file_bytes, start_time, end_time):
-    payload = {
-        'from': SD_DELTA_FROM_MAIL,
-        'to': SD_DELTA_TO_MAIL,
-        'title': 'SD Delta Robot opdatering',
-        'body': f'Vedhæftet er en liste over personer med ændringer i SD og har "nyansat" i Logiva/Signflow for perioden {start_time.strftime("%H:%M:%S %d/%m-%Y")} - {end_time.strftime("%H:%M:%S %d/%m-%Y")}',
-        'attachments': {'filename': file_name, 'content': list(file_bytes.getvalue())}
-    }
-
-    mail_client.make_request(method='POST', json=payload)
-
-
-def send_mail():
-    payload = {
-        'from': SD_DELTA_FROM_MAIL,
-        'to': SD_DELTA_TO_MAIL,
-        'title': 'SD Delta Robot opdatering',
-        'body': 'Ingen brugeroprettelser i SD Delta roboten.'
-    }
-
-    mail_client.make_request(method='POST', json=payload)
-
-
-def df_to_excel_bytes(df):
-    excel_file = io.BytesIO()
-
-    with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False)
-
-    excel_file.seek(0)
-
-    return excel_file
 
 
 def handle_deleted_employment(employee):
