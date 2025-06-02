@@ -402,4 +402,3 @@ class DeltaClient(APIClient):
             return is_in_delta, ",".join(user_keys)
         else:
             return is_in_delta, None
-
