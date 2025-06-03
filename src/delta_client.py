@@ -163,16 +163,6 @@ class DeltaClient(APIClient):
 
     # Takes cpr and returns a list of dictionaries with employment_id, institution_code and cpr
     def get_engagement_without_user(self, cpr, from_date):
-        if from_date and '.' in from_date:
-            try:
-                from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
-            except ValueError:
-                try:
-                    from_date = datetime.strptime(from_date, "%d.%m.%y").strftime("%Y-%m-%d")
-                except ValueError:
-                    logger.warning("from_date format is invalid: %s", from_date)
-                    return
-
         query = {
             "graphQueries": [
                 {
@@ -298,7 +288,7 @@ class DeltaClient(APIClient):
             else:
                 logger.error("How can it be negative length?")
 
-    def get_dq_numbers(self, cpr, from_date):
+    def get_dq_numbers_and_sd_lookup_data(self, cpr, from_date):
         if from_date and '.' in from_date:
             try:
                 from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
@@ -318,13 +308,13 @@ class DeltaClient(APIClient):
                             "alias": "person",
                             "userKey": "APOS-Types-Person",
                             "relations": [
-                                # {
-                                #     "alias": "person",
-                                #     "title": "APOS-Types-Engagement-TypeRelation-Person",
-                                #     "userKey": "APOS-Types-Engagement-TypeRelation-Person",
-                                #     "typeUserKey": "APOS-Types-Person",
-                                #     "direction": "OUT"
-                                # },
+                                {
+                                    "alias": "person",
+                                    "title": "APOS-Types-Engagement-TypeRelation-Person",
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-Person",
+                                    "typeUserKey": "APOS-Types-Engagement",
+                                    "direction": "IN"
+                                },
                                 {
                                     "alias": "user",
                                     "title": "APOS-Types-User-TypeRelation-Person",
@@ -371,7 +361,15 @@ class DeltaClient(APIClient):
                                 {
                                     "userKey": "APOS-Types-User-TypeRelation-Person",
                                     "projection": {
-                                        "identity": True
+                                        "identity": True,
+                                        "state": True
+                                    }
+                                },
+                                {
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-Person",
+                                    "projection": {
+                                        "identity": True,
+                                        "state": True
                                     }
                                 }
                             ]
@@ -393,12 +391,118 @@ class DeltaClient(APIClient):
             is_in_delta = True
 
         user_keys = []
+        institution_codes = []
+        tjenestenummre = []
         for inst in instances:
             for ref in inst.get('inTypeRefs', []):
                 if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
-                    user_keys.append(ref.get('targetObject', {}).get('identity', {}).get('userKey', None))
+                    if ref.get('targetObject', {}).get('state', None) == 'STATE_ACTIVE':
+                        user_keys.append(ref.get('targetObject', {}).get('identity', {}).get('userKey', None))
+                if ref.get('refObjTypeUserKey') == 'APOS-Types-Engagement':
+                    if ref.get('targetObject', {}).get('state', None) == 'STATE_ACTIVE':
+                        tjenestenummer = ref.get('targetObject', {}).get('identity', {}).get('userKey', None).split(".")[1] if ref.get('targetObject', {}).get('identity', {}).get('userKey', None) else None
+                        institution_code = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)[:2] if ref.get('targetObject', {}).get('identity', {}).get('userKey', None) else None
+                        tjenestenummre.append(tjenestenummer)
+                        institution_codes.append(institution_code)
 
+        institution_codes = list(set(institution_codes))
         if user_keys:
-            return is_in_delta, ",".join(user_keys)
+            return is_in_delta, ",".join(user_keys), ",".join(tjenestenummre), ",".join(institution_codes)
+        elif tjenestenummre or institution_codes:
+            return is_in_delta, None, ",".join(tjenestenummre), ",".join(institution_codes)
         else:
-            return is_in_delta, None
+            return is_in_delta, None, None, None
+
+    def get_all_active_engagements(self):
+        results = []
+        offset = 0
+        limit = 1000
+
+        while True:
+            grapgh_query = {
+                "graphQueries": [
+                    {
+                        "computeAvailablePages": True,
+                        "graphQuery": {
+                            "structure": {
+                                "alias": "employee",
+                                "userKey": "APOS-Types-Engagement",
+                                "relations": [
+                                    {
+                                        "alias": "person",
+                                        "userKey": "APOS-Types-Engagement-TypeRelation-Person",
+                                        "typeUserKey": "APOS-Types-Person",
+                                        "direction": "OUT"
+                                    }
+                                ]
+                            },
+                            "criteria": {
+                                "type": "AND",
+                                "criteria": [
+                                    {
+                                        "type": "MATCH",
+                                        "operator": "EQUAL",
+                                        "left": {
+                                            "source": "DEFINITION",
+                                            "alias": "employee.$state"
+                                        },
+                                        "right": {
+                                            "source": "STATIC",
+                                            "value": "STATE_ACTIVE"
+                                        }
+                                    },
+                                ]
+                            },
+                            "projection": {
+                                "identity": True,
+                                "state": True,
+                                "timeline": "FULL",
+                                "typeRelations": [
+                                    {
+                                        "userKey": "APOS-Types-Engagement-TypeRelation-Person",
+                                        "projection": {
+                                            "identity": True
+                                        }
+                                    }
+                                ]
+
+                            }
+                        },
+                        "validDate": "NOW",
+                        "offset": offset,
+                        "limit": limit
+                    }
+                ]
+            }
+
+            res = self.make_request(path='/api/object/graph-query', method='POST', json=grapgh_query)
+
+            graph_result = res["graphQueryResult"][0]
+            available_pages = graph_result.get("availablePages", 0)
+            instances = graph_result.get("instances", [])
+            # instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
+            results = []
+            for instance in instances:
+                identity_userkey = instance.get("identity", {}).get("userKey")
+                tjenestenummer = None
+                institution_code = None
+                if identity_userkey and "." in identity_userkey:
+                    tjenestenummer = identity_userkey.split(".")[1]
+                    institution_code = identity_userkey[:2]
+                for ref in instance.get("typeRefs", []):
+                    if ref.get("refObjTypeUserKey") == "APOS-Types-Person":
+                        cpr = ref.get("targetObject", {}).get("identity", {}).get("userKey")
+                        break
+                else:
+                    cpr = None
+                validity_from = instance.get("validityInterval", {}).get("from")
+                validity_to = instance.get("validityInterval", {}).get("to")
+                results.append({"institution_code": institution_code, "tjenestenummer": tjenestenummer, "cpr": cpr, "delta_start_date": validity_from, "delta_end_date": validity_to})
+
+            total_instances = available_pages * limit
+            if offset + limit >= total_instances or len(instances) < limit:
+                break
+
+            offset += limit
+
+        return results

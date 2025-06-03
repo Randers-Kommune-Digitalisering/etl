@@ -1,12 +1,17 @@
 import logging
 import re
+import urllib.parse
 import pandas as pd
+
+from io import StringIO
+from datetime import datetime
 
 from sd_client import SDClient
 from delta_client import DeltaClient
 from logiva_signflow import LogivaSignflowClient
-from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, DELTA_URL, DELTA_CLIENT_ID, DELTA_CLIENT_SECRET, DELTA_REALM, DELTA_AUTH_URL
-from datetime import datetime
+from utils.utils import df_to_excel_bytes
+from utils.api_requests import APIClient
+from utils.config import SD_URL, SD_USER, SD_PASS, LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS, DELTA_URL, DELTA_CLIENT_ID, DELTA_CLIENT_SECRET, DELTA_REALM, DELTA_AUTH_URL, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE
 
 EMPLOYMENT_STATUS = {'0': 'Ansat ikke i løn', '1': 'Aktiv', '3': 'Midlertidig ude af løn', '4': 'Ansat i konflikt', '7': 'Emigreret eller død', '8': 'Fratrådt', '9': 'Pensioneret', 'S': 'Slettet', None: None}
 
@@ -128,6 +133,15 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                 logiva_rows = []
 
                 for cpr, from_date in missing_cprs_with_dates:
+                    if from_date and '.' in from_date:
+                        try:
+                            from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
+                        except ValueError:
+                            try:
+                                from_date = datetime.strptime(from_date, "%d.%m.%y").strftime("%Y-%m-%d")
+                            except ValueError:
+                                logger.warning("from_date format is invalid: %s", from_date)
+                                continue
                     logiva_emp_list = delta_client.get_engagement_without_user(cpr, from_date)
                     if logiva_emp_list:
                         for logiva_emp_details in logiva_emp_list:
@@ -184,3 +198,74 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
         else:
             logger.error(e)
         return
+
+
+def get_fixed_end_dates_df():
+    res = delta_client.get_all_active_engagements()
+    df = pd.DataFrame(res)
+    df = df[df['delta_end_date'] != 'PLUS_INF']
+
+    status_cols = ['department', 'job_position', 'employement_status_code', 'employment_status_deactivation_date']
+    status_dicts = df.apply(
+        lambda row: sd_client.get_employment_status_and_end_date(
+            row['institution_code'], row['cpr'], row['tjenestenummer']
+        ),
+        axis=1
+    )
+    for col in status_cols:
+        df[col] = status_dicts.apply(lambda d: d.get(col))
+
+    df['delta_end_date'] = pd.to_datetime(df['delta_end_date'], errors='coerce') - pd.Timedelta(days=1)
+    df['delta_end_date'] = df['delta_end_date'].dt.strftime('%Y-%m-%d')
+    df = df[df['employment_status_deactivation_date'] != df['delta_end_date']]
+
+    config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
+    excluded_config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE)
+    excluded_config_file = config_library_client.make_request(path=excluded_config_path)
+    if not excluded_config_file:
+        logging.error(f"Failed to load config file: {SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE}")
+
+    all_institutions_df = sd_client.get_all_institutions_df()
+    excluded_institutions_df = pd.read_csv(StringIO(excluded_config_file.decode("utf-8")), sep=';', skipinitialspace=True).map(lambda x: x.strip() if isinstance(x, str) else x).query('DepartmentIdentifier == "-"')
+
+    merged_institutions = all_institutions_df.merge(excluded_institutions_df[["InstitutionIdentifier", "InstitutionName"]], on=['InstitutionIdentifier', 'InstitutionName'], how='left', indicator=True)
+    institutions_to_check = list(merged_institutions[merged_institutions['_merge'] == 'left_only'].drop(columns=['_merge']).reset_index(drop=True)[["InstitutionIdentifier", "InstitutionName"]].itertuples(index=False, name=None))
+
+    df_read = pd.read_csv("TEST3.csv", dtype=str)
+
+    EMPLOYMENT_STATUS = {'0': 'Ansat ikke i løn', '1': 'Aktiv', '3': 'Midlertidig ude af løn', '4': 'Ansat i konflikt', '7': 'Emigreret eller død', '8': 'Fratrådt', '9': 'Pensioneret', 'S': 'Slettet', None: None}
+
+    all_rows = []
+
+    for idx, row in df_read.iterrows():
+        department_name = sd_client.get_department_name(row['institution_code'], row['department'])
+        niveau0, niveau2 = sd_client.get_profession_names(row['job_position'])
+        employment_status = EMPLOYMENT_STATUS.get(row['employement_status_code'])
+        employee_name = sd_client.get_person_names(row['institution_code'], row['cpr'])
+
+        institution_name = next((name for code, name in institutions_to_check if str(code) == str(row['institution_code'])), None)
+
+        if institution_name:
+            if employment_status and employee_name:
+                row = {
+                    'Institutions-niveau': f'{institution_name} ({row["institution_code"]})',
+                    'Stamafdeling': department_name,
+                    'CPR-nummer': row['cpr'],
+                    'Navn (for-/efternavn)': employee_name,
+                    'Stillingskode nuværende': niveau0,
+                    'Stillingskode niveau 2': niveau2,
+                    'Startdato': ".".join(reversed(row['delta_start_date'].split("-"))),
+                    'Slutdato': ".".join(reversed(row['employment_status_deactivation_date'].split("-"))),
+                    'Ansættelsesstatus': employment_status,
+                    'Tjenestenummer': row['tjenestenummer'],
+                    'Afdeling': row['department'],
+                    'Handling': None
+                }
+                all_rows.append(row)
+    all_df = pd.DataFrame(all_rows)
+
+    excel_file = df_to_excel_bytes(all_df)
+    if excel_file:
+        with open('rettet_ophørsdatoer.xlsx', "wb") as f:
+            f.write(excel_file.read())
+        logger.info("Excel file saved to disk: rettet_ophørsdatoer.xlsx")
