@@ -254,14 +254,14 @@ class SDClient(APIClient):
             logger.error(e)
             return None
 
-    def get_employment_start_date(self, institution_id, cpr_id, employment_id, effective_date=None):
+    def get_employment_start_date(self, institution_id, cpr_id, effective_date=None):
         try:
             effective_date = datetime.now(pytz.timezone("Europe/Copenhagen")) if effective_date is None else effective_date
 
             params = {
                 'InstitutionIdentifier': institution_id,
                 'PersonCivilRegistrationIdentifier': cpr_id,
-                'EmploymentIdentifier': employment_id,
+                # 'EmploymentIdentifier': employment_id,
                 'EffectiveDate': effective_date.strftime("%Y-%m-%d"),
                 'StatusActiveIndicator': True,
                 'EmploymentStatusIndicator': True
@@ -275,12 +275,11 @@ class SDClient(APIClient):
 
             if len(persons) == 1:
                 p = persons[0]
-
-                emp_date = p.find('Employment/EmploymentDate')
-                return emp_date.text if emp_date is not None else None
-
+                emp_dates = p.findall('.//Employment/EmploymentDate')
+                employment_dates = [ed.text for ed in emp_dates if ed is not None and ed.text]
+                return employment_dates if employment_dates else None
             elif len(persons) == 0:
-                raise Exception('No results found - persons')
+                return None
             else:
                 raise Exception('Multiple results found')
         except Exception as e:

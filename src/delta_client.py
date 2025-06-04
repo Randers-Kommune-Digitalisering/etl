@@ -262,7 +262,6 @@ class DeltaClient(APIClient):
                 logger.info("Only engagement has user")
                 pass
         else:
-            # Filter out instances that have an APOS-Types-User
             filtered_instances = [
                 inst for inst in instances
                 if not any(ref.get('refObjTypeUserKey') == 'APOS-Types-User' for ref in inst.get('inTypeRefs', []))
@@ -288,7 +287,11 @@ class DeltaClient(APIClient):
             else:
                 logger.error("How can it be negative length?")
 
-    def get_dq_numbers_and_sd_lookup_data(self, cpr, from_date):
+    def get_dq_numbers(self, cpr, from_date):
+        if not isinstance(from_date, str):
+            logger.warning("from_date is not a string: %s", from_date)
+            logger.warning(type(from_date))
+            return None, []
         if from_date and '.' in from_date:
             try:
                 from_date = datetime.strptime(from_date, "%d.%m.%Y").strftime("%Y-%m-%d")
@@ -297,7 +300,7 @@ class DeltaClient(APIClient):
                     from_date = datetime.strptime(from_date, "%d.%m.%y").strftime("%Y-%m-%d")
                 except ValueError:
                     logger.warning("from_date format is invalid: %s", from_date)
-                    return
+                    return None, []
 
         query = {
             "graphQueries": [
@@ -308,13 +311,6 @@ class DeltaClient(APIClient):
                             "alias": "person",
                             "userKey": "APOS-Types-Person",
                             "relations": [
-                                {
-                                    "alias": "person",
-                                    "title": "APOS-Types-Engagement-TypeRelation-Person",
-                                    "userKey": "APOS-Types-Engagement-TypeRelation-Person",
-                                    "typeUserKey": "APOS-Types-Engagement",
-                                    "direction": "IN"
-                                },
                                 {
                                     "alias": "user",
                                     "title": "APOS-Types-User-TypeRelation-Person",
@@ -364,13 +360,6 @@ class DeltaClient(APIClient):
                                         "identity": True,
                                         "state": True
                                     }
-                                },
-                                {
-                                    "userKey": "APOS-Types-Engagement-TypeRelation-Person",
-                                    "projection": {
-                                        "identity": True,
-                                        "state": True
-                                    }
                                 }
                             ]
                         }
@@ -391,27 +380,16 @@ class DeltaClient(APIClient):
             is_in_delta = True
 
         user_keys = []
-        institution_codes = []
-        tjenestenummre = []
+
         for inst in instances:
             for ref in inst.get('inTypeRefs', []):
                 if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
                     if ref.get('targetObject', {}).get('state', None) == 'STATE_ACTIVE':
                         user_keys.append(ref.get('targetObject', {}).get('identity', {}).get('userKey', None))
-                if ref.get('refObjTypeUserKey') == 'APOS-Types-Engagement':
-                    if ref.get('targetObject', {}).get('state', None) == 'STATE_ACTIVE':
-                        tjenestenummer = ref.get('targetObject', {}).get('identity', {}).get('userKey', None).split(".")[1] if ref.get('targetObject', {}).get('identity', {}).get('userKey', None) else None
-                        institution_code = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)[:2] if ref.get('targetObject', {}).get('identity', {}).get('userKey', None) else None
-                        tjenestenummre.append(tjenestenummer)
-                        institution_codes.append(institution_code)
-
-        institution_codes = list(set(institution_codes))
         if user_keys:
-            return is_in_delta, ",".join(user_keys), ",".join(tjenestenummre), ",".join(institution_codes)
-        elif tjenestenummre or institution_codes:
-            return is_in_delta, None, ",".join(tjenestenummre), ",".join(institution_codes)
+            return is_in_delta, user_keys
         else:
-            return is_in_delta, None, None, None
+            return is_in_delta, []
 
     def get_all_active_engagements(self):
         results = []
