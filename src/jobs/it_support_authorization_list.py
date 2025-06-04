@@ -123,7 +123,6 @@ def job():
             cols.insert(idx, 'Fra dato SD')
             filtered_signflow_df = filtered_signflow_df[cols]
 
-        filtered_signflow_df.to_excel('liste_autorisationer.xlsx', index=False)
         excel_file = df_to_excel_bytes(filtered_signflow_df)
 
         send_mail_with_attachment(
@@ -143,7 +142,6 @@ def job():
         tb = traceback.format_exc()
         logger.error(f"Error in IT Support Authorization List job: {e}\nTraceback:\n{tb}")
         try:
-            filtered_signflow_df.to_excel('liste_autorisationer.xlsx', index=False)
             excel_file = df_to_excel_bytes(filtered_signflow_df)
             send_mail_with_attachment(
                 IT_SUPPORT_MAIL,
