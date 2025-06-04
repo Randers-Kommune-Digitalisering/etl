@@ -31,9 +31,10 @@ def job():
         excluded_departments_df = pd.read_csv(StringIO(excluded_config_file.decode("utf-8")), sep=';', skipinitialspace=True).map(lambda x: x.strip() if isinstance(x, str) else x).query('DepartmentIdentifier != "-"')
 
         end_time = datetime.now(pytz.timezone("Europe/Copenhagen"))
+        # end_time = pytz.timezone("Europe/Copenhagen").localize(datetime(2025, 5, 13, 12, 0, 0)) # TESTING TODO: DELETE THIS LINE
         start_time = end_time - timedelta(days=1)
 
-        include_logiva = time(8, 0) <= end_time.time() < time(10, 0)
+        include_logiva = True
 
         all_df = get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_time, end_time, include_logiva)
 
@@ -43,7 +44,7 @@ def job():
 
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
-                if include_logiva:
+                if time(8, 0) <= end_time.time() < time(10, 0):
                     send_mail_with_attachment(
                         SD_DELTA_TO_MAIL,
                         SD_DELTA_FROM_MAIL,
