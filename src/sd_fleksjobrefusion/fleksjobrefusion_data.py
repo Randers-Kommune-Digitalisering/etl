@@ -109,12 +109,12 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
 
         # Search for the person
         logger.info("Clicking on the search field...")
-        søgefelt = WebDriverWait(driver, 20).until(
+        search_field = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((By.XPATH, '/html/body/div[3]/div/div/div/div/div[2]/div[2]/input'))
         )
-        søgefelt.clear()
-        søgefelt.send_keys(f'{tjenestenummer} {institution}')
-        søgefelt.click()
+        search_field.clear()
+        search_field.send_keys(f'{tjenestenummer} {institution}')
+        search_field.click()
         logger.info(f"Searching for person with tjenestenummer: {tjenestenummer} and institution: {institution}")
 
         logger.info("Clicking on the first name in the search results...")
@@ -209,7 +209,7 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
         return True
 
     except Exception as e:
-        logger.info(f"❌ Fejl for {tjenestenummer}: {e}")
+        logger.error(f"❌ Fejl for {tjenestenummer}: {e}")
         return False
 
     finally:

@@ -29,17 +29,18 @@ def job():
 
         error = []
         for person in sd_fleksjobrefusion_config:
-            t = person["t"]
-            i = person["i"]
-            b = person["b"]
-            l = person["l"]
-            if not process_person(driver, t, i, b, l):
-                error.append((t, i, b, l))
+            tjenestenummer = person["tjenestenummer"]
+            institution = person["institution"]
+            beloeb = person["beloeb"]
+            loenart = person["loenart"]
+            if not process_person(driver, tjenestenummer, institution, beloeb, loenart):
+                error.append((tjenestenummer, institution, beloeb, loenart))
 
         if error:
             logger.info("The following persons failed:")
-            for t, i, b, l in error:
-                logger.error(f"- {t} ({i}): {b} - {l}")
+            for tjenestenummer, institution, beloeb, loenart in error:
+                logger.error(f"- {tjenestenummer} ({institution}): {beloeb} - {loenart}")
+            return False
         else:
             logger.info("All persons were processed correctly.")
             return True
