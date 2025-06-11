@@ -2,13 +2,17 @@ import logging
 from sd_fleksjobrefusion.fleksjobrefusion_data import login_to_sd, process_person
 from selenium import webdriver
 from utils.api_requests import APIClient
+from selenium.webdriver.chrome.options import Options
 from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_BASE_PATH, SD_FLEKSJOBREFUSION_CONFIG_FILE
 import urllib.parse
 
 logger = logging.getLogger(__name__)
 
-options = webdriver.ChromeOptions()
+options = Options()
 options.add_argument("--incognito")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
 driver = webdriver.Chrome(options=options)
 
 config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
