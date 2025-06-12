@@ -3,8 +3,10 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.keys import Keys
-from utils.config import SD_FLEKSJOBREFUSION_USERNAME, SD_FLEKSJOBREFUSION_PASSWORD, SD_FLEKSJOBREFUSION_URL
+from utils.config import SD_FLEKSJOBREFUSION_USERNAME, SD_FLEKSJOBREFUSION_PASSWORD, SD_FLEKSJOBREFUSION_URL, SD_FLEKSJOBREFUSION_SFTP_DIR
 import logging
+import pandas as pd
+import io
 logger = logging.getLogger(__name__)
 
 
@@ -180,7 +182,7 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
         beloeb_input.send_keys(str(beloeb))
         logger.info(f"Amount input set to: {beloeb} kr.")
 
-        # Wait for the wage type input to be available and clickable
+        # # Wait for the wage type input to be available and clickable
         logger.info("Waiting for the wage type input field...")
         loenart_input = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((By.XPATH, '//*[@id="pageForm:loenart_input"]'))
@@ -188,7 +190,7 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
         loenart_input.click()
         loenart_input.clear()
         loenart_input.send_keys(str(loenart))
-        time.sleep(1)
+        time.sleep(3)
         loenart_input.send_keys(Keys.ENTER)
         logger.info(f"Wage type input set to: {loenart}")
 
@@ -224,3 +226,51 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
 
     finally:
         driver.switch_to.default_content()
+
+
+def read_excel_from_sftp(sftp_client, remote_path):
+    logger.info(f"Reading Excel file from SFTP: {remote_path}")
+    with sftp_client.get_connection() as sftp:
+        logger.info(f"Files in directory: {sftp.listdir('/SD-Fleksjobrefusion')}")
+        with sftp.open(remote_path, 'rb') as remote_file:
+            file_bytes = remote_file.read()
+            excel_data = io.BytesIO(file_bytes)
+            df = pd.read_excel(excel_data, dtype={'TJNR.': str})
+    logger.info(f"Successfully read Excel file: {remote_path}")
+    return df
+
+
+def get_latest_excel_path(sftp_client, directory=SD_FLEKSJOBREFUSION_SFTP_DIR):
+    with sftp_client.get_connection() as sftp:
+        files = sftp.listdir_attr(directory)
+        excel_files = [f for f in files if f.filename.lower().endswith('.xlsx')]
+        if not excel_files:
+            logger.error(f"No Excel files found in the directory: {directory}")
+        latest_file = max(excel_files, key=lambda f: f.st_mtime)
+        latest_path = directory.rstrip('/') + '/' + latest_file.filename
+        logger.info(f"Latest Excel file selected: {latest_path}")
+        return latest_path
+
+
+def excel_to_sd_fleksjobrefusion_config(df):
+    df.columns = df.columns.str.strip()
+    config = []
+    for _, row in df.iterrows():
+        tjnr = str(row['TJNR.']).zfill(5)
+        if pd.notna(row['Lønart 684']):
+            beloeb = round(float(row['Lønart 684']), 2)
+            config.append({
+                "tjenestenummer": tjnr,
+                "institution": str(row['Int.']),
+                "beloeb": f"-{beloeb:.2f}".replace('.', ','),
+                "loenart": "684"
+            })
+        elif pd.notna(row['Lønart 685']):
+            beloeb = round(float(row['Lønart 685']), 2)
+            config.append({
+                "tjenestenummer": tjnr,
+                "institution": str(row['Int.']),
+                "beloeb": f"-{beloeb:.2f}".replace('.', ','),
+                "loenart": "685"
+            })
+    return config

@@ -1,11 +1,14 @@
 import logging
-from sd_fleksjobrefusion.fleksjobrefusion_data import login_to_sd, process_person
+from sd_fleksjobrefusion.fleksjobrefusion_data import (
+    login_to_sd,
+    process_person,
+    read_excel_from_sftp,
+    get_latest_excel_path,
+    excel_to_sd_fleksjobrefusion_config,
+)
 from selenium import webdriver
-from utils.api_requests import APIClient
 from selenium.webdriver.chrome.options import Options
-from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_BASE_PATH, SD_FLEKSJOBREFUSION_CONFIG_FILE
-import urllib.parse
-
+from utils.sftp_connection import get_sd_sftp_client
 logger = logging.getLogger(__name__)
 
 options = Options()
@@ -15,20 +18,18 @@ options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
 driver = webdriver.Chrome(options=options)
 
-config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
-
 
 def job():
     try:
         logger.info("Starting Fleksjob Refusion job...")
+
+        sftp_client = get_sd_sftp_client()
+        REMOTE_EXCEL_PATH = get_latest_excel_path(sftp_client)
+        df = read_excel_from_sftp(sftp_client, REMOTE_EXCEL_PATH)
+        sd_fleksjobrefusion_config = excel_to_sd_fleksjobrefusion_config(df)
+
         if not login_to_sd(driver):
             logger.error("Login to SD failed. Exiting job.")
-            return False
-
-        config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, SD_FLEKSJOBREFUSION_CONFIG_FILE)
-        sd_fleksjobrefusion_config = config_library_client.make_request(path=config_path)
-        if sd_fleksjobrefusion_config is None:
-            logging.error(f"Failed to load config file from path: {config_path}")
             return False
 
         error = []
