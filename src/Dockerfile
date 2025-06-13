@@ -21,6 +21,8 @@ RUN mkdir -p /app/.cache/selenium && chown -R $USER_ID:$GROUP_ID /app/.cache && 
 COPY . $HOME
 WORKDIR $HOME
 
+RUN chown -R $USER_ID:$GROUP_ID $HOME && chmod -R 775 $HOME
+
 # Install python packages
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
