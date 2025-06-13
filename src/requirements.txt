@@ -18,3 +18,4 @@ SQLAlchemy
 zipfile36
 pymysql
 elasticsearch8
+selenium
