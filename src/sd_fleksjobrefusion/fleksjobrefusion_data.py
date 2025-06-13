@@ -52,6 +52,14 @@ def login_to_sd(driver):
         workplace_login_button.click()
         logger.info("Arbejdsplads Login button clicked.")
 
+        # Wait for the new window to appear
+        time.sleep(2)
+        logger.info("Switching to Login Popup window if available...")
+        windows = driver.window_handles
+        if len(windows) > 1:
+            driver.switch_to.window(windows[-1])
+            logger.info("Switched to Login Popup window.")
+
         # Uncomment the following lines if you run this locally inside Randers Kommune Network/ADFS
         # time.sleep(2)
         # pyautogui.write(SD_FLEKSJOBREFUSION_USERNAME)
