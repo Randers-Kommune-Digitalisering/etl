@@ -31,7 +31,6 @@ def job():
         excluded_departments_df = pd.read_csv(StringIO(excluded_config_file.decode("utf-8")), sep=';', skipinitialspace=True).map(lambda x: x.strip() if isinstance(x, str) else x).query('DepartmentIdentifier != "-"')
 
         end_time = datetime.now(pytz.timezone("Europe/Copenhagen"))
-        # end_time = pytz.timezone("Europe/Copenhagen").localize(datetime(2025, 5, 13, 12, 0, 0)) # TESTING TODO: DELETE THIS LINE
         start_time = end_time - timedelta(days=1)
 
         include_logiva = True

@@ -233,25 +233,27 @@ class SDClient(APIClient):
             root = etree.fromstring(res)
 
             employments = []
-            for e in root.xpath("//Person"):
-                cpr = e.find('PersonCivilRegistrationIdentifier').text
-                employment = e.find('Employment/EmploymentIdentifier').text
-                effective_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(e.xpath('.//ActivationDate/text()')))])]
-                employment_status_code = e.find('Employment/EmploymentStatus/EmploymentStatusCode').text if e.find('Employment/EmploymentStatus/EmploymentStatusCode') is not None else None
+            for p in root.xpath("//Person"):
+                cpr = p.find('PersonCivilRegistrationIdentifier').text
+                for e in p.xpath('.//Employment'):
+                    employment = e.find('EmploymentIdentifier').text
+                    # print([date for date in list(set(e.xpath('.//ActivationDate/text()')))])
+                    effective_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(e.xpath('.//ActivationDate/text()')))])]
+                    employment_status_code = e.find('EmploymentStatus/EmploymentStatusCode').text if e.find('EmploymentStatus/EmploymentStatusCode') is not None else None
 
-                # Only include effective dates after the end date
-                effective_dates = [date for date in effective_dates if datetime.strptime(date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d')]
+                    # Only include effective dates after the end date
+                    # effective_dates = [date for date in effective_dates if datetime.strptime(date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d')]
 
-                # If not future date then include the current date
-                if not effective_dates:
-                    effective_dates = [end_date]
+                    # If not future date then include the current date
+                    if not effective_dates:
+                        effective_dates = [end_date]
 
-                employments.append({'institution': institution_id, 'cpr': cpr, 'employment_id': employment, 'effective_dates': effective_dates, 'employement_status_code': employment_status_code})
+                    employments.append({'institution': institution_id, 'cpr': cpr, 'employment_id': employment, 'effective_dates': effective_dates, 'employement_status_code': employment_status_code})
 
             return employments
 
-        except Exception as e:
-            logger.error(e)
+        except Exception as p:
+            logger.error(p)
             return None
 
     def get_employment_start_date(self, institution_id, cpr_id, effective_date=None):
