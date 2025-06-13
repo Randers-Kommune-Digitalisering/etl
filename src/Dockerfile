@@ -14,6 +14,9 @@ RUN addgroup --gid $GROUP_ID $GROUP_NAME && \
 # Install packages
 RUN apt-get update && apt-get install --yes --no-install-recommends build-essential libmariadb-dev libpq-dev chromium chromium-driver
 
+# Permission for cache directory
+RUN mkdir -p /app/.cache/selenium && chown -R $USER_ID:$GROUP_ID /app/.cache && chmod -R 775 /app/.cache
+
 # Copy files and set working dir
 COPY . $HOME
 WORKDIR $HOME
