@@ -12,7 +12,7 @@ RUN addgroup --gid $GROUP_ID $GROUP_NAME && \
     adduser $USER_ID -u $USER_ID -D -G $GROUP_NAME -h $HOME
 
 # Install packages
-RUN apt-get update && apt-get install --yes --no-install-recommends build-essential libmariadb-dev libpq-dev
+RUN apt-get update && apt-get install --yes --no-install-recommends build-essential libmariadb-dev libpq-dev chromium chromium-driver
 
 # Copy files and set working dir
 COPY . $HOME
