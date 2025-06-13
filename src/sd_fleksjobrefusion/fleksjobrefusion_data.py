@@ -231,7 +231,7 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
 def read_excel_from_sftp(sftp_client, remote_path):
     logger.info(f"Reading Excel file from SFTP: {remote_path}")
     with sftp_client.get_connection() as sftp:
-        logger.info(f"Files in directory: {sftp.listdir('/SD-Fleksjobrefusion')}")
+        logger.info(f"Files in directory: {sftp.listdir(SD_FLEKSJOBREFUSION_SFTP_DIR)}")
         with sftp.open(remote_path, 'rb') as remote_file:
             file_bytes = remote_file.read()
             excel_data = io.BytesIO(file_bytes)
