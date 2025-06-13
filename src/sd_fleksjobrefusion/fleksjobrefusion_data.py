@@ -208,14 +208,14 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
         time.sleep(2)
 
         # Wait for the save button to be available and clickable
-        logger.info("Waiting for the save button...")
-        gem_button = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="pageForm:j_idt108"]'))
-        )
-        gem_button.click()
-        logger.info("Save button clicked.")
+        # logger.info("Waiting for the save button...")
+        # gem_button = WebDriverWait(driver, 20).until(
+        #     EC.element_to_be_clickable((By.XPATH, '//*[@id="pageForm:j_idt108"]'))
+        # )
+        # gem_button.click()
+        # logger.info("Save button clicked.")
 
-        time.sleep(2)
+        # time.sleep(2)
 
         logger.info(f"✅ {tjenestenummer} ({institution}) behandlet med beløb {beloeb} og lønart {loenart}.")
         return True
