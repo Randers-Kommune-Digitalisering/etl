@@ -62,7 +62,7 @@ def login_to_sd(driver):
 
         logger.info("Entering username...")
         username_input = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.NAME, "UserName"))
+            EC.element_to_be_clickable((By.XPATH, '/html/body/div[2]/div[2]/div/main/div/div/div/form/div[2]/div[1]/input'))
             # EC.element_to_be_clickable((By.XPATH, '//*[@id="userNameInput"]'))
         )
         username_input.click()
