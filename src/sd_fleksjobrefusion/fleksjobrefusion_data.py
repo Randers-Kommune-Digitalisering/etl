@@ -52,13 +52,6 @@ def login_to_sd(driver):
         workplace_login_button.click()
         logger.info("Arbejdsplads Login button clicked.")
 
-        # Wait for the new window to appear
-        logger.info("Waiting for Login popup window to appear...")
-        WebDriverWait(driver, 10).until(lambda d: len(d.window_handles) > 1)
-        driver.switch_to.window(driver.window_handles[-1])
-        logger.info("Switched to the Login Popup window.")
-
-
         # Uncomment the following lines if you run this locally inside Randers Kommune Network/ADFS
         # time.sleep(2)
         # pyautogui.write(SD_FLEKSJOBREFUSION_USERNAME)
@@ -66,9 +59,8 @@ def login_to_sd(driver):
         # pyautogui.write(SD_FLEKSJOBREFUSION_PASSWORD)
         # pyautogui.press('enter')
 
-        time.sleep(2)
         logger.info("Entering username...")
-        username_input = WebDriverWait(driver, 20).until(
+        username_input = WebDriverWait(driver, 30).until(
             EC.element_to_be_clickable((By.XPATH, '//*[@id="userNameInput"]'))
         )
         username_input.clear()
