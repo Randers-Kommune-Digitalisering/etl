@@ -62,9 +62,9 @@ def login_to_sd(driver):
 
         logger.info("Entering username...")
         username_input = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="userNameInput"]'))
+            EC.element_to_be_clickable((By.NAME, "UserName"))
+            # EC.element_to_be_clickable((By.XPATH, '//*[@id="userNameInput"]'))
         )
-
         username_input.click()
         username_input.send_keys(SD_FLEKSJOBREFUSION_USERNAME)
         logger.info("Username entered.")
