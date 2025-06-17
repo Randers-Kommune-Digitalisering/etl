@@ -13,5 +13,5 @@ def get_sharepoint_list():
         items = response.get("items", [])
         return items
     except Exception as e:
-        logger.info(f"Could not get SharePoint list: {e}")
+        logger.error(f"Could not get SharePoint list: {e}")
         return []

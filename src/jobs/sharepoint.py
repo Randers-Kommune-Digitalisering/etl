@@ -30,7 +30,7 @@ def job():
         else:
             logger.error("Failed to get database connection")
 
-        logger.info("SharePoint data sucessfully fetched, processed, and saved into DB")
+        logger.info("SharePoint data successfully fetched, processed, and saved into DB")
         return True
 
     except Exception as e:
