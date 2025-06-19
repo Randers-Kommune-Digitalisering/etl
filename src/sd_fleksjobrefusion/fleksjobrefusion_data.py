@@ -52,6 +52,8 @@ def login_to_sd(driver):
         workplace_login_button.click()
         logger.info("Arbejdsplads Login button clicked.")
 
+        driver.switch_to.default_content()
+
         # Uncomment the following lines if you run this locally inside Randers Kommune Network/ADFS
         # time.sleep(2)
         # pyautogui.write(SD_FLEKSJOBREFUSION_USERNAME)
@@ -59,12 +61,11 @@ def login_to_sd(driver):
         # pyautogui.write(SD_FLEKSJOBREFUSION_PASSWORD)
         # pyautogui.press('enter')
 
-        time.sleep(2)
         logger.info("Entering username...")
-        username_input = WebDriverWait(driver, 20).until(
+        username_input = WebDriverWait(driver, 30).until(
             EC.element_to_be_clickable((By.XPATH, '//*[@id="userNameInput"]'))
         )
-        username_input.clear()
+        username_input.click()
         username_input.send_keys(SD_FLEKSJOBREFUSION_USERNAME)
         logger.info("Username entered.")
         time.sleep(1)
@@ -73,7 +74,7 @@ def login_to_sd(driver):
         password_input = WebDriverWait(driver, 20).until(
             EC.element_to_be_clickable((By.XPATH, '//*[@id="passwordInput"]'))
         )
-        password_input.clear()
+        password_input.click()
         password_input.send_keys(SD_FLEKSJOBREFUSION_PASSWORD)
         logger.info("Password entered.")
         time.sleep(1)
