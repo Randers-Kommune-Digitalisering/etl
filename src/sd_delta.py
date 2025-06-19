@@ -200,7 +200,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
         return
 
 
-def get_fixed_end_dates_df():
+def write_fixed_end_dates_file():
     res = delta_client.get_all_active_engagements()
     df = pd.DataFrame(res)
     df = df[df['delta_end_date'] != 'PLUS_INF']
@@ -231,13 +231,11 @@ def get_fixed_end_dates_df():
     merged_institutions = all_institutions_df.merge(excluded_institutions_df[["InstitutionIdentifier", "InstitutionName"]], on=['InstitutionIdentifier', 'InstitutionName'], how='left', indicator=True)
     institutions_to_check = list(merged_institutions[merged_institutions['_merge'] == 'left_only'].drop(columns=['_merge']).reset_index(drop=True)[["InstitutionIdentifier", "InstitutionName"]].itertuples(index=False, name=None))
 
-    df_read = pd.read_csv("TEST3.csv", dtype=str)
-
     EMPLOYMENT_STATUS = {'0': 'Ansat ikke i løn', '1': 'Aktiv', '3': 'Midlertidig ude af løn', '4': 'Ansat i konflikt', '7': 'Emigreret eller død', '8': 'Fratrådt', '9': 'Pensioneret', 'S': 'Slettet', None: None}
 
     all_rows = []
 
-    for idx, row in df_read.iterrows():
+    for idx, row in df.iterrows():
         department_name = sd_client.get_department_name(row['institution_code'], row['department'])
         niveau0, niveau2 = sd_client.get_profession_names(row['job_position'])
         employment_status = EMPLOYMENT_STATUS.get(row['employement_status_code'])
