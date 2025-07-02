@@ -411,6 +411,13 @@ class DeltaClient(APIClient):
                                         "userKey": "APOS-Types-Engagement-TypeRelation-Person",
                                         "typeUserKey": "APOS-Types-Person",
                                         "direction": "OUT"
+                                    },
+                                    {
+                                        "alias": "user",
+                                        "title": "APOS-Types-User-TypeRelation-Engagement",
+                                        "userKey": "APOS-Types-User-TypeRelation-Engagement",
+                                        "typeUserKey": "APOS-Types-User",
+                                        "direction": "IN"
                                     }
                                 ]
                             },
@@ -484,3 +491,235 @@ class DeltaClient(APIClient):
             offset += limit
 
         return results
+
+    def get_adm_orgs(self):
+        graph_query = {
+            "graphQueries": [
+                {
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "adm",
+                            "userKey": "APOS-Types-AdministrativeUnit"
+                        },
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "adm.$state"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": "STATE_ACTIVE"
+                                    }
+                                },
+                            ]
+                        },
+                        "projection": {
+                            "identity": True
+
+                        }
+                    },
+                    "validDate": "NOW"
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=graph_query)
+
+        instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
+
+        data = []
+
+        for inst in instances:
+            userkey = inst.get('identity', {}).get('userKey', '')
+            name = inst.get('identity', {}).get('name', '')
+
+            data.append({
+                'userkey': userkey,
+                'name': name
+            })
+
+        return data
+
+    def get_employees(self, adm_userkey):
+        graph_query = {
+            "graphQueries": [
+                {
+                    "computeAvailablePages": True,
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "employee",
+                            "userKey": "APOS-Types-Engagement",
+                            "relations": [
+                                {
+                                    "alias": "adm",
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-AdmUnit",
+                                    "typeUserKey": "APOS-Types-Engagement",
+                                    "direction": "OUT"
+                                }
+                            ]
+                        },
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "employee.adm.$userKey"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": adm_userkey
+                                    }
+                                },
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "employee.$state"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": "STATE_ACTIVE"
+                                    }
+                                }
+                            ]
+                        },
+                        "projection": {
+                            "identity": True,
+                            "incomingTypeRelations": [
+                                    {
+                                        "userKey": "APOS-Types-User-TypeRelation-Engagement",
+                                        "projection": {
+                                            "identity": True
+                                        }
+                                    }
+                            ]
+
+                        }
+                    },
+                    "validDate": "NOW"
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=graph_query)
+
+        instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
+        data = []
+
+        for inst in instances:
+            # userkey = inst.get('identity', {}).get('userKey', '')
+            name = inst.get('identity', {}).get('name', '')
+            user = None
+            for ref in inst.get('inTypeRefs', []):
+                if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
+                    user = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)
+
+            data.append({
+                'user': user,
+                'name': name
+            })
+
+        return data
+
+    def get_leaders(self, adm_userkey):
+        graph_query = {
+            "graphQueries": [
+                {
+                    "computeAvailablePages": True,
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "employee",
+                            "userKey": "APOS-Types-Engagement",
+                            "relations": [
+                                {
+                                    "alias": "leader",
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-Leader",
+                                    "typeUserKey": "APOS-Types-Leader",
+                                    "direction": "IN",
+                                    "relations": [
+                                        {
+                                            "alias": "leaderAdm",
+                                            "userKey": "APOS-Types-Leader-TypeRelation-AdmUnit",
+                                            "typeUserKey": "APOS-Types-AdmUnit",
+                                            "direction": "OUT"
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "employee.leader.leaderAdm.$userKey"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": adm_userkey
+                                    }
+                                },
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "employee.$state"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": "STATE_ACTIVE"
+                                    }
+                                }
+                            ]
+                        },
+                        "projection": {
+                            "identity": True,
+                            "incomingTypeRelations": [
+                                    {
+                                        "userKey": "APOS-Types-User-TypeRelation-Engagement",
+                                        "projection": {
+                                            "identity": True
+                                        }
+                                    }
+                            ]
+
+                        }
+                    },
+                    "validDate": "NOW"
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=graph_query)
+
+        instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
+
+        data = []
+
+        for inst in instances:
+            # userkey = inst.get('identity', {}).get('userKey', '')
+            name = inst.get('identity', {}).get('name', '')
+            user = None
+            for ref in inst.get('inTypeRefs', []):
+                if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
+                    user = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)
+
+            data.append({
+                'user': user,
+                'name': name
+            })
+
+        return data
