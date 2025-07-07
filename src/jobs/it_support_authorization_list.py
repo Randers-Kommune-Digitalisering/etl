@@ -84,9 +84,9 @@ def job():
             for date in list_of_dates:
                 for inst_id in all_institutions_df['InstitutionIdentifier'].values.tolist():
                     start_date_sd = sd_client.get_employment_start_date(
-                        inst_id,
-                        row['CPR'],
-                        date
+                        institution_id=inst_id,
+                        cpr_id=row['CPR'],
+                        effective_date=date
                     )
                     if start_date_sd:
                         start_date_sd_formatted = [datetime.datetime.strptime(sd, "%Y-%m-%d").date() for sd in start_date_sd]

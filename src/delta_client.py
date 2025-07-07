@@ -1,5 +1,7 @@
 import logging
 
+from sqlalchemy import true
+
 from utils.api_requests import APIClient
 from datetime import datetime
 
@@ -484,3 +486,367 @@ class DeltaClient(APIClient):
             offset += limit
 
         return results
+
+    def get_adm_children(self, top_adm_org_user_key=None):
+        grapgh_query = {
+            "graphQueries": [
+                {
+                    "parameterMap": {
+                        "admKey": f"{top_adm_org_user_key}" if top_adm_org_user_key else 1
+                    },
+                    "computeAvailablePages": False,
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "adm",
+                            "userKey": "APOS-Types-AdministrativeUnit",
+                            # "relations": [
+                            #     {
+                            #         "alias": "adm",
+                            #         "userKey": "APOS-Types-Engagement-TypeRelation-AdmUnit",
+                            #         "typeUserKey": "APOS-Types-Engagement",
+                            #         "direction": "IN"
+                            #     }
+                            # ]
+                        },
+                        "parameters": [
+                            {
+                                "key": "admUuid",
+                                "name": "Admin Org uuid"
+                            }
+                        ],
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "adm.$userKey"
+                                    },
+                                    "right": {
+                                        "source": "PARAMETER",
+                                        "key": "admKey"
+                                    }
+                                },
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "adm.$state"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": "STATE_ACTIVE"
+                                    }
+                                }
+                            ]
+                        },
+                        "projection": {
+                            "children": {
+                                "identity": True,
+                                # "attributes": [
+                                #         "APOS-Types-AdministrativeUnit-Attribute-SDUnitCodes"
+                                # ]
+                            }
+                        }
+                    },
+                    "validDate": "NOW",
+                    "offset": 0,
+                    "limit": 1
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=grapgh_query)
+
+        isinstances = res.get('graphQueryResult', [])[0].get('instances', [])
+        adm_orgs = []
+        for inst in isinstances:
+            for child in inst.get('childrenObjects', []):
+                uuid = child.get('identity', {}).get('uuid', '')
+                user_key = child.get('identity', {}).get('userKey', '')
+                name = child.get('identity', {}).get('name', '')
+                adm_orgs.append({
+                    'name': name,
+                    'userKey': user_key,
+                    'uuid': uuid
+                })
+
+        return adm_orgs
+
+    # def get_employees_by_adm_org(self, adm_org_name=None):
+    #     grapgh_query = {
+    #         "graphQueries": [
+    #             {
+    #                 "parameterMap": {
+    #                     "admName": f"{adm_org_name}" if adm_org_name else 'Randers Kommune'
+    #                 },
+    #                 "computeAvailablePages": False,
+    #                 "graphQuery": {
+    #                    "structure": {
+    #                         "alias": "employee",
+    #                         "userKey": "APOS-Types-Engagement",
+    #                         "relations": [
+    #                             {
+    #                                 "alias": "adm",
+    #                                 "userKey": "APOS-Types-Engagement-TypeRelation-AdmUnit",
+    #                                 "typeUserKey": "APOS-Types-AdministrativeUnit",
+    #                                 "direction": "OUT"
+    #                             },
+    #                             {
+    #                                 "alias": "position",
+    #                                 "userKey": "APOS-Types-Engagement-TypeRelation-Position",
+    #                                 "typeUserKey": "APOS-Types-PositionType",
+    #                                 "direction": "OUT"
+    #                             }
+    #                         ]
+    #                     },
+    #                     "parameters": [
+    #                         {
+    #                             "key": "admName",
+    #                             "name": "Admin Org Name"
+    #                         }
+    #                     ],
+    #                     "criteria": {
+    #                         "type": "AND",
+    #                         "criteria": [
+    #                             {
+    #                                 "type": "MATCH",
+    #                                 "operator": "EQUAL",
+    #                                 "left": {
+    #                                     "source": "DEFINITION",
+    #                                     "alias": "employee.adm.$name"
+    #                                 },
+    #                                 "right": {
+    #                                     "source": "PARAMETER",
+    #                                     "key": "admName"
+    #                                 }
+    #                             },
+    #                             {
+    #                                 "type": "MATCH",
+    #                                 "operator": "EQUAL",
+    #                                 "left": {
+    #                                     "source": "DEFINITION",
+    #                                     "alias": "employee.$state"
+    #                                 },
+    #                                 "right": {
+    #                                     "source": "STATIC",
+    #                                     "value": "STATE_ACTIVE"
+    #                                 }
+    #                             }
+    #                         ]
+    #                     },
+    #                     "projection": {
+    #                         "identity": True,
+    #                         "attributes": [
+    #                            "APOS-Types-Engagement-Attribute-Email",
+    #                            "APOS-Types-Engagement-Attribute-Mobile",
+    #                            "APOS-Types-Engagement-Attribute-SDUnitCode"
+
+    #                         ],
+    #                         "typeRelations": [
+    #                             {
+    #                                 "userKey": "APOS-Types-Engagement-TypeRelation-Position",
+    #                                 "projection": {
+    #                                     "identity": True
+    #                                 }
+    #                             }
+    #                         ]
+    #                     }
+    #                 },
+    #                 "validDate": "NOW"
+    #             }
+    #         ]
+    #     }
+
+    #     res = self.make_request(path='/api/object/graph-query', method='POST', json=grapgh_query)
+
+    #     instances = res.get('graphQueryResult', [])[0].get('instances', [])
+
+    #     employees = []
+
+    #     for inst in instances:
+    #         institution_code = inst.get('identity', {}).get('userKey', '')[:2]
+    #         name = inst.get('identity', {}).get('name', '')
+    #         tjenestenummer = inst.get('identity', {}).get('userKey', '').split('.')[1] if '.' in inst.get('identity', {}).get('userKey', '') else None
+    #         birthday = inst.get('identity', {}).get('userKey', '').split('.')[-1] if '.' in inst.get('identity', {}).get('userKey', '') else None
+    #         attributes = inst.get('attributes', [])
+    #         email = next((att['value'] for att in attributes if att['userKey'] == 'APOS-Types-Engagement-Attribute-Email'), None)
+    #         mobile = next((att['value'] for att in attributes if att['userKey'] == 'APOS-Types-Engagement-Attribute-Mobile'), None)
+    #         sd_unit_code = next((att['value'] for att in attributes if att['userKey'] == 'APOS-Types-Engagement-Attribute-SDUnitCode'), None)
+
+    #         titel = inst.get('typeRefs', [{}])[0].get('targetObject', {}).get('identity', {}).get('userKey', '')
+
+    #         try:
+    #             dt = datetime.strptime(birthday, "%d%m%y")
+    #             year = dt.year
+    #             today = datetime.today()
+    #             age = today.year - year - ((today.month, today.day) < (dt.month, dt.day))
+    #             if year >= 2000 and age < 18:
+    #                 dt = dt.replace(year=year - 100)
+    #             birthday_formatted = dt.strftime("%d-%m-%Y")
+    #         except Exception:
+    #             birthday_formatted = birthday
+
+    #         employees.append({
+    #             'institution_code': institution_code,
+    #             'Navn': name,
+    #             'Personalenr.': tjenestenummer,
+    #             'Mobiltelefonnr.': mobile,
+    #             'Email': email,
+    #             'MasterGroup': adm_org_name,
+    #             'UserGroup': sd_unit_code,
+    #             'Titel': titel,
+    #             'Fødselsdag': birthday_formatted
+    #         })
+
+    #     return employees
+
+    def get_employees_by_sd_department(self, sd_department_id: str):
+        if not sd_department_id:
+            raise ValueError("sd_department_id must be provided")
+        grapgh_query = {
+            "graphQueries": [
+                {
+                    "parameterMap": {
+                        "sdid": sd_department_id
+                    },
+                    "computeAvailablePages": False,
+                    "graphQuery": {
+                        "structure": {
+                            "alias": "employee",
+                            "userKey": "APOS-Types-Engagement",
+                            "attributes": [
+                                {
+                                    "alias": "sddep",
+                                    "userKey": "APOS-Types-Engagement-Attribute-SDUnitCode"
+                                }
+                            ],
+                            "relations": [
+                                {
+                                    "alias": "adm",
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-AdmUnit",
+                                    "typeUserKey": "APOS-Types-AdministrativeUnit",
+                                    "direction": "OUT"
+                                },
+                                {
+                                    "alias": "position",
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-Position",
+                                    "typeUserKey": "APOS-Types-PositionType",
+                                    "direction": "OUT"
+                                }
+                            ]
+                        },
+                        "parameters": [
+                            {
+                                "key": "sdid",
+                                "name": "SD Department Id"
+                            }
+                        ],
+                        "criteria": {
+                            "type": "AND",
+                            "criteria": [
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "employee.sddep"
+                                    },
+                                    "right": {
+                                        "source": "PARAMETER",
+                                        "key": "sdid"
+                                    }
+                                },
+                                {
+                                    "type": "MATCH",
+                                    "operator": "EQUAL",
+                                    "left": {
+                                        "source": "DEFINITION",
+                                        "alias": "employee.$state"
+                                    },
+                                    "right": {
+                                        "source": "STATIC",
+                                        "value": "STATE_ACTIVE"
+                                    }
+                                }
+                            ]
+                        },
+                        "projection": {
+                            "identity": True,
+                            "attributes": [
+                                "APOS-Types-Engagement-Attribute-Email",
+                                "APOS-Types-Engagement-Attribute-Mobile",
+                                "APOS-Types-Engagement-Attribute-SDUnitCode"
+                            ],
+                            "typeRelations": [
+                                {
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-Position",
+                                    "projection": {
+                                        "identity": True
+                                    }
+                                },
+                                {
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-AdmUnit",
+                                    "projection": {
+                                        "identity": True
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    "validDate": "NOW"
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/graph-query', method='POST', json=grapgh_query)
+
+        instances = res.get('graphQueryResult', [])[0].get('instances', [])
+
+        employees = []
+
+        for inst in instances:
+            sd_department_id_delta = next((att['value'] for att in inst.get('attributes', []) if att['userKey'] == 'APOS-Types-Engagement-Attribute-SDUnitCode'), None)
+            if sd_department_id_delta == sd_department_id:
+                # institution_code = inst.get('identity', {}).get('userKey', '')[:2]
+                name = inst.get('identity', {}).get('name', '')
+                tjenestenummer = inst.get('identity', {}).get('userKey', '').split('.')[1] if '.' in inst.get('identity', {}).get('userKey', '') else None
+                birthday = inst.get('identity', {}).get('userKey', '').split('.')[-1] if '.' in inst.get('identity', {}).get('userKey', '') else None
+
+                attributes = inst.get('attributes', [])
+                email = next((att['value'] for att in attributes if att['userKey'] == 'APOS-Types-Engagement-Attribute-Email'), None)
+                mobile = next((att['value'] for att in attributes if att['userKey'] == 'APOS-Types-Engagement-Attribute-Mobile'), None)
+
+                type_refs = inst.get('typeRefs', [])
+                titel = next((ref for ref in type_refs if ref.get('refObjTypeUserKey') == 'APOS-Types-PositionType'), {}).get('targetObject', {}).get('identity', {}).get('userKey', '')
+                adm_org_name = next((ref for ref in type_refs if ref.get('refObjTypeUserKey') == 'APOS-Types-AdministrativeUnit'), {}).get('targetObject', {}).get('identity', {}).get('name', '')
+
+                try:
+                    dt = datetime.strptime(birthday, "%d%m%y")
+                    year = dt.year
+                    today = datetime.today()
+                    age = today.year - year - ((today.month, today.day) < (dt.month, dt.day))
+                    if year >= 2000 and age < 18:
+                        dt = dt.replace(year=year - 100)
+                    birthday_formatted = dt.strftime("%d-%m-%Y")
+                except Exception:
+                    birthday_formatted = birthday
+
+                employees.append({
+                    # 'institution_code': institution_code,
+                    'Navn': name,
+                    'Personalenr.': tjenestenummer,
+                    'Mobiltelefonnr.': mobile,
+                    'Email': email,
+                    'MasterGroup': adm_org_name,
+                    'UserGroup': sd_department_id,
+                    'Titel': titel,
+                    'Fødselsdag': birthday_formatted
+                })
+            else:
+                logger.warning(f"SD Department ID mismatch: delta: {sd_department_id_delta}, sd: {sd_department_id}")
+
+        return employees
