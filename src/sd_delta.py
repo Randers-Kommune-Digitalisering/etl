@@ -23,12 +23,34 @@ ls_client = LogivaSignflowClient(LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS)
 
 def handle_deleted_employment(employee):
     try:
+        def handle_deleted_employment(employee):
+            employment_in_sd = None
+            for date in employee['effective_dates']:
+                res = sd_client.employment_exist(employee['institution'], employee['cpr'], employee['employment_id'], date)
+                if res:
+                    employment_in_sd = True
+                    break
+                elif res is None:
+                    pass
+                else:
+                    employment_in_sd = False
+                    break
+    
+            if employment_in_sd is False:
+                can_deactivate, uuid = delta_client.employment_can_deactivate(employee['institution'], employee['employment_id'], employee['cpr'])
+                if can_deactivate:
+                    if delta_client.employment_deactivate(uuid):
+                        logger.info(f'Employment {employee["employment_id"]} deactivated in Delta')
+                else:
+                    logger.info(f'Employment {employee["employment_id"]} not found in Delta - not making any changes')
+
         in_sd = sd_client.person_exist(employee['institution'], employee['cpr'])
         if in_sd is None:
             raise Exception('Failed to check if person exists in SD')
         elif in_sd:
-            logger.info(f'Person with employment {employee["employment_id"]} exists in SD - not making any changes in Delta')
+            handle_deleted_employment(employee)
         else:
+            handle_deleted_employment(employee)
             can_deactivate, uuid = delta_client.person_can_deactivate(employee['cpr'])
             if can_deactivate:
                 if delta_client.person_deactivate(uuid):
@@ -36,7 +58,7 @@ def handle_deleted_employment(employee):
             else:
                 logger.info(f'Person with employment {employee["employment_id"]} has related objects in Delta - not making any changes')
     except Exception as e:
-        logger.warning(f'Failed to deactivated person with employment {employee["employment_id"]} with error: {e}')
+        logger.warning(f'Failed to deactivated person or employment, employment id: {employee["employment_id"]} with error: {e}')
 
 
 def get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_datetime, end_datetime, include_logiva=False):

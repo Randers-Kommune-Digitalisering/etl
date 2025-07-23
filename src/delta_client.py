@@ -44,7 +44,8 @@ class DeltaClient(APIClient):
 
                 return no_realated_objects, person['identity']['uuid']
             else:
-                raise Exception("None or many people returned from Delta")
+                # raise Exception("None or many people returned from Delta")
+                return False, None
         else:
             raise Exception("Failed to query Delta")
 
@@ -64,6 +65,78 @@ class DeltaClient(APIClient):
                             "to": "PLUS_INF"
                         },
                         "objTypeUserKey": "APOS-Types-Person",
+                        "identity": {
+                            "uuid": uuid
+
+                        },
+                        "state": "STATE_INACTIVE"
+                    }
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/update', method='POST', json=query)
+
+        if res.get('result', {}).get('code', None) == 'OK':
+            return True
+        else:
+            raise Exception(res)
+
+    def employment_can_deactivate(self, institution_id, employment_id, cpr):
+        query = {
+            "queries": [
+                {
+                    "criteria": {
+                        "identity": {
+                            "objUserKey": f"{institution_id}%{employment_id}%{cpr[:6]}"
+                        }
+                    },
+                    "typeFilter": {
+                        "userKey": "APOS-Types-Engagement"
+                    },
+                    "resultLimit": {
+                        "scopeLimitList": [
+                            "IDENTITY_UUID",
+                            "STATE"
+                        ],
+                        "limit": 10,
+                        "offset": 0
+                    },
+                    "validDate": "NOW"
+                }
+            ]
+        }
+
+        res = self.make_request(path='/api/object/query', method='POST', json=query)
+
+        if len(res['queryResults']) == 1:
+            if len(res['queryResults'][0]['instances']) == 1 and res['queryResults'][0]['instancesCount'] == 1:
+                employment = res['queryResults'][0]['instances'][0]
+                is_active = employment['state'] == 'STATE_ACTIVE'
+
+                return is_active, employment['identity']['uuid']
+            else:
+                # raise Exception("None or many employments returned from Delta")
+                return False, None
+        else:
+            raise Exception("Failed to query Delta")
+
+    def employment_deactivate(self, uuid):
+        query = {
+            "transaction": "ALL",
+            "objectUpdateList": [
+                {
+                    "scope": {
+                        "flags": [
+                            "STATE"
+                        ]
+                    },
+                    "instance": {
+                        "validityInterval": {
+                            "from": "NOW",
+                            "to": "PLUS_INF"
+                        },
+                        "objTypeUserKey": "APOS-Types-Engagement",
                         "identity": {
                             "uuid": uuid
 
