@@ -68,6 +68,7 @@ def get_queue_names():
         "Borgerservice_Folkeregister_1978",
         "Borgerservice_Pas_Korekort_89159000",
         "Borgerservice_Pension_89151986",
-        "Borgerservice_Team Information_89159001"
+        "Borgerservice_Team Information_89159001",
+        "Omstillingen"
     ]
     return queue_names
