@@ -96,13 +96,16 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                             handle_deleted_employment(employee)
                             continue
 
+                        if employee['employement_status_code'] == '3':
+                            continue
+
                         has_active = False
 
                         for date in employee['effective_dates']:
                             extra_employee_details = sd_client.get_employment_details(inst[0], employee['cpr'], employee['employment_id'], date)
 
                             if extra_employee_details:
-                                if not has_active and extra_employee_details['employement_status_code'] in ['0', '1', '3']:
+                                if not has_active and extra_employee_details['employement_status_code'] in ['0', '1']:
                                     has_active = True
 
                                 if has_active and extra_employee_details['employement_status_code'] not in ['7', '8', '9'] or not has_active:
