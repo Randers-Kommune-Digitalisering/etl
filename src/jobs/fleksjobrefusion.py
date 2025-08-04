@@ -58,7 +58,7 @@ def job():
             for e in error:
                 logger.error(f"- {e['Tjenestenummer']} ({e['Institution']}): {e['Beløb']} - {e['Lønart']}")
 
-            df_error = pd.DataFrame(error, columns=["Tjenestenummer", "Institution", "Beløb", "Lønart"])
+            df_error = pd.DataFrame(error)
             today = datetime.date.today()
             excel_file = df_to_excel_bytes(df_error)
 
