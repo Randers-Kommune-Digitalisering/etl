@@ -7,13 +7,13 @@ Formålet med jobbet er at hente data fra en Sharepoint Liste og gemme det i en 
 
 ## Beskrivelse
 
-Kode  består af et ETL-job, der udfører følgende trin:
+Koden består af et ETL-job, der udfører følgende trin:
 
-- Henter Sharepoint liste data fra API-Service som udstillet et endpoint til at hente sharepoint data gennem Microsoft Graph API
-- Gemmer data i en Postgres DB
+- Henter SharePoint-listedata fra API-Service, som udstiller et endpoint til at hente SharePoint-data gennem Microsoft Graph API (`get_sharepoint_list()`).
+- Gemmer dataen i PostgreSQL-tabellen `sharepoint_handleplan_items`
 
 **Dataflow:**
-- Data fra API-Service → Gem i Postgres DB 
+- Data fra API-Service → Gemmes i Postgres DB (`sharepoint_handleplan_items`)  
 
 
 ## Afhængigheder
