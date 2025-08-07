@@ -75,27 +75,44 @@ def job():
         for idx, row in filtered_signflow_df[filtered_signflow_df['Handling'].isin(['Nyansat', 'Modtag'])].iterrows():
             original_date = datetime.datetime.strptime(row['Fra dato Signflow'], '%d.%m.%Y').date()
 
-            list_of_dates = []
-            for weeks in range(0, 5):
-                list_of_dates.append(original_date + datetime.timedelta(weeks=weeks))
+            # vvv LOOKS FOR DATES TWO WEEKS BACK AND FORWARDS - not used vvv
+            # list_of_dates = []
+            # for weeks in range(0, 5):
+            #     list_of_dates.append(original_date + datetime.timedelta(weeks=weeks))
 
-            sd_dates = []
+            # sd_dates = []
 
-            for date in list_of_dates:
-                for inst_id in all_institutions_df['InstitutionIdentifier'].values.tolist():
-                    start_date_sd = sd_client.get_employment_start_date(
-                        inst_id,
-                        row['CPR'],
-                        date
-                    )
-                    if start_date_sd:
-                        start_date_sd_formatted = [datetime.datetime.strptime(sd, "%Y-%m-%d").date() for sd in start_date_sd]
-                        sd_dates.extend(start_date_sd_formatted)
+            # for date in list_of_dates:
+            #     for inst_id in all_institutions_df['InstitutionIdentifier'].values.tolist():
+            #         start_date_sd = sd_client.get_employment_start_date(
+            #             inst_id,
+            #             row['CPR'],
+            #             date
+            #         )
+            #         if start_date_sd:
+            #             start_date_sd_formatted = [datetime.datetime.strptime(sd, "%Y-%m-%d").date() for sd in start_date_sd]
+            #             sd_dates.extend(start_date_sd_formatted)
 
-            sd_dates = list(set([d for d in sd_dates if d is not None]))
-            if sd_dates:
-                sd_date = min(sd_dates, key=lambda d: abs((d - original_date).days))
-                filtered_signflow_df.at[idx, 'Fra dato SD'] = sd_date.strftime("%d.%m.%Y")
+            # sd_dates = list(set([d for d in sd_dates if d is not None]))
+            # if sd_dates:
+            #     sd_date = min(sd_dates, key=lambda d: abs((d - original_date).days))
+            #     filtered_signflow_df.at[idx, 'Fra dato SD'] = sd_date.strftime("%d.%m.%Y")
+            # else:
+            #     filtered_signflow_df.at[idx, 'Fra dato SD'] = None
+            #     filtered_signflow_df.at[idx, 'Findes ikke i SD'] = 'x'
+            # ^^^ LOOKS FOR DATES TWO WEEKS BACK AND FORWARDS - not used ^^^
+
+            sd_date = None
+            for inst_id in all_institutions_df['InstitutionIdentifier'].values.tolist():
+                sd_dates = sd_client.get_employment_start_date(inst_id, row['CPR'], original_date)
+                if sd_dates:
+                    sd_dates = [datetime.datetime.strptime(sd, "%Y-%m-%d").date() for sd in sd_dates]
+                    sd_date_dt = min(sd_dates, key=lambda d: abs((d - original_date).days))
+                    sd_date = sd_date_dt.strftime("%d.%m.%Y")
+                    break
+
+            if sd_date:
+                filtered_signflow_df.at[idx, 'Fra dato SD'] = sd_date
             else:
                 filtered_signflow_df.at[idx, 'Fra dato SD'] = None
                 filtered_signflow_df.at[idx, 'Findes ikke i SD'] = 'x'
@@ -106,7 +123,6 @@ def job():
             combined_dq_numbers = list(set(sf_date_dq_number + sd_date_dq_number))
             filtered_signflow_df.at[idx, 'Loginnavn(e)'] = ', '.join(combined_dq_numbers) if combined_dq_numbers else None
             filtered_signflow_df.at[idx, 'Findes ikke i Delta'] = 'x' if not (sf_date_is_in_delta or sd_date_is_in_delta) else None
-        pd.set_option('display.max_columns', None)
 
         filtered_signflow_df = filtered_signflow_df.assign(
             _sort_date=filtered_signflow_df['Fra dato Signflow'].apply(lambda x: datetime.datetime.strptime(x, '%d.%m.%Y'))
