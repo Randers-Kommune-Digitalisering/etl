@@ -2,7 +2,6 @@
 import datetime
 import logging
 import traceback
-import pandas as pd
 
 from mail import send_mail_with_attachment
 from logiva_signflow import LogivaSignflowClient
