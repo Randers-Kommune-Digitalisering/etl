@@ -1,39 +1,45 @@
 FROM python:3.10-slim
 
-# Set dir and user
 ENV GROUP_NAME=app
 ENV HOME=/app
 ENV GROUP_ID=11000
 ENV USER_ID=11001
 ENV PORT=8080
+ENV CHROME_BIN=/usr/bin/chromium
+ENV CHROMEDRIVER=/usr/bin/chromedriver
+ENV SE_CACHE_PATH=/tmp/selenium_cache
 
-# Add user
-RUN addgroup --gid $GROUP_ID $GROUP_NAME && \
-    adduser $USER_ID -u $USER_ID -D -G $GROUP_NAME -h $HOME
+# Add user and group
+RUN groupadd --gid $GROUP_ID $GROUP_NAME && \
+    useradd --uid $USER_ID --gid $GROUP_ID --home-dir $HOME --create-home app
 
-# Install packages
-RUN apt-get update && apt-get install --yes --no-install-recommends build-essential libmariadb-dev libpq-dev chromium chromium-driver
+RUN apt-get update && \
+    apt-get install --yes --no-install-recommends \
+        build-essential \
+        libmariadb-dev \
+        libpq-dev \
+        chromium \
+        chromium-driver && \
+    rm -rf /var/lib/apt/lists/*
 
-# Permission for cache directory
-# RUN mkdir -p /app/.cache/selenium && chown -R $USER_ID:$GROUP_ID /app/.cache && chmod -R 775 /app/.cache
+RUN chmod a+x /usr/bin/chromedriver && \
+    chmod a+x /usr/bin/chromium
 
-RUN chmod a+x /usr/bin/chromedriver
-RUN chmod a+x /usr/bin/chromium
+RUN mkdir -p /tmp/selenium_cache && chmod -R 777 /tmp/selenium_cache
 
-# Copy files and set working dir
+# Copy app files
 COPY . $HOME
 WORKDIR $HOME
 
+# Set permissions
 RUN chown -R $USER_ID:$GROUP_ID $HOME && chmod -R 775 $HOME
 
-# Install python packages
-RUN pip install --upgrade pip
-RUN pip install -r requirements.txt
+# Install Python dependencies
+RUN pip install --upgrade pip && \
+    pip install -r requirements.txt
 
-# Open port
 EXPOSE $PORT
 
-# Set user
 USER $USER_ID
 
 ENTRYPOINT ["python"]
