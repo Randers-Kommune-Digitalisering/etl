@@ -13,7 +13,7 @@ import datetime
 from selenium.webdriver.chrome.options import Options
 from utils.sftp_connection import get_sd_sftp_client
 import pandas as pd
-import tempfile
+# import tempfile
 from utils.config import SD_FLEKSJOBREFUSION_TO_MAIL, SD_FLEKSJOBREFUSION_FROM_MAIL
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,7 @@ options.add_argument("--disable-dev-shm-usage")
 options.add_argument("--disable-gpu")
 options.add_argument("--headless")
 options.add_argument("--window-size=1920,1080")
-options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
+# options.add_argument(f"--user-data-dir={tempfile.mkdtemp()}")
 driver = webdriver.Chrome(options=options)
 
 
