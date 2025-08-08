@@ -17,8 +17,8 @@ RUN apt-get update && apt-get install --yes --no-install-recommends build-essent
 # Permission for cache directory
 # RUN mkdir -p /app/.cache/selenium && chown -R $USER_ID:$GROUP_ID /app/.cache && chmod -R 775 /app/.cache
 
-RUN chmod +x /usr/bin/chromedriver
-RUN chmod +x /usr/bin/chrome
+RUN chmod a+x /usr/bin/chromedriver
+RUN chmod a+x /usr/bin/chromium
 
 # Copy files and set working dir
 COPY . $HOME
