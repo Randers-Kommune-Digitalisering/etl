@@ -90,11 +90,11 @@ def fetch_activity_data_from_elasticsearch(es_client, scroll_size=1000):
             "query": {
                 "bool": {
                     "must": [
-                        {"match": {"FirstQueueDisplayName": "Hovednummer_89151515"}}
+                        {"match": {"FirstQueueDisplayName": "Jobcenter Randers"}}
                     ],
                     "must_not": [
                         {"match": {"LastQueueDisplayName": "Omstillingen"}},
-                        {"match": {"LastQueueDisplayName": "Hovednummer_89151515"}}
+                        {"match": {"LastQueueDisplayName": "Jobcenter Randers"}}
                     ]
                 }
             },
