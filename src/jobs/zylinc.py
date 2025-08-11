@@ -2,8 +2,9 @@ import logging
 import pandas as pd
 from utils.elastic_search_client import ElasticSearchClient
 from utils.config import ELASTICSEARCH_HOST, ELASTICSEARCH_PORT, ELASTICSEARCH_USER, ELASTICSEARCH_PASS
-from zylinc.zylinc import fetch_data_from_elasticsearch, get_queue_names
+from zylinc.zylinc import fetch_queue_data_from_elasticsearch, get_queue_names, fetch_activity_data_from_elasticsearch
 from utils.database_connection import get_db_zylinc
+
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +33,7 @@ def job():
             try:
                 logger.info(f"Processing queue: {queue_name}")
 
-                data_to_insert = fetch_data_from_elasticsearch(queue_name, es_client)
+                data_to_insert = fetch_queue_data_from_elasticsearch(queue_name, es_client)
                 if not data_to_insert:
                     logger.error(f"No data fetched for queue: {queue_name}")
                     return False
@@ -55,7 +56,31 @@ def job():
                 logger.error(f"Error processing queue {queue_name}: {e}")
                 return False
 
-        logger.info("All queues processed successfully")
+        try:
+            logger.info("Processing Activity Data")
+            data_to_insert = fetch_activity_data_from_elasticsearch(es_client)
+            if not data_to_insert:
+                logger.error("No data fetched from Activity Data")
+                return False
+
+            db_client.ensure_database_exists()
+            connection = db_client.get_connection()
+            if connection:
+                logger.info("Database connection established")
+                df = pd.DataFrame(data_to_insert)
+                table_name = "zylinc_activity_data"
+                df.to_sql(table_name, con=connection, if_exists='replace', index=False, chunksize=1000)
+                logger.info(f"Data successfully inserted into PostgreSQL table: {table_name}")
+                connection.close()
+            else:
+                raise Exception("Failed to get database connection")
+
+            logger.info("Activity Data processed successfully")
+        except Exception as e:
+            logger.error(f"Error processing Activity Data: {e}")
+            return False
+
+        logger.info("Zylinc job completed successfully")
         return True
     except Exception as e:
         logger.error(f"An error occurred: {e}")
