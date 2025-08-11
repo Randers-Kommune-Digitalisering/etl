@@ -72,9 +72,22 @@ def query_activity_data(es_client, scroll_size, body):
         return data_to_insert
     except Exception as e:
         logger.error(f"Error querying clientprod-t19n-activity-data-6: {e}")
+        return None
 
 
-def fetch_activity_data_from_elasticsearch(es_client, scroll_size=1000):
+EXCLUDED_QUEUE_NAMES = [
+    "Omstillingen",
+    "Jobcenter Randers",
+    "UURanders_4747",
+    "Ydelseskontor_Team HTF_7194"
+]
+
+
+def build_must_not_clause(excluded_names):
+    return [{"match": {"LastQueueDisplayName": name}} for name in excluded_names]
+
+
+def fetch_activity_data_from_elasticsearch(es_client, queue_name="Jobcenter Randers", excluded_queues=EXCLUDED_QUEUE_NAMES, scroll_size=1000):
     try:
         logger.info("Fetching data from Elasticsearch index: clientprod-t19n-activity-data-6")
         body = {
@@ -90,14 +103,9 @@ def fetch_activity_data_from_elasticsearch(es_client, scroll_size=1000):
             "query": {
                 "bool": {
                     "must": [
-                        {"match": {"FirstQueueDisplayName": "Jobcenter Randers"}}
+                        {"match": {"FirstQueueDisplayName": queue_name}}
                     ],
-                    "must_not": [
-                        {"match": {"LastQueueDisplayName": "Omstillingen"}},
-                        {"match": {"LastQueueDisplayName": "Jobcenter Randers"}},
-                        {"match": {"LastQueueDisplayName": "UURanders_4747"}},
-                        {"match": {"LastQueueDisplayName": "Ydelseskontor_Team HTF_7194"}},
-                    ]
+                    "must_not": build_must_not_clause(excluded_queues)
                 }
             },
             "script_fields": {
@@ -130,7 +138,7 @@ def fetch_activity_data_from_elasticsearch(es_client, scroll_size=1000):
         data_to_insert = query_activity_data(es_client, scroll_size, body)
         return data_to_insert
     except Exception as e:
-        logger.error(f"Error fetching data from clientprod-t19n-data: {e}")
+        logger.error(f"Error fetching data from clientprod-t19n-activity-data-6: {e}")
         return None
 
 
