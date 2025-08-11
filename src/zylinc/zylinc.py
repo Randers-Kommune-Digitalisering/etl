@@ -94,7 +94,9 @@ def fetch_activity_data_from_elasticsearch(es_client, scroll_size=1000):
                     ],
                     "must_not": [
                         {"match": {"LastQueueDisplayName": "Omstillingen"}},
-                        {"match": {"LastQueueDisplayName": "Jobcenter Randers"}}
+                        {"match": {"LastQueueDisplayName": "Jobcenter Randers"}},
+                        {"match": {"LastQueueDisplayName": "UURanders_4747"}},
+                        {"match": {"LastQueueDisplayName": "Ydelseskontor_Team HTF_7194"}},
                     ]
                 }
             },
