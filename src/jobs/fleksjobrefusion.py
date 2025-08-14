@@ -11,7 +11,7 @@ from mail import send_mail_with_attachment
 from utils.utils import df_to_excel_bytes
 import datetime
 from selenium.webdriver.chrome.options import Options
-from utils.sftp_connection import get_sd_sftp_client
+from utils.sftp_connection import get_shared_sftp_client
 import pandas as pd
 from utils.config import SD_FLEKSJOBREFUSION_TO_MAIL, SD_FLEKSJOBREFUSION_FROM_MAIL
 logger = logging.getLogger(__name__)
@@ -30,7 +30,7 @@ def job():
     try:
         logger.info("Starting Fleksjob Refusion job...")
 
-        sftp_client = get_sd_sftp_client()
+        sftp_client = get_shared_sftp_client()
         REMOTE_EXCEL_PATH = get_latest_excel_path(sftp_client)
         df = read_excel_from_sftp(sftp_client, REMOTE_EXCEL_PATH)
         sd_fleksjobrefusion_config = excel_to_sd_fleksjobrefusion_config(df)
