@@ -149,3 +149,40 @@ def period_request(dataset, period_format):
     except Exception as e:
         logger.error(f'Error fetching period for dataset {dataset}: {e}')
         raise
+
+
+def fetch_and_store_table_updates():
+    try:
+        logger.info("Fetching tables metadata from jobindsats API")
+        tables_data = jobindsats_client.make_request(path='v2/tables/json')
+        if not tables_data:
+            logger.error("No tables data received")
+            return False
+
+        updates = []
+        for table in tables_data:
+            updates.append({
+                "TableID": table.get("TableID"),
+                "TableName": table.get("TableName"),
+                "SubjectName": table.get("SubjectName"),
+                "LatestUpdate": table.get("LatestUpdate"),
+                "NextUpdate": table.get("NextUpdate")
+            })
+
+        df_updates = pd.DataFrame(updates)
+        output_table = "jobindsats_table_updates"
+
+        db_client.ensure_database_exists()
+        connection = db_client.get_connection()
+        if connection:
+            df_updates.to_sql(output_table, con=connection, if_exists='replace', index=False)
+            logger.info(f"Successfully saved {output_table} to the database")
+            connection.close()
+            return True
+        else:
+            logger.error("Failed to get database connection")
+            return False
+
+    except Exception as e:
+        logger.error(f"Error fetching and storing table updates: {e}")
+        return False
