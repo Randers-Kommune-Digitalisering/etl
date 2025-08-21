@@ -166,7 +166,8 @@ def fetch_and_store_table_updates():
                 "TableName": table.get("TableName"),
                 "SubjectName": table.get("SubjectName"),
                 "LatestUpdate": table.get("LatestUpdate"),
-                "NextUpdate": table.get("NextUpdate")
+                "NextUpdate": table.get("NextUpdate"),
+                "UpdateFrequency": table.get("UpdateFrequency"),
             })
 
         df_updates = pd.DataFrame(updates)
