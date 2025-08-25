@@ -52,6 +52,14 @@ def job():
                         file_name,
                         excel_file
                     )
+                    send_mail_with_attachment(
+                        "rune.aagaard.keena@randers.dk",
+                        SD_DELTA_FROM_MAIL,
+                        'SD Delta Robot opdatering',
+                        f'Vedhæftet er en liste over personer med ændringer i SD og har "nyansat" i Logiva/Signflow for perioden {start_time.strftime("%H:%M:%S %d/%m-%Y")} - {end_time.strftime("%H:%M:%S %d/%m-%Y")}',
+                        file_name,
+                        excel_file
+                    )
                 logger.info("SD Delta job done")
                 return True
         return False
