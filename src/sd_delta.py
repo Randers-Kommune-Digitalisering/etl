@@ -142,7 +142,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                                     existing_end = datetime.strptime(row['Slutdato'], "%d.%m.%Y")
                                                     
                                                     new_start_string = ".".join(reversed(old_start_date.split("-"))) if old_start_date else ".".join(reversed(employee['start_date'].split("-")))
-                                                    new_start = datetime.strptime(new_start_string), "%d.%m.%Y")
+                                                    new_start = datetime.strptime(new_start_string, "%d.%m.%Y")
                                                     new_end = datetime.strptime(".".join(reversed(employee['end_date'].split("-"))), "%d.%m.%Y")
                                                     
                                                     row['Startdato'] = (new_start if new_start < existing_start else existing_start).strftime("%d.%m.%Y")
