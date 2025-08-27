@@ -35,7 +35,7 @@ def handle_deleted_employment(employee):
                 else:
                     employment_in_sd = False
                     break
-    
+
             if employment_in_sd is False:
                 can_deactivate, uuid = delta_client.employment_can_deactivate(employee['institution'], employee['employment_id'], employee['cpr'])
                 if can_deactivate:
@@ -118,12 +118,32 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                         employment_status = EMPLOYMENT_STATUS.get(employee['employement_status_code'])
                                         employee_name = sd_client.get_person_names(inst[0], employee['cpr'])
 
+                                        if not all([department_name, niveau0, niveau2, employee_name]):
+                                            logger.warning(f'Failed to get full details for employee {employee["employment_id"]} in institution {inst[0]}')
+                                            continue
+
                                         old_start_date = None
 
                                         if datetime.strptime(employee['start_date'], '%Y-%m-%d').date() < datetime.today().date():
                                             old_start_date = delta_client.get_engagement_start_date_based_on_sd_dates(employee['employment_id'], employee['cpr'][:6], employee['start_date'], employee['end_date'])
 
                                         if employment_status and employee_name:
+                                            if employee['employement_status_code'] == '3':
+                                                row = next(
+                                                    (
+                                                        r for r in all_rows
+                                                        if (r['CPR-nummer'] == employee['cpr'] and r['Navn (for-/efternavn)'] == employee_name and r['Tjenestenummer'] == employee['employment_id'] and r['Institutions-niveau'] == f'{inst[1]} ({inst[0]})' and r['Stamafdeling'] == department_name and r['Stillingskode nuværende'] == niveau0 and r['Stillingskode niveau 2'] == niveau2 and r['Afdeling'] == employee['department'] and r['Ansættelsesstatus'] == 'Aktiv')
+                                                    ),
+                                                    None
+                                                )
+                                                if row:
+                                                    # Update existing row with new end date
+                                                    row['Slutdato'] = ".".join(reversed(employee['end_date'].split("-")))
+                                                    continue
+                                                else:
+                                                    # Set to '1' / 'Aktiv'- to avoid Delta setting employee to inactive
+                                                    employment_status = EMPLOYMENT_STATUS.get('1')
+                                                        
                                             row = {
                                                 'Institutions-niveau': f'{inst[1]} ({inst[0]})',
                                                 'Stamafdeling': department_name,
@@ -147,6 +167,10 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                 logger.warning(f'Failed to get extra employee details for employee {employee["employment_id"]} in institution {inst[0]} at {date}')
 
                     logger.info(f'{changes_found} changes found for institution {inst}')
+                else:
+                    if employees is None:
+                        logger.error(f'Failed to get employees with changes for institution {inst[0]}')
+                        return
 
             # Handle logiva
             if include_logiva:
