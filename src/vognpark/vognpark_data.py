@@ -8,7 +8,7 @@ logger = logging.getLogger(__name__)
 
 VOGNPARK_COLUMNS = [
     "Level_1", "Level_2", "Level_3", "Level_4", "Level_5", "Level_6",
-    "Art", "Træk", "Drivmiddel", "Reg. nr.", "Mærke", "Model", "Primær bruger",
+    "Art", "Træk", "Drivmiddel", "Reg. nr.", "Mærke", "Model",
     "Anvendelse", "Stel nr. "
 ]
 
