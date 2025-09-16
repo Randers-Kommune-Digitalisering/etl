@@ -1,6 +1,6 @@
 import logging
 
-from sqlalchemy import true
+# from sqlalchemy import true
 
 from utils.api_requests import APIClient
 from datetime import datetime
@@ -704,7 +704,7 @@ class DeltaClient(APIClient):
 
     #     return employees
 
-    def get_employees_by_sd_department(self, sd_department_id: str):
+    def get_employees_by_sd_department(self, sd_department_id: str, sd_department_name: str):
         if not sd_department_id:
             raise ValueError("sd_department_id must be provided")
         grapgh_query = {
@@ -842,7 +842,7 @@ class DeltaClient(APIClient):
                     'Mobiltelefonnr.': mobile,
                     'Email': email,
                     'MasterGroup': adm_org_name,
-                    'UserGroup': sd_department_id,
+                    'UserGroup': sd_department_name,
                     'Titel': titel,
                     'Fødselsdag': birthday_formatted
                 })
