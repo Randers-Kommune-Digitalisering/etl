@@ -23,7 +23,7 @@ def flatten_xml(element):
     return result
 
 
-def df_to_excel_bytes(df):
+def df_to_excel_bytes(df: pd.DataFrame):
     excel_file = io.BytesIO()
 
     with pd.ExcelWriter(excel_file, engine='xlsxwriter') as writer:
@@ -32,3 +32,13 @@ def df_to_excel_bytes(df):
     excel_file.seek(0)
 
     return excel_file
+
+
+def df_to_csv_bytes(df: pd.DataFrame, sep: str = ';', encoding: str = 'cp1252'):
+    csv_file = io.BytesIO()
+
+    df.to_csv(csv_file, index=False, sep=sep, encoding=encoding)
+
+    csv_file.seek(0)
+
+    return csv_file
