@@ -19,10 +19,10 @@ class FTPSClient:
         if path == '.':
             host = self.host
         else:
-            host = f'{self.host}/{path.lstrip('/')}'
+            host = f"{self.host}/{path.lstrip('/')}"
 
         buffer = io.BytesIO()
-        
+
         c = pycurl.Curl()
         c.setopt(c.URL, host)
         c.setopt(c.USERPWD, f'{self.username}:{self.password}')
@@ -45,7 +45,7 @@ class FTPSClient:
                 raise ValueError('No file extenstion in filename')
 
             filedata.seek(0)
-            host = f'{self.host}/{filename.strip('/')}'
+            host = f"{self.host}/{filename.strip('/')}"
 
             upload_curl = pycurl.Curl()
             upload_curl.setopt(upload_curl.URL, f"{host}/{filename}")
