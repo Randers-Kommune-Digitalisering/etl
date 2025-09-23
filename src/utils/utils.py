@@ -34,7 +34,7 @@ def df_to_excel_bytes(df: pd.DataFrame):
     return excel_file
 
 
-def df_to_csv_bytes(df: pd.DataFrame, sep: str = ';', encoding: str = 'cp1252'):
+def df_to_csv_bytes(df: pd.DataFrame, sep: str = ';', encoding: str = 'UTF-8'):
     csv_file = io.BytesIO()
 
     df.to_csv(csv_file, index=False, sep=sep, encoding=encoding)
