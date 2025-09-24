@@ -1,11 +1,13 @@
 import io
 import logging
+from mail import send_mail_with_attachment
 from utils.sftp_connection import get_asset_sftp_client
 from io import StringIO
 import pandas as pd
 from datetime import datetime
 from utils.api_requests import APIClient
 from utils.config import ATEA_API_KEY, ATEA_URL
+from utils.utils import df_to_csv_bytes_utf8
 
 logger = logging.getLogger(__name__)
 
@@ -574,7 +576,7 @@ def get_bitlocker_code(capa_db_client):
         return None
 
 
-def update_bitlocker_code(sshw_db_client, data):
+def update_bitlocker_code(db_client, data):
     sql_command = """
     UPDATE Asset
     SET BitlockerKode = :bitlocker_code
@@ -584,10 +586,10 @@ def update_bitlocker_code(sshw_db_client, data):
         for row in data:
             if len(row) == 2:
                 unit_name, bitlocker_code = row
-                sshw_db_client.execute_sql(sql_command, {'bitlocker_code': bitlocker_code, 'unit_name': unit_name})
+                db_client.execute_sql(sql_command, {'bitlocker_code': bitlocker_code, 'unit_name': unit_name})
             else:
                 logger.error(f"Unexpected row format: {row}")
-        sshw_db_client.get_connection().commit()
+        db_client.get_connection().commit()
         logger.info("BitLocker Code Data updated successfully in Asset table.")
     except Exception as e:
         logger.error(f"Error updating data in Asset table: {e}")
@@ -621,7 +623,7 @@ def get_bitlocker_encryption(capa_db_client):
         return None
 
 
-def update_bitlocker_encryption(sshw_db_client, data):
+def update_bitlocker_encryption(db_client, data):
     sql_command = """
     UPDATE Asset
     SET BitlockerKrypteringProcent = :bitlocker_status
@@ -630,8 +632,8 @@ def update_bitlocker_encryption(sshw_db_client, data):
     try:
         for row in data:
             unit_name, bitlocker_status = row
-            sshw_db_client.execute_sql(sql_command, {'bitlocker_status': bitlocker_status, 'unit_name': unit_name})
-        sshw_db_client.get_connection().commit()
+            db_client.execute_sql(sql_command, {'bitlocker_status': bitlocker_status, 'unit_name': unit_name})
+        db_client.get_connection().commit()
         logger.info("BitLocker Encryption Data updated successfully in Asset table.")
     except Exception as e:
         logger.error(f"Error updating data in Asset table: {e}")
@@ -666,7 +668,7 @@ def get_bitlocker_status(capa_db_client):
         return None
 
 
-def update_bitlocker_status(sshw_db_client, data):
+def update_bitlocker_status(db_client, data):
     sql_command = """
     UPDATE Asset
     SET BitlockerStatus = :bitlocker_status
@@ -675,8 +677,8 @@ def update_bitlocker_status(sshw_db_client, data):
     try:
         for row in data:
             unit_name, bitlocker_status = row
-            sshw_db_client.execute_sql(sql_command, {'bitlocker_status': bitlocker_status, 'unit_name': unit_name})
-        sshw_db_client.get_connection().commit()
+            db_client.execute_sql(sql_command, {'bitlocker_status': bitlocker_status, 'unit_name': unit_name})
+        db_client.get_connection().commit()
         logger.info("BitLocker Status Data updated successfully in Asset table.")
     except Exception as e:
         logger.error(f"Error updating BitLocker Status in Asset table: {e}")
@@ -723,7 +725,6 @@ def update_model(db_client, data):
             db_client.execute_sql(sql_command, {'model': model, 'unit_name': unit_name})
             logger.info(f"Updated Unit Name: {unit_name} with Model: {model}")
         logger.info("Model Data updated successfully in Asset table.")
-        return "SUCCESS"
     except Exception as e:
         logger.error(f"Error updating Model Data in Asset table: {e}")
         return None
@@ -1063,6 +1064,40 @@ def update_afdelings_ean_from_delta(db_client, sftp_file_path):
         return True
     except Exception as e:
         logger.error(f"Error updating AfdelingsEAN from excel: {e}")
+        return False
+
+
+def send_computerassets_as_csv(db_client, to_mail, from_mail):
+    try:
+        sql_command = "SELECT * FROM Asset"
+        result = db_client.execute_sql(sql_command)
+        if not result:
+            logger.info("No data found in Asset table.")
+            return False
+
+        columns = [
+            "UnitName", "Producent", "Model", "Enhedstype", "Serienummer", "KøbsEANnr", "AfdelingsEAN",
+            "PrimaryFullName", "PrimaryUser", "Afdeling", "SidsteLoginDato",
+            "SidsteRul", "BitlockerKode", "BitlockerStatus", "BitlockerKrypteringProcent",
+            "OSVersion", "MACAdresse", "DeviceLicense", "LaanePC", "Price",
+            "OrderDate", "Warranty"
+        ]
+        df = pd.DataFrame(result, columns=columns)
+        csv_file = df_to_csv_bytes_utf8(df)
+        today = datetime.today()
+
+        send_mail_with_attachment(
+            to_mail=to_mail,
+            from_mail=from_mail,
+            title=f'Asset-Management export {today.strftime("%d.%m.%Y")}',
+            body=f'Alle Asset-Management data is attached as CSV file. from {today.strftime("%d.%m.%Y")}',
+            file_name='Asset-Management.csv',
+            file_bytes=csv_file
+        )
+        logger.info("Asset-Management data sent as mail (CSV).")
+        return True
+    except Exception as e:
+        logger.error(f"Error exporting and mailing Asset-Management (CSV): {e}")
         return False
 
 
