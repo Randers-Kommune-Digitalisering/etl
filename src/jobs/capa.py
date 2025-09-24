@@ -5,7 +5,7 @@ from capa.capa_data import (
     get_primary_user, update_primary_user, get_department, update_department,
     get_fullname, update_fullname, update_device_license_for_computers
 )
-from utils.config import ASSET_SFTP_FILE_PATH
+from utils.config import ASSET_SFTP_DEVICE_FILE_PATH
 
 capa_cms_db_client = get_capa_cms_db()
 asset_db_client = get_asset_db()
@@ -41,7 +41,7 @@ def job():
         else:
             logger.info("No Fullname data found")
 
-        update_device_license_for_computers(asset_db_client, ASSET_SFTP_FILE_PATH)
+        update_device_license_for_computers(asset_db_client, ASSET_SFTP_DEVICE_FILE_PATH)
 
         return True
 
