@@ -7,10 +7,17 @@ from asset.asset_data import (
     get_device_type, update_device_type, get_producent, update_producent, get_os, update_os, get_last_online, update_last_online,
     get_last_install_date, update_last_install_date, get_mac_addresses, update_mac_addresses, get_bitlocker_code, update_bitlocker_code,
     get_bitlocker_encryption, update_bitlocker_encryption, get_bitlocker_status, update_bitlocker_status, get_model, update_model,
-    update_historical_data_from_comm2ig, update_ean_from_atea, update_afdelings_ean_from_delta
+    update_historical_data_from_comm2ig, update_ean_from_atea, update_afdelings_ean_from_delta, send_computerassets_as_csv
 
 )
-from utils.config import ASSET_SFTP_DEVICE_FILE_PATH, ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, ASSET_SFTP_EAN_ATEA_FILE_PATH, ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH
+from utils.config import (
+    ASSET_SFTP_DEVICE_FILE_PATH,
+    ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH,
+    ASSET_SFTP_EAN_ATEA_FILE_PATH,
+    ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH,
+    ASSET_MAIL_TO,
+    ASSET_MAIL_FROM,
+)
 
 capa_cms_db_client = get_capa_cms_db()
 asset_db_client = get_asset_db()
@@ -115,6 +122,8 @@ def job():
         update_ean_from_atea(asset_db_client, ASSET_SFTP_EAN_ATEA_FILE_PATH)
 
         update_afdelings_ean_from_delta(asset_db_client, ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH)
+
+        send_computerassets_as_csv(asset_db_client, ASSET_MAIL_TO, ASSET_MAIL_FROM)
 
         return True
 
