@@ -6,7 +6,7 @@ from io import StringIO
 import pandas as pd
 from datetime import datetime
 from utils.api_requests import APIClient
-from utils.config import ATEA_API_KEY, ATEA_URL
+from utils.config import ATEA_API_KEY, ATEA_URL, TOPDESK_API_USERNAME, TOPDESK_API_PASSWORD, TOPDESK_API_URL, TOPDESK_ASSET_FILENAME
 from utils.utils import df_to_csv_bytes_utf8
 
 logger = logging.getLogger(__name__)
@@ -1115,3 +1115,38 @@ def download_excel_from_sftp(sftp_file_path):
         with conn.open(sftp_file_path, 'rb') as file:
             excel_data = file.read()
     return excel_data
+
+
+def upload_computerassets_to_topdesk(db_client):
+    try:
+        sql_command = "SELECT * FROM Asset"
+        result = db_client.execute_sql(sql_command)
+        if not result:
+            logger.info("No data found in Asset table.")
+            return False
+
+        columns = [
+            "UnitName", "Producent", "Model", "Enhedstype", "Serienummer", "KøbsEANnr", "AfdelingsEAN",
+            "PrimaryFullName", "PrimaryUser", "Afdeling", "SidsteLoginDato",
+            "SidsteRul", "BitlockerKode", "BitlockerStatus", "BitlockerKrypteringProcent",
+            "OSVersion", "MACAdresse", "DeviceLicense", "LaanePC", "Price",
+            "OrderDate", "Warranty"
+        ]
+        df = pd.DataFrame(result, columns=columns)
+        csv_bytes = df_to_csv_bytes_utf8(df)
+
+        topdesk_client = APIClient(
+            base_url=TOPDESK_API_URL,
+            username=TOPDESK_API_USERNAME,
+            password=TOPDESK_API_PASSWORD
+        )
+
+        upload_path = f"/services/import-to-api-v1/api/sourceFiles?filename={TOPDESK_ASSET_FILENAME}"
+
+        logger.info(f"Uploading {TOPDESK_ASSET_FILENAME} to TopDesk at {TOPDESK_API_URL}{upload_path}")
+        topdesk_client.make_request(path=upload_path, method="put", data=csv_bytes)
+        logger.info(f"Successfully uploaded {TOPDESK_ASSET_FILENAME} to TopDesk.")
+        return True
+    except Exception as e:
+        logger.error(f"Error uploading {TOPDESK_ASSET_FILENAME} to TopDesk: {e}")
+        return False
