@@ -1117,7 +1117,7 @@ def download_excel_from_sftp(sftp_file_path):
     return excel_data
 
 
-def upload_computerassets_to_topdesk(db_client):
+def upload_assets_to_topdesk(db_client):
     try:
         sql_command = "SELECT * FROM Asset"
         result = db_client.execute_sql(sql_command)
