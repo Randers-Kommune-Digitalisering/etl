@@ -1,6 +1,5 @@
 import io
 import logging
-from mail import send_mail_with_attachment
 from utils.sftp_connection import get_asset_sftp_client
 from io import StringIO
 import pandas as pd
@@ -1064,40 +1063,6 @@ def update_afdelings_ean_from_delta(db_client, sftp_file_path):
         return True
     except Exception as e:
         logger.error(f"Error updating AfdelingsEAN from excel: {e}")
-        return False
-
-
-def send_computerassets_as_csv(db_client, to_mail, from_mail):
-    try:
-        sql_command = "SELECT * FROM Asset"
-        result = db_client.execute_sql(sql_command)
-        if not result:
-            logger.info("No data found in Asset table.")
-            return False
-
-        columns = [
-            "UnitName", "Producent", "Model", "Enhedstype", "Serienummer", "KøbsEANnr", "AfdelingsEAN",
-            "PrimaryFullName", "PrimaryUser", "Afdeling", "SidsteLoginDato",
-            "SidsteRul", "BitlockerKode", "BitlockerStatus", "BitlockerKrypteringProcent",
-            "OSVersion", "MACAdresse", "DeviceLicense", "LaanePC", "Price",
-            "OrderDate", "Warranty"
-        ]
-        df = pd.DataFrame(result, columns=columns)
-        csv_file = df_to_csv_bytes_utf8(df)
-        today = datetime.today()
-
-        send_mail_with_attachment(
-            to_mail=to_mail,
-            from_mail=from_mail,
-            title=f'Asset-Management export {today.strftime("%d.%m.%Y")}',
-            body=f'Alle Asset-Management data is attached as CSV file. from {today.strftime("%d.%m.%Y")}',
-            file_name='Asset-Management.csv',
-            file_bytes=csv_file
-        )
-        logger.info("Asset-Management data sent as mail (CSV).")
-        return True
-    except Exception as e:
-        logger.error(f"Error exporting and mailing Asset-Management (CSV): {e}")
         return False
 
 
