@@ -855,7 +855,7 @@ def fetch_database_serial_numbers(db_client):
         return []
 
 
-def update_price_from_atea(db_client):
+def update_asset_info_from_atea(db_client):
     try:
         atea_data = fetch_atea_data()
         if not atea_data:

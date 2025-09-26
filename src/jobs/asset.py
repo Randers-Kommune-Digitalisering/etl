@@ -3,7 +3,7 @@ from utils.database_connection import get_asset_db, get_capa_cms_db
 from asset.asset_data import (
     get_serial_number, insert_serial_numbers,
     get_primary_user, update_primary_user, get_department, update_department,
-    get_fullname, update_fullname, update_device_license_for_computers, update_price_from_atea,
+    get_fullname, update_fullname, update_device_license_for_computers, update_asset_info_from_atea,
     get_device_type, update_device_type, get_producent, update_producent, get_os, update_os, get_last_online, update_last_online,
     get_last_install_date, update_last_install_date, get_mac_addresses, update_mac_addresses, get_bitlocker_code, update_bitlocker_code,
     get_bitlocker_encryption, update_bitlocker_encryption, get_bitlocker_status, update_bitlocker_status, get_model, update_model,
@@ -143,7 +143,7 @@ def job():
             logger.error("Failed to update device license for computers.")
             return False
 
-        if not update_price_from_atea(asset_db_client):
+        if not update_asset_info_from_atea(asset_db_client):
             logger.error("Failed to update price from Atea.")
             return False
 
