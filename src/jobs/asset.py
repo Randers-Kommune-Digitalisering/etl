@@ -123,7 +123,7 @@ def job():
 
         upload_assets_to_topdesk(asset_db_client)
 
-        logger.info("Asset data job completed successfully.")
+        logger.info("Asset job completed successfully.")
         return True
 
     except Exception as e:
