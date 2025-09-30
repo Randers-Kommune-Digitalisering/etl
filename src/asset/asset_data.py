@@ -4,6 +4,8 @@ from utils.sftp_connection import get_asset_sftp_client
 from io import StringIO
 import pandas as pd
 from datetime import datetime
+from dateutil.relativedelta import relativedelta
+from dateutil.parser import parse
 from utils.api_requests import APIClient
 from utils.config import ATEA_API_KEY, ATEA_URL, TOPDESK_API_USERNAME, TOPDESK_API_PASSWORD, TOPDESK_API_URL, TOPDESK_ASSET_FILENAME
 from utils.utils import df_to_csv_bytes_utf8
@@ -34,7 +36,7 @@ def create_asset_management_table_if_not_exists(db_client):
         OSVersion VARCHAR(255),
         MACAdresse VARCHAR(255),
         DeviceLicense VARCHAR(255),
-        LaanePC BIT,
+        Drift VARCHAR(255),
         Price VARCHAR(255),
         OrderDate VARCHAR(255),
         Warranty VARCHAR(255)
@@ -313,7 +315,7 @@ def get_producent(db_client):
             filtered_result = []
             for row in result:
                 unit_name, producent = row
-                if producent and not (unit_name.startswith('DQ') or unit_name.startswith('AP')):  # Filter out USERS(DQ/AP)
+                if producent and not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
                     logger.info(f"Unit Name: {unit_name}, Producent: {producent}")
                     filtered_result.append(row)
             logger.info(f"Total elements: {len(filtered_result)}")
@@ -478,6 +480,46 @@ def update_last_install_date(db_client, data):
         logger.info("Last Install Date Data updated successfully in Asset table.")
     except Exception as e:
         logger.error(f"Error updating data in Asset table: {e}")
+
+
+def update_drift_status(db_client):
+    try:
+        sql_select = "SELECT UnitName, SidsteLoginDato FROM Asset"
+        result = db_client.execute_sql(sql_select)
+
+        if not result:
+            logger.info("No units found in Asset table.")
+            return
+
+        six_months_ago = datetime.now() - relativedelta(months=6)
+
+        for unit_name, last_login_str in result:
+            drift_status = "FALSE"
+
+            if last_login_str:
+                try:
+                    last_login = parse(str(last_login_str))
+                    if last_login >= six_months_ago:
+                        drift_status = "TRUE"
+                except Exception:
+                    logger.error(f"Could not parse SidsteLoginDato: {last_login_str} for {unit_name}")
+
+            sql_update = """
+            UPDATE Asset
+            SET Drift = :drift_status
+            WHERE UnitName = :unit_name
+            """
+            db_client.execute_sql(sql_update, {
+                'drift_status': drift_status,
+                'unit_name': unit_name
+            })
+            logger.info(f"Updated Drift status for Unit Name: {unit_name} to {drift_status}")
+
+        db_client.get_connection().commit()
+        logger.info("Drift status updated for all units.")
+
+    except Exception as e:
+        logger.error(f"Error updating Drift status for all units: {e}")
 
 
 def get_mac_addresses(db_client):
@@ -1094,7 +1136,7 @@ def upload_assets_to_topdesk(db_client):
             "UnitName", "Producent", "Model", "Enhedstype", "Serienummer", "KøbsEANnr", "AfdelingsEAN",
             "PrimaryFullName", "PrimaryUser", "Afdeling", "SidsteLoginDato",
             "SidsteRul", "BitlockerKode", "BitlockerStatus", "BitlockerKrypteringProcent",
-            "OSVersion", "MACAdresse", "DeviceLicense", "LaanePC", "Price",
+            "OSVersion", "MACAdresse", "DeviceLicense", "Drift", "Price",
             "OrderDate", "Warranty"
         ]
         df = pd.DataFrame(result, columns=columns)
