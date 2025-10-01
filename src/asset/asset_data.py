@@ -491,7 +491,7 @@ def update_drift_status(db_client):
             logger.info("No units found in Asset table.")
             return
 
-        six_months_ago = datetime.now() - relativedelta(months=1)
+        six_months_ago = datetime.now() - relativedelta(months=6)
 
         for unit_name, last_login_str in result:
             drift_status = "FALSE"
