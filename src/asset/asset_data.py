@@ -8,7 +8,7 @@ from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
 from utils.api_requests import APIClient
 from utils.config import ATEA_API_KEY, ATEA_URL, TOPDESK_API_USERNAME, TOPDESK_API_PASSWORD, TOPDESK_API_URL, TOPDESK_ASSET_FILENAME
-from utils.utils import df_to_csv_bytes_utf8
+from utils.utils import df_to_csv_bytes
 
 logger = logging.getLogger(__name__)
 
@@ -1220,7 +1220,7 @@ def upload_assets_to_topdesk(db_client):
             "OrderDate", "Warranty"
         ]
         df = pd.DataFrame(result, columns=columns)
-        csv_bytes = df_to_csv_bytes_utf8(df)
+        csv_bytes = df_to_csv_bytes(df, sep=';', encoding='UTF-8')
 
         topdesk_client = APIClient(
             base_url=TOPDESK_API_URL,
