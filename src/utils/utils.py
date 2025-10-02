@@ -42,13 +42,3 @@ def df_to_csv_bytes(df: pd.DataFrame, sep: str = ';', encoding: str = 'cp1252'):
     csv_file.seek(0)
 
     return csv_file
-
-
-def df_to_csv_bytes_utf8(df: pd.DataFrame, sep: str = ';', encoding: str = 'UTF-8'):
-    csv_file = io.BytesIO()
-
-    df.to_csv(csv_file, index=False, sep=sep, encoding=encoding)
-
-    csv_file.seek(0)
-
-    return csv_file
