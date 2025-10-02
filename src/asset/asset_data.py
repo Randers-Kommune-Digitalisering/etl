@@ -977,6 +977,37 @@ def fetch_database_serial_numbers(db_client):
         return []
 
 
+def update_prices_orderdate_warranty_in_database(db_client, matching_serials, serial_info_map):
+    try:
+        update_sql_command = """
+        UPDATE Asset
+        SET Price = :price, OrderDate = :order_date, Warranty = :warranty
+        WHERE TRIM(LOWER(Serienummer)) = TRIM(LOWER(:serial_number))
+        """
+
+        for serial_number in matching_serials:
+            info = serial_info_map[serial_number]
+            price_str = "{:.2f}".format(float(info['Price']))
+            order_date = format_atea_date(info['OrderDate'])
+            warranty = format_atea_date(info['Warranty'])
+            norm_serial = serial_number.strip().lower() if serial_number else serial_number
+            logger.info(f"Updating Serial Number: '{norm_serial}', Price: {price_str}, OrderDate: {order_date}, Warranty: {warranty}")
+            db_client.execute_sql(
+                update_sql_command,
+                {
+                    'price': price_str,
+                    'order_date': order_date,
+                    'warranty': warranty,
+                    'serial_number': norm_serial
+                }
+            )
+
+        db_client.get_connection().commit()
+        logger.info("Price, OrderDate and Warranty updates completed successfully.")
+    except Exception as e:
+        logger.error(f"Error updating prices, order dates and warranty in the database: {e}")
+
+
 def update_asset_info_from_atea(db_client):
     try:
         atea_data = fetch_atea_data()
@@ -994,7 +1025,7 @@ def update_asset_info_from_atea(db_client):
         logger.info(f"Matching Serial Numbers: {matching_serials}")
 
         if matching_serials:
-            update_prices_in_database(db_client, matching_serials, serial_price_map)
+            update_prices_orderdate_warranty_in_database(db_client, matching_serials, serial_price_map)
         else:
             logger.info("No matching serial numbers found. No updates performed.")
     except Exception as e:
@@ -1010,38 +1041,6 @@ def format_atea_date(date_str):
     except Exception as e:
         logger.error(f"Error formatting date '{date_str}': {e}")
         return date_str
-
-
-def update_prices_in_database(db_client, matching_serials, serial_info_map):
-    try:
-        update_sql_command = """
-        UPDATE Asset
-        SET Price = :price, OrderDate = :order_date, Warranty = :warranty
-        WHERE TRIM(LOWER(Serienummer)) = TRIM(LOWER(:serial_number))
-        """
-
-        for serial_number in matching_serials:
-            info = serial_info_map[serial_number]
-            price_str = "{:.2f}".format(float(info['Price']))
-            order_date = format_atea_date(info['OrderDate'])
-            warranty = format_atea_date(info['Warranty'])
-            norm_serial = serial_number.strip().lower() if serial_number else serial_number
-            logger.info(f"Updating Serial Number: '{norm_serial}', Price: {price_str}, OrderDate: {order_date}, Warranty: {warranty}")
-            rows_affected = db_client.execute_sql(
-                update_sql_command,
-                {
-                    'price': price_str,
-                    'order_date': order_date,
-                    'warranty': warranty,
-                    'serial_number': norm_serial
-                }
-            )
-            logger.info(f"Updated price, order date and warranty for Serial Number: '{norm_serial}'. Rows affected: {rows_affected}")
-
-        db_client.get_connection().commit()
-        logger.info("Price, OrderDate and Warranty updates completed successfully.")
-    except Exception as e:
-        logger.error(f"Error updating prices, order dates and warranty in the database: {e}")
 
 
 def format_order_date(date_str):
