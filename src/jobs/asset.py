@@ -8,7 +8,7 @@ from asset.asset_data import (
     get_last_install_date, update_last_install_date, get_mac_addresses, update_mac_addresses, get_bitlocker_code, update_bitlocker_code,
     get_bitlocker_encryption, update_bitlocker_encryption, get_bitlocker_status, update_bitlocker_status, get_model, update_model,
     update_historical_data_from_comm2ig, update_ean_from_atea, update_afdelings_ean_from_delta, upload_assets_to_topdesk,
-    update_drift_status
+    update_drift_status, get_lan_mac_addresses, update_lan_mac_addresses
 
 )
 from utils.config import (
@@ -71,6 +71,12 @@ def job():
             logger.info("No last install date data found.")
 
         update_drift_status(asset_db_client)
+
+        get_lan_mac_addresses_result = get_lan_mac_addresses(capa_cms_db_client)
+        if get_lan_mac_addresses_result:
+            update_lan_mac_addresses(asset_db_client, get_lan_mac_addresses_result)
+        else:
+            logger.info("No LAN MAC addresses data found.")
 
         mac_addresses_result = get_mac_addresses(capa_cms_db_client)
         if mac_addresses_result:

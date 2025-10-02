@@ -35,6 +35,7 @@ def create_asset_management_table_if_not_exists(db_client):
         BitlockerKrypteringProcent VARCHAR(255),
         OSVersion VARCHAR(255),
         MACAdresse VARCHAR(255),
+        LanMACAdresse VARCHAR(255),
         DeviceLicense VARCHAR(255),
         Drift VARCHAR(255),
         Price VARCHAR(255),
@@ -520,6 +521,85 @@ def update_drift_status(db_client):
 
     except Exception as e:
         logger.error(f"Error updating Drift status for all units: {e}")
+
+
+def get_lan_mac_addresses(db_client):
+    lan_mac_sql = """
+    SELECT U.NAME, MAC_INV.VALUE
+    FROM UNIT U
+    JOIN INV MAC_INV ON U.UNITID = MAC_INV.UNITID
+        AND MAC_INV.SECTION = 'Network Adapter'
+        AND (
+            MAC_INV.NAME = 'Device #1 MAC Address' OR
+            MAC_INV.NAME = 'Device #2 MAC Address' OR
+            MAC_INV.NAME = 'Device #3 MAC Address' OR
+            MAC_INV.NAME = 'Device #4 MAC Address' OR
+            MAC_INV.NAME = 'Device #5 MAC Address' OR
+            MAC_INV.NAME = 'Device #6 MAC Address' OR
+            MAC_INV.NAME = 'Device #7 MAC Address' OR
+            MAC_INV.NAME = 'Device #8 MAC Address' OR
+            MAC_INV.NAME = 'Device #9 MAC Address' OR
+            MAC_INV.NAME = 'Device #10 MAC Address' OR
+            MAC_INV.NAME = 'Device #11 MAC Address' OR
+            MAC_INV.NAME = 'Device #12 MAC Address' OR
+            MAC_INV.NAME = 'Device #13 MAC Address' OR
+            MAC_INV.NAME = 'Device #14 MAC Address' OR
+            MAC_INV.NAME = 'Device #15 MAC Address'
+        )
+    JOIN INV IP_INV ON U.UNITID = IP_INV.UNITID
+        AND IP_INV.SECTION = 'Network Configuration'
+        AND (
+            (MAC_INV.NAME = 'Device #1 MAC Address' AND IP_INV.NAME = 'Device #1 IP address')
+            OR (MAC_INV.NAME = 'Device #2 MAC Address' AND IP_INV.NAME = 'Device #2 IP address')
+            OR (MAC_INV.NAME = 'Device #3 MAC Address' AND IP_INV.NAME = 'Device #3 IP address')
+            OR (MAC_INV.NAME = 'Device #4 MAC Address' AND IP_INV.NAME = 'Device #4 IP address')
+            OR (MAC_INV.NAME = 'Device #5 MAC Address' AND IP_INV.NAME = 'Device #5 IP address')
+            OR (MAC_INV.NAME = 'Device #6 MAC Address' AND IP_INV.NAME = 'Device #6 IP address')
+            OR (MAC_INV.NAME = 'Device #7 MAC Address' AND IP_INV.NAME = 'Device #7 IP address')
+            OR (MAC_INV.NAME = 'Device #8 MAC Address' AND IP_INV.NAME = 'Device #8 IP address')
+            OR (MAC_INV.NAME = 'Device #9 MAC Address' AND IP_INV.NAME = 'Device #9 IP address')
+            OR (MAC_INV.NAME = 'Device #10 MAC Address' AND IP_INV.NAME = 'Device #10 IP address')
+            OR (MAC_INV.NAME = 'Device #11 MAC Address' AND IP_INV.NAME = 'Device #11 IP address')
+            OR (MAC_INV.NAME = 'Device #12 MAC Address' AND IP_INV.NAME = 'Device #12 IP address')
+            OR (MAC_INV.NAME = 'Device #13 MAC Address' AND IP_INV.NAME = 'Device #13 IP address')
+            OR (MAC_INV.NAME = 'Device #14 MAC Address' AND IP_INV.NAME = 'Device #14 IP address')
+            OR (MAC_INV.NAME = 'Device #15 MAC Address' AND IP_INV.NAME = 'Device #15 IP address')
+        )
+    WHERE IP_INV.VALUE LIKE '10.129.%'
+       OR IP_INV.VALUE LIKE '10.146.%'
+       OR IP_INV.VALUE LIKE '10.161.%'
+       OR IP_INV.VALUE LIKE '10.177.%'
+    """
+    logger.info(f"Executing LAN MAC SQL command: {lan_mac_sql}")
+    try:
+        result = db_client.execute_sql(lan_mac_sql)
+        filtered_result = []
+        for row in result:
+            unit_name, lan_mac_address = row
+            if not (unit_name.startswith('DQ') or unit_name.startswith('AP')):
+                logger.info(f"Unit Name: {unit_name}, LAN MAC Address: {lan_mac_address}")
+                filtered_result.append((unit_name, lan_mac_address))
+        logger.info(f"Total LAN MAC elements: {len(filtered_result)}")
+        return filtered_result
+    except Exception as e:
+        logger.error(f"Error retrieving LAN MAC addresses data: {e}")
+        return None
+
+
+def update_lan_mac_addresses(db_client, data):
+    sql_command = """
+    UPDATE Asset
+    SET LANMacAdresse = :lan_mac_address
+    WHERE UnitName = :unit_name
+    """
+    try:
+        for row in data:
+            unit_name, lan_mac_address = row
+            db_client.execute_sql(sql_command, {'lan_mac_address': lan_mac_address, 'unit_name': unit_name})
+        db_client.get_connection().commit()
+        logger.info("LAN MAC Addresses Data updated successfully in Asset table.")
+    except Exception as e:
+        logger.error(f"Error updating LAN MAC data in Asset table: {e}")
 
 
 def get_mac_addresses(db_client):
@@ -1136,7 +1216,7 @@ def upload_assets_to_topdesk(db_client):
             "UnitName", "Producent", "Model", "Enhedstype", "Serienummer", "KøbsEANnr", "AfdelingsEAN",
             "PrimaryFullName", "PrimaryUser", "Afdeling", "SidsteLoginDato",
             "SidsteRul", "BitlockerKode", "BitlockerStatus", "BitlockerKrypteringProcent",
-            "OSVersion", "MACAdresse", "DeviceLicense", "Drift", "Price",
+            "OSVersion", "MACAdresse", "LanMACAdresse", "DeviceLicense", "Drift", "Price",
             "OrderDate", "Warranty"
         ]
         df = pd.DataFrame(result, columns=columns)
