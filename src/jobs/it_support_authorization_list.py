@@ -103,7 +103,7 @@ def job():
 
             sd_date = None
             for inst_id in all_institutions_df['InstitutionIdentifier'].values.tolist():
-                sd_dates = sd_client.get_employment_start_date(inst_id, row['CPR'], original_date)
+                sd_dates = sd_client.get_employment_start_date(inst_id, row['CPR'], None, original_date)
                 if sd_dates:
                     sd_dates = [datetime.datetime.strptime(sd, "%Y-%m-%d").date() for sd in sd_dates]
                     sd_date_dt = min(sd_dates, key=lambda d: abs((d - original_date).days))
@@ -171,3 +171,4 @@ def job():
         except Exception as e2:
             logger.error(f"Error in IT Support Authorization List job: {e2}")
             return False
+
