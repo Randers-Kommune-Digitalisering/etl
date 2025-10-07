@@ -1,4 +1,3 @@
-
 import datetime
 import logging
 import traceback
@@ -171,4 +170,3 @@ def job():
         except Exception as e2:
             logger.error(f"Error in IT Support Authorization List job: {e2}")
             return False
-
