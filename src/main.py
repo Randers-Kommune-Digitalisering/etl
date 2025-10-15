@@ -2,7 +2,6 @@ from flask import Flask
 from healthcheck import HealthCheck
 from prometheus_client import generate_latest
 import logging
-from asset.asset_data import create_asset_tables
 
 from utils.logging import set_logging_configuration, APP_RUNNING
 from utils.config import DEBUG, PORT, POD_NAME
@@ -22,7 +21,6 @@ def create_app():
 
 
 def initialize_db():
-    create_asset_tables()
     logger.info("Initialization complete.")
 
 

@@ -1,6 +1,6 @@
 import logging
 from asset.asset_data import (
-    insert_departments_data, insert_users_data, insert_computers_data, insert_device_license_and_historical_data
+    create_asset_tables, insert_departments_data, insert_users_data, insert_computers_data, insert_device_license_and_historical_data
 )
 
 logger = logging.getLogger(__name__)
@@ -9,6 +9,8 @@ logger = logging.getLogger(__name__)
 def job():
     try:
         logger.info("Starting Asset data job")
+
+        create_asset_tables()
 
         insert_departments_data()
 
