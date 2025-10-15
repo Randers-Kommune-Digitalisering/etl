@@ -11,12 +11,14 @@ from asset.model import Afdeling, Bruger, Computer
 from utils.api_requests import APIClient
 from utils.config import (
     ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH, ASSET_SFTP_DEVICE_FILE_PATH, ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, ASSET_SFTP_EAN_ATEA_FILE_PATH,
-    ATEA_API_KEY, ATEA_URL,
+    ATEA_API_KEY, ATEA_URL, TOPDESK_API_USERNAME, TOPDESK_API_PASSWORD, TOPDESK_API_URL, TOPDESK_ASSET_FILENAME,
 )
+from utils.utils import df_to_csv_bytes
 
 logger = logging.getLogger(__name__)
 
 atea_client = APIClient(base_url=ATEA_URL, api_key=ATEA_API_KEY, use_subkey=True)
+topdesk_client = APIClient(base_url=TOPDESK_API_URL, username=TOPDESK_API_USERNAME, password=TOPDESK_API_PASSWORD)
 capa_cms_db_client = get_capa_cms_db()
 asset_db_client = get_asset_db()
 
@@ -457,4 +459,102 @@ def insert_atea_data():
         return True
     except Exception as e:
         logger.error(f"Error updating asset info from Atea: {e}")
+        return False
+
+
+def upload_assets_to_topdesk():
+    try:
+        sql_command = """
+        SELECT
+            STRING_AGG(a."Afdeling", ', ') AS "Afdeling",
+            STRING_AGG(a."AfdelingsEAN", ', ') AS "AfdelingsEAN",
+            b."PrimaryFullName",
+            b."PrimaryUser",
+            c."UnitName",
+            c."Producent",
+            c."Model",
+            c."Enhedstype",
+            c."Serienummer",
+            c."SidsteLoginDato",
+            c."SidsteRul",
+            c."BitlockerKode",
+            c."BitlockerStatus",
+            c."BitlockerKrypteringProcent",
+            c."OSVersion",
+            c."MACAdresse",
+            c."LanMACAdresse",
+            c."DeviceLicense",
+            c."Price",
+            c."OrderDate",
+            c."KøbsEANnr",
+            c."Warranty",
+            c."Drift"
+        FROM public."Computer" c
+        LEFT JOIN public."Bruger" b ON c."BrugerID" = b."BrugerID"
+        LEFT JOIN public."bruger_afdeling" ba ON b."BrugerID" = ba."bruger_id"
+        LEFT JOIN public."Afdeling" a ON ba."afdeling_id" = a."AfdelingID"
+        GROUP BY
+            b."PrimaryFullName",
+            b."PrimaryUser",
+            c."UnitName",
+            c."Producent",
+            c."Model",
+            c."Enhedstype",
+            c."Serienummer",
+            c."SidsteLoginDato",
+            c."SidsteRul",
+            c."BitlockerKode",
+            c."BitlockerStatus",
+            c."BitlockerKrypteringProcent",
+            c."OSVersion",
+            c."MACAdresse",
+            c."LanMACAdresse",
+            c."DeviceLicense",
+            c."Price",
+            c."OrderDate",
+            c."KøbsEANnr",
+            c."Warranty",
+            c."Drift"
+        """
+        result = asset_db_client.execute_sql(sql_command)
+        if not result:
+            logger.info("No data found in Computer/Bruger/Afdeling tables.")
+            return False
+
+        columns = [
+            "Afdeling", "AfdelingsEAN", "PrimaryFullName", "PrimaryUser", "UnitName", "Producent", "Model",
+            "Enhedstype", "Serienummer", "SidsteLoginDato", "SidsteRul", "BitlockerKode", "BitlockerStatus",
+            "BitlockerKrypteringProcent", "OSVersion", "MACAdresse", "LanMACAdresse", "DeviceLicense",
+            "Price", "OrderDate", "KøbsEANnr", "Warranty", "Drift"
+        ]
+        df = pd.DataFrame(result, columns=columns)
+
+        # Transform data to match TopDesk requirements
+        for col in ["SidsteLoginDato", "SidsteRul", "OrderDate", "Warranty"]:
+            if col in df.columns:
+                df[col] = df[col].apply(
+                    lambda val: "" if pd.isnull(val) else pd.to_datetime(val).strftime("%Y-%m-%dT%H:%M:%S.00")
+                    if str(val).strip() else str(val)
+                )
+
+        for col in ["Drift", "DeviceLicense"]:
+            if col in df.columns:
+                df[col] = df[col].apply(
+                    lambda val: "TRUE" if val is True or str(val).lower() == "true" else ""
+                )
+
+        if "Price" in df.columns:
+            df["Price"] = df["Price"].apply(
+                lambda val: "{:.2f}".format(float(val)) if pd.notnull(val) and str(val).strip() else ""
+            )
+
+        csv_bytes = df_to_csv_bytes(df, sep=';', encoding='UTF-8')
+        upload_path = f"/services/import-to-api-v1/api/sourceFiles?filename={TOPDESK_ASSET_FILENAME}"
+
+        logger.info(f"Uploading {TOPDESK_ASSET_FILENAME} to TopDesk at {TOPDESK_API_URL}{upload_path}")
+        topdesk_client.make_request(path=upload_path, method="put", data=csv_bytes)
+        logger.info(f"Successfully uploaded {TOPDESK_ASSET_FILENAME} to TopDesk.")
+        return True
+    except Exception as e:
+        logger.error(f"Error uploading {TOPDESK_ASSET_FILENAME} to TopDesk: {e}")
         return False
