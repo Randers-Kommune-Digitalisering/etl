@@ -418,3 +418,43 @@ def insert_device_license_and_historical_data():
     except Exception as e:
         logger.error(f"Error with updating DeviceLicense, AfdelingsEAN, Comm2ig or Atea data: {e}")
         return False
+
+
+def insert_atea_data():
+    try:
+        atea_data = fetch_atea_data()
+        if not atea_data:
+            logger.error("No data fetched from Atea API.")
+            return False
+
+        serial_info_map = {
+            str(item.get('SerialNumber')).strip().lower(): {
+                'Price': item.get('Price'),
+                'OrderDate': item.get('OrderDate'),
+                'Warranty': item.get('Warranty')
+            }
+            for item in atea_data
+            if item.get('SerialNumber') and item.get('Price') and item.get('OrderDate') and item.get('Warranty')
+        }
+
+        with asset_db_client.get_session() as session:
+            computers = session.query(Computer).all()
+            updated = 0
+            for computer in computers:
+                serial_norm = str(computer.Serienummer).strip().lower() if computer.Serienummer else None
+                info = serial_info_map.get(serial_norm)
+                if info:
+                    try:
+                        computer.Price = float(info['Price'])
+                    except Exception:
+                        logger.warning(f"Could not convert price '{info['Price']}' for serial '{serial_norm}'")
+                        continue
+                    computer.OrderDate = info['OrderDate']
+                    computer.Warranty = info['Warranty']
+                    updated += 1
+            session.commit()
+            logger.info(f"Updated price, order date, and warranty for {updated} computers from Atea API.")
+        return True
+    except Exception as e:
+        logger.error(f"Error updating asset info from Atea: {e}")
+        return False
