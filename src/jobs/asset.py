@@ -1,6 +1,6 @@
 import logging
 from asset.asset_data import (
-    insert_departments_data, insert_users_data, insert_computers_data
+    insert_departments_data, insert_users_data, insert_computers_data, insert_device_license_and_historical_data
 )
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,8 @@ def job():
         insert_users_data()
 
         insert_computers_data()
+
+        insert_device_license_and_historical_data()
 
         logger.info("Asset job completed successfully.")
         return True

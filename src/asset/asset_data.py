@@ -1,13 +1,22 @@
 import logging
+import io
+import pandas as pd
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from dateutil.parser import parse
 from utils.database_connection import get_asset_db, get_capa_cms_db
+from utils.sftp_connection import get_asset_sftp_client
 from asset.model import Base
 from asset.model import Afdeling, Bruger, Computer
+from utils.api_requests import APIClient
+from utils.config import (
+    ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH, ASSET_SFTP_DEVICE_FILE_PATH, ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, ASSET_SFTP_EAN_ATEA_FILE_PATH,
+    ATEA_API_KEY, ATEA_URL,
+)
 
 logger = logging.getLogger(__name__)
 
+atea_client = APIClient(base_url=ATEA_URL, api_key=ATEA_API_KEY, use_subkey=True)
 capa_cms_db_client = get_capa_cms_db()
 asset_db_client = get_asset_db()
 
@@ -271,4 +280,141 @@ def insert_computers_data():
             return False
     except Exception as e:
         logger.error(f"Error inserting computers into Computer table: {e}")
+        return False
+
+
+def fetch_atea_data():
+    try:
+        logger.info("Fetching data from Atea API...")
+        url = "/api/assets/search?PageSize=2000&Page=1&AssetType=AB,AA"
+        response = atea_client.make_request(path=url, method='get')
+
+        if isinstance(response, list):
+            logger.info(f"Successfully retrieved data from Atea API. Total records: {len(response)}")
+            return response
+        else:
+            logger.error(f"Unexpected response structure: {response}")
+            return None
+    except Exception as e:
+        logger.error(f"Error while fetching data from Atea API: {e}")
+        return None
+
+
+def insert_device_license_and_historical_data():
+    try:
+        sftp_client = get_asset_sftp_client()
+        with sftp_client.get_connection() as conn:
+            with conn.open(ASSET_SFTP_DEVICE_FILE_PATH, 'r') as file:
+                device_license_csv_data = file.read().decode('utf-8')
+            with conn.open(ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH, 'rb') as file:
+                afdelings_ean_excel_data = file.read()
+            with conn.open(ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, 'r') as file:
+                comm2ig_csv_data = file.read().decode('utf-8')
+            with conn.open(ASSET_SFTP_EAN_ATEA_FILE_PATH, 'rb') as file:
+                atea_excel_data = file.read()
+
+        df_device_license = pd.read_csv(io.StringIO(device_license_csv_data))
+        df_device_license.columns = df_device_license.columns.str.strip()
+        if 'ComputerName' not in df_device_license.columns:
+            logger.error("CSV is missing 'ComputerName' column.")
+            return False
+        computer_names = [name.strip() for name in df_device_license['ComputerName'].dropna().tolist()]
+
+        df_afdelings_ean = pd.read_excel(io.BytesIO(afdelings_ean_excel_data), dtype=str)
+        df_afdelings_ean.columns = df_afdelings_ean.columns.str.strip()
+        if 'Institution/afdeling' not in df_afdelings_ean.columns or 'Ean-nummer' not in df_afdelings_ean.columns:
+            logger.error("Exel is missing 'Institution/afdeling' or 'Ean-nummer' column.")
+            return False
+
+        df_comm2ig = pd.read_csv(io.StringIO(comm2ig_csv_data), dtype=str, sep=',')
+        df_comm2ig.columns = df_comm2ig.columns.str.strip()
+        required_cols = ['Serienr.', 'Pris pr.stk. i kr. ekskl. moms', 'Fakturadato', 'EAN-nr.']
+        missing = [col for col in required_cols if col not in df_comm2ig.columns]
+        if missing:
+            logger.error(f"Required columns not found in Comm2ig CSV file: {missing}")
+            return False
+
+        df_atea = pd.read_excel(io.BytesIO(atea_excel_data), dtype=str)
+        df_atea.columns = df_atea.columns.str.strip()
+        if 'Nummer' not in df_atea.columns or 'EAN-nr.' not in df_atea.columns:
+            logger.error("Atea Excel Data missing 'Nummer' or 'EAN-nr.' column.")
+            return False
+
+        atea_data = fetch_atea_data()
+        if not atea_data:
+            logger.error("No data fetched from Atea API.")
+            return False
+        billto_map = {str(item.get('BillTo')): item.get('SerialNumber') for item in atea_data if item.get('BillTo') and item.get('SerialNumber')}
+
+        with asset_db_client.get_session() as session:
+
+            computers = session.query(Computer).all()
+            name_to_computer = {c.UnitName: c for c in computers if c.UnitName}
+            serial_to_computer = {str(c.Serienummer).lstrip('sS').lower(): c for c in computers if c.Serienummer}
+            serial_exact_lookup = {str(c.Serienummer): c for c in computers if c.Serienummer}
+
+            # DeviceLicense/AD
+            updated_device = 0
+            for name in computer_names:
+                computer = name_to_computer.get(name)
+                if computer:
+                    computer.DeviceLicense = True
+                    updated_device += 1
+
+            afdelinger = session.query(Afdeling).all()
+            afdeling_lookup = {a.Afdeling: a for a in afdelinger if a.Afdeling}
+
+            # AfdelingsEAN/Delta
+            updated_ean = 0
+            for _, row in df_afdelings_ean.iterrows():
+                afdeling = str(row['Institution/afdeling']).strip().lower()
+                ean_nummer = str(row['Ean-nummer']).strip()
+                if not ean_nummer or ean_nummer.lower() == 'nan':
+                    logger.info(f"Skipping update for Department: {afdeling} as Ean-nummer is empty.")
+                    continue
+                afdeling_obj = afdeling_lookup.get(afdeling)
+                if afdeling_obj:
+                    afdeling_obj.AfdelingsEAN = ean_nummer
+                    updated_ean += 1
+
+            # Comm2ig historisk data
+            updated_comm2ig = 0
+            for _, row in df_comm2ig.iterrows():
+                serial = row['Serienr.']
+                serial_norm = str(serial[1:]).lower() if isinstance(serial, str) and serial.startswith('S') else str(serial).lower()
+                price = row['Pris pr.stk. i kr. ekskl. moms']
+                fakturadato = row['Fakturadato']
+                ean_nr = row['EAN-nr.'] if 'EAN-nr.' in row else None
+
+                computer_obj = serial_to_computer.get(serial_norm)
+                if computer_obj:
+                    try:
+                        price_float = float(str(price).replace(',', '.'))
+                    except Exception:
+                        logger.warning(f"Could not convert price '{price}' for serial '{serial_norm}'")
+                        continue
+                    computer_obj.Price = price_float
+                    computer_obj.OrderDate = fakturadato
+                    computer_obj.KøbsEANnr = ean_nr
+                    updated_comm2ig += 1
+
+            # Atea KøbsEANnr
+            updated_atea = 0
+            for _, row in df_atea.iterrows():
+                nummer = str(row['Nummer']).strip()
+                ean_nr = row['EAN-nr.']
+                serial = billto_map.get(nummer)
+                computer_obj = serial_exact_lookup.get(serial)
+                if serial and computer_obj:
+                    computer_obj.KøbsEANnr = ean_nr
+                    updated_atea += 1
+
+            session.commit()
+            logger.info(f"DeviceLicense updated for {updated_device} computers")
+            logger.info(f"AfdelingsEAN updated for {updated_ean} departments")
+            logger.info(f"Comm2ig Historical data: Updated Price, Order Date, and KøbsEANnr for {updated_comm2ig} serial numbers.")
+            logger.info(f"Atea: KøbsEANnr updated for {updated_atea}")
+        return True
+    except Exception as e:
+        logger.error(f"Error with updating DeviceLicense, AfdelingsEAN, Comm2ig or Atea data: {e}")
         return False
