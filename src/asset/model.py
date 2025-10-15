@@ -1,8 +1,15 @@
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, Boolean
+from sqlalchemy import Column, DateTime, Integer, String, Float, ForeignKey, Boolean, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
+
+
+bruger_afdeling = Table(
+    'bruger_afdeling', Base.metadata,
+    Column('bruger_id', Integer, ForeignKey('Bruger.BrugerID')),
+    Column('afdeling_id', Integer, ForeignKey('Afdeling.AfdelingID'))
+)
 
 
 class Afdeling(Base):
@@ -10,7 +17,7 @@ class Afdeling(Base):
     AfdelingID = Column(Integer, primary_key=True, autoincrement=True)
     Afdeling = Column(String, nullable=False)
     AfdelingsEAN = Column(String)
-    brugere = relationship('Bruger', back_populates='afdeling')
+    brugere = relationship('Bruger', secondary=bruger_afdeling, back_populates='afdelinger')
 
 
 class Bruger(Base):
@@ -18,8 +25,7 @@ class Bruger(Base):
     BrugerID = Column(Integer, primary_key=True, autoincrement=True)
     PrimaryFullName = Column(String, nullable=False)
     PrimaryUser = Column(String, nullable=False)
-    AfdelingID = Column(Integer, ForeignKey('Afdeling.AfdelingID'))
-    afdeling = relationship('Afdeling', back_populates='brugere')
+    afdelinger = relationship('Afdeling', secondary=bruger_afdeling, back_populates='brugere')
     computere = relationship('Computer', back_populates='bruger')
 
 
@@ -30,8 +36,8 @@ class Computer(Base):
     Model = Column(String)
     Enhedstype = Column(String)
     Serienummer = Column(String)
-    SidsteLoginDato = Column(String)
-    SidsteRul = Column(String)
+    SidsteLoginDato = Column(DateTime)
+    SidsteRul = Column(DateTime)
     BitlockerKode = Column(String)
     BitlockerStatus = Column(String)
     BitlockerKrypteringProcent = Column(String)
@@ -41,7 +47,8 @@ class Computer(Base):
     DeviceLicense = Column(Boolean)
     Drift = Column(Boolean)
     Price = Column(Float)
-    OrderDate = Column(String)
-    Warranty = Column(String)
+    OrderDate = Column(DateTime)
+    Warranty = Column(DateTime)
+    KøbsEANnr = Column(String)
     BrugerID = Column(Integer, ForeignKey('Bruger.BrugerID'))
     bruger = relationship('Bruger', back_populates='computere')
