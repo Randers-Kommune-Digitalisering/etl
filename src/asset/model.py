@@ -5,50 +5,50 @@ from sqlalchemy.ext.declarative import declarative_base
 Base = declarative_base()
 
 
-bruger_afdeling = Table(
-    'bruger_afdeling', Base.metadata,
-    Column('bruger_id', Integer, ForeignKey('Bruger.BrugerID')),
-    Column('afdeling_id', Integer, ForeignKey('Afdeling.AfdelingID'))
+user_department = Table(
+    'user_department', Base.metadata,
+    Column('user_id', Integer, ForeignKey('user.user_id')),
+    Column('department_id', Integer, ForeignKey('department.department_id'))
 )
 
 
-class Afdeling(Base):
-    __tablename__ = 'Afdeling'
-    AfdelingID = Column(Integer, primary_key=True, autoincrement=True)
-    Afdeling = Column(String, nullable=False)
-    AfdelingsEAN = Column(String)
-    brugere = relationship('Bruger', secondary=bruger_afdeling, back_populates='afdelinger')
+class Department(Base):
+    __tablename__ = 'department'
+    department_id = Column(Integer, primary_key=True, autoincrement=True)
+    name = Column(String, nullable=False)
+    ean = Column(String)
+    users = relationship('User', secondary=user_department, back_populates='departments')
 
 
-class Bruger(Base):
-    __tablename__ = 'Bruger'
-    BrugerID = Column(Integer, primary_key=True, autoincrement=True)
-    PrimaryFullName = Column(String, nullable=False)
-    PrimaryUser = Column(String, nullable=False)
-    afdelinger = relationship('Afdeling', secondary=bruger_afdeling, back_populates='brugere')
-    computere = relationship('Computer', back_populates='bruger')
+class User(Base):
+    __tablename__ = 'user'
+    user_id = Column(Integer, primary_key=True, autoincrement=True)
+    full_name = Column(String, nullable=False)
+    primary_user = Column(String, nullable=False)
+    departments = relationship('Department', secondary=user_department, back_populates='users')
+    computers = relationship('Computer', back_populates='user')
 
 
 class Computer(Base):
-    __tablename__ = 'Computer'
-    UnitName = Column(String, primary_key=True)
-    Producent = Column(String)
-    Model = Column(String)
-    Enhedstype = Column(String)
-    Serienummer = Column(String)
-    SidsteLoginDato = Column(DateTime)
-    SidsteRul = Column(DateTime)
-    BitlockerKode = Column(String)
-    BitlockerStatus = Column(String)
-    BitlockerKrypteringProcent = Column(String)
-    OSVersion = Column(String)
-    MACAdresse = Column(String)
-    LanMACAdresse = Column(String)
-    DeviceLicense = Column(Boolean)
-    Drift = Column(Boolean)
-    Price = Column(Float)
-    OrderDate = Column(DateTime)
-    Warranty = Column(DateTime)
-    KøbsEANnr = Column(String)
-    BrugerID = Column(Integer, ForeignKey('Bruger.BrugerID'))
-    bruger = relationship('Bruger', back_populates='computere')
+    __tablename__ = 'computer'
+    unit_name = Column(String, primary_key=True)
+    producent = Column(String)
+    model = Column(String)
+    device_type = Column(String)
+    serial_number = Column(String)
+    last_login_date = Column(DateTime)
+    last_run = Column(DateTime)
+    bitlocker_code = Column(String)
+    bitlocker_status = Column(String)
+    bitlocker_encryption_percentage = Column(String)
+    os_version = Column(String)
+    mac_address = Column(String)
+    lan_mac_address = Column(String)
+    device_license = Column(Boolean)
+    drift = Column(Boolean)
+    price = Column(Float)
+    order_date = Column(DateTime)
+    warranty = Column(DateTime)
+    kob_ean_nr = Column(String)
+    user_id = Column(Integer, ForeignKey('user.user_id'))
+    user = relationship('User', back_populates='computers')
