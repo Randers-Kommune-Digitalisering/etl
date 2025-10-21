@@ -13,17 +13,29 @@ def job():
 
         create_asset_tables()
 
-        insert_departments_data()
+        if not insert_departments_data():
+            logger.error("Failed to insert departments data.")
+            return False
 
-        insert_users_data()
+        if not insert_users_data():
+            logger.error("Failed to insert users data.")
+            return False
 
-        insert_computers_data()
+        if not insert_computers_data():
+            logger.error("Failed to insert computers data.")
+            return False
 
-        insert_device_license_and_historical_data()
+        if not insert_device_license_and_historical_data():
+            logger.error("Failed to insert device license and historical data.")
+            return False
 
-        insert_atea_data()
+        if not insert_atea_data():
+            logger.error("Failed to insert Atea data.")
+            return False
 
-        upload_assets_to_topdesk()
+        if not upload_assets_to_topdesk():
+            logger.error("Failed to upload assets to TopDesk.")
+            return False
 
         logger.info("Asset job completed successfully.")
         return True
