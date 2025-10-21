@@ -22,3 +22,4 @@ zipfile36
 pymysql
 elasticsearch8
 selenium
+python-dateutil

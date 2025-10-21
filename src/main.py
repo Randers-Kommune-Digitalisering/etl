@@ -2,8 +2,6 @@ from flask import Flask
 from healthcheck import HealthCheck
 from prometheus_client import generate_latest
 import logging
-from utils.database_connection import get_asset_db
-from capa.capa_data import create_capa_table_if_not_exists
 
 from utils.logging import set_logging_configuration, APP_RUNNING
 from utils.config import DEBUG, PORT, POD_NAME
@@ -23,8 +21,6 @@ def create_app():
 
 
 def initialize_db():
-    asset_db_client = get_asset_db()
-    create_capa_table_if_not_exists(asset_db_client)
     logger.info("Initialization complete.")
 
 
