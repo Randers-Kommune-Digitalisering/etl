@@ -386,6 +386,8 @@ def insert_device_license_and_historical_data():
                 price = row['Pris pr.stk. i kr. ekskl. moms']
                 fakturadato = row['Fakturadato']
                 ean_nr = row['EAN-nr.'] if 'EAN-nr.' in row else None
+                if pd.isna(ean_nr) or str(ean_nr).strip().lower() == 'nan' or not str(ean_nr).strip():
+                    ean_nr = None
 
                 computer_obj = serial_to_computer.get(serial_norm)
                 if computer_obj:
