@@ -467,8 +467,8 @@ def upload_assets_to_topdesk():
     try:
         sql_command = """
         SELECT
-            STRING_AGG(a."name", ', ') AS "afdeling",
-            STRING_AGG(a."ean", ', ') AS "afdelings_ean",
+            STRING_AGG(a."name", ', ') AS "department",
+            STRING_AGG(a."ean", ', ') AS "department_ean",
             b."full_name",
             b."primary_user",
             c."unit_name",
@@ -523,7 +523,7 @@ def upload_assets_to_topdesk():
             return False
 
         columns = [
-            "afdeling", "afdelings_ean", "full_name", "primary_user", "unit_name", "producent", "model",
+            "department", "department_ean", "full_name", "primary_user", "unit_name", "producent", "model",
             "device_type", "serial_number", "last_login_date", "last_run", "bitlocker_code", "bitlocker_status",
             "bitlocker_encryption_percentage", "os_version", "mac_address", "lan_mac_address", "device_license",
             "price", "order_date", "kob_ean_nr", "warranty", "drift"
