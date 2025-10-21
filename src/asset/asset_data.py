@@ -7,7 +7,7 @@ from dateutil.parser import parse
 from utils.database_connection import get_asset_db, get_capa_cms_db
 from utils.sftp_connection import get_asset_sftp_client
 from asset.model import Base
-from asset.model import Afdeling, Bruger, Computer
+from asset.model import Department, User, Computer
 from utils.api_requests import APIClient
 from utils.config import (
     ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH, ASSET_SFTP_DEVICE_FILE_PATH, ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, ASSET_SFTP_EAN_ATEA_FILE_PATH,
@@ -47,13 +47,13 @@ def insert_departments_data():
             with asset_db_client.get_session() as session:
                 inserted = 0
                 for row in result:
-                    department = row[0].lower() if isinstance(row[0], str) else row[0]
-                    if not session.query(Afdeling).filter_by(Afdeling=department).first():
-                        afdeling_obj = Afdeling(Afdeling=department)
-                        session.add(afdeling_obj)
+                    department = row[0].strip().lower() if isinstance(row[0], str) else row[0]
+                    if not session.query(Department).filter_by(name=department).first():
+                        department_obj = Department(name=department)
+                        session.add(department_obj)
                         inserted += 1
                 session.commit()
-                logger.info(f"Inserted {inserted} unique departments into Afdeling table.")
+                logger.info(f"Inserted {inserted} unique departments into Department table.")
             return True
         else:
             logger.error("No Department data found.")
@@ -88,8 +88,8 @@ def insert_users_data():
             return False
 
         with asset_db_client.get_session() as session:
-            departments = {d.Afdeling: d for d in session.query(Afdeling).all()}
-            existing_users = {u.PrimaryUser: u for u in session.query(Bruger).all()}
+            departments = {d.name: d for d in session.query(Department).all()}
+            existing_users = {u.primary_user: u for u in session.query(User).all()}
 
             user_data = {}
             for primary_user, fullname, department in result:
@@ -100,18 +100,17 @@ def insert_users_data():
 
             inserted = 0
             for primary_user, data in user_data.items():
-
                 user = existing_users.get(primary_user)
                 if not user:
-                    user = Bruger(PrimaryFullName=data["fullname"], PrimaryUser=primary_user)
+                    user = User(full_name=data["fullname"], primary_user=primary_user)
                     session.add(user)
                     session.flush()
                     inserted += 1
 
                 for dept in data["departments"]:
                     department_obj = departments.get(dept)
-                    if department_obj and department_obj not in user.afdelinger:
-                        user.afdelinger.append(department_obj)
+                    if department_obj and department_obj not in user.departments:
+                        user.departments.append(department_obj)
 
             session.commit()
             logger.info(f"Inserted/updated {inserted} users and linked departments.")
@@ -222,55 +221,55 @@ def insert_computers_data():
             with asset_db_client.get_session() as session:
                 for row in result:
                     (
-                        unit_name, producent, model, enhedstype, serienummer, sidste_login_dato, sidste_rul, primary_user,
-                        bitlocker_kode, bitlocker_status, bitlocker_kryptering, os_version, mac_adresse, lan_mac_adresse
+                        unit_name, producent, model, device_type, serial_number, last_login_date, last_run, primary_user,
+                        bitlocker_code, bitlocker_status, bitlocker_encryption_percentage, os_version, mac_address, lan_mac_address
                     ) = row
-                    bruger_obj = session.query(Bruger).filter_by(PrimaryUser=primary_user).first()
-                    bruger_id = bruger_obj.BrugerID if bruger_obj else None
+                    user_obj = session.query(User).filter_by(primary_user=primary_user).first()
+                    user_id = user_obj.user_id if user_obj else None
 
                     drift_status = False
-                    if sidste_login_dato:
+                    if last_login_date:
                         try:
-                            last_login = parse(str(sidste_login_dato))
+                            last_login = parse(str(last_login_date))
                             if last_login >= six_months_ago:
                                 drift_status = True
                         except Exception:
-                            logger.error(f"Could not parse SidsteLoginDato: {sidste_login_dato} for {unit_name}")
+                            logger.error(f"Could not parse SidsteLoginDato: {last_login_date} for {unit_name}")
 
-                    computer = session.query(Computer).filter_by(UnitName=unit_name).first()
+                    computer = session.query(Computer).filter_by(unit_name=unit_name).first()
                     if computer:
-                        computer.Producent = producent
-                        computer.Model = model
-                        computer.Enhedstype = enhedstype
-                        computer.Serienummer = serienummer
-                        computer.SidsteLoginDato = sidste_login_dato
-                        computer.SidsteRul = sidste_rul
-                        computer.BrugerID = bruger_id
-                        computer.BitlockerKode = bitlocker_kode
-                        computer.BitlockerStatus = bitlocker_status
-                        computer.BitlockerKrypteringProcent = bitlocker_kryptering
-                        computer.OSVersion = os_version
-                        computer.Drift = drift_status
-                        computer.MACAdresse = mac_adresse
-                        computer.LanMACAdresse = lan_mac_adresse
+                        computer.producent = producent
+                        computer.model = model
+                        computer.device_type = device_type
+                        computer.serial_number = serial_number
+                        computer.last_login_date = last_login_date
+                        computer.last_run = last_run
+                        computer.user_id = user_id
+                        computer.bitlocker_code = bitlocker_code
+                        computer.bitlocker_status = bitlocker_status
+                        computer.bitlocker_encryption_percentage = bitlocker_encryption_percentage
+                        computer.os_version = os_version
+                        computer.drift = drift_status
+                        computer.mac_address = mac_address
+                        computer.lan_mac_address = lan_mac_address
                         updated += 1
                     else:
                         computer = Computer(
-                            UnitName=unit_name,
-                            Producent=producent,
-                            Model=model,
-                            Enhedstype=enhedstype,
-                            Serienummer=serienummer,
-                            SidsteLoginDato=sidste_login_dato,
-                            SidsteRul=sidste_rul,
-                            BrugerID=bruger_id,
-                            BitlockerKode=bitlocker_kode,
-                            BitlockerStatus=bitlocker_status,
-                            BitlockerKrypteringProcent=bitlocker_kryptering,
-                            OSVersion=os_version,
-                            Drift=drift_status,
-                            MACAdresse=mac_adresse,
-                            LanMACAdresse=lan_mac_adresse
+                            unit_name=unit_name,
+                            producent=producent,
+                            model=model,
+                            device_type=device_type,
+                            serial_number=serial_number,
+                            last_login_date=last_login_date,
+                            last_run=last_run,
+                            user_id=user_id,
+                            bitlocker_code=bitlocker_code,
+                            bitlocker_status=bitlocker_status,
+                            bitlocker_encryption_percentage=bitlocker_encryption_percentage,
+                            os_version=os_version,
+                            drift=drift_status,
+                            mac_address=mac_address,
+                            lan_mac_address=lan_mac_address
                         )
                         session.add(computer)
                         inserted += 1
@@ -351,32 +350,32 @@ def insert_device_license_and_historical_data():
         with asset_db_client.get_session() as session:
 
             computers = session.query(Computer).all()
-            name_to_computer = {c.UnitName: c for c in computers if c.UnitName}
-            serial_to_computer = {str(c.Serienummer).lstrip('sS').lower(): c for c in computers if c.Serienummer}
-            serial_exact_lookup = {str(c.Serienummer): c for c in computers if c.Serienummer}
+            name_to_computer = {c.unit_name: c for c in computers if c.unit_name}
+            serial_to_computer = {str(c.serial_number).lstrip('sS').lower(): c for c in computers if c.serial_number}
+            serial_exact_lookup = {str(c.serial_number): c for c in computers if c.serial_number}
 
             # DeviceLicense/AD
             updated_device = 0
             for name in computer_names:
                 computer = name_to_computer.get(name)
                 if computer:
-                    computer.DeviceLicense = True
+                    computer.device_license = True
                     updated_device += 1
 
-            afdelinger = session.query(Afdeling).all()
-            afdeling_lookup = {a.Afdeling: a for a in afdelinger if a.Afdeling}
+            departments = session.query(Department).all()
+            department_lookup = {a.name: a for a in departments if a.name}
 
             # AfdelingsEAN/Delta
             updated_ean = 0
             for _, row in df_afdelings_ean.iterrows():
-                afdeling = str(row['Institution/afdeling']).strip().lower()
+                department = str(row['Institution/afdeling']).strip().lower()
                 ean_nummer = str(row['Ean-nummer']).strip()
                 if not ean_nummer or ean_nummer.lower() == 'nan':
-                    logger.info(f"Skipping update for Department: {afdeling} as Ean-nummer is empty.")
+                    logger.info(f"Skipping update for Department: {department} as Ean-nummer is empty.")
                     continue
-                afdeling_obj = afdeling_lookup.get(afdeling)
-                if afdeling_obj:
-                    afdeling_obj.AfdelingsEAN = ean_nummer
+                department_obj = department_lookup.get(department)
+                if department_obj:
+                    department_obj.ean = ean_nummer
                     updated_ean += 1
 
             # Comm2ig historisk data
@@ -395,9 +394,9 @@ def insert_device_license_and_historical_data():
                     except Exception:
                         logger.warning(f"Could not convert price '{price}' for serial '{serial_norm}'")
                         continue
-                    computer_obj.Price = price_float
-                    computer_obj.OrderDate = fakturadato
-                    computer_obj.KøbsEANnr = ean_nr
+                    computer_obj.price = price_float
+                    computer_obj.order_date = fakturadato
+                    computer_obj.kob_ean_nr = ean_nr
                     updated_comm2ig += 1
 
             # Atea KøbsEANnr
@@ -408,14 +407,14 @@ def insert_device_license_and_historical_data():
                 serial = billto_map.get(nummer)
                 computer_obj = serial_exact_lookup.get(serial)
                 if serial and computer_obj:
-                    computer_obj.KøbsEANnr = ean_nr
+                    computer_obj.kob_ean_nr = ean_nr
                     updated_atea += 1
 
             session.commit()
             logger.info(f"DeviceLicense updated for {updated_device} computers")
             logger.info(f"AfdelingsEAN updated for {updated_ean} departments")
-            logger.info(f"Comm2ig Historical data: Updated Price, Order Date, and KøbsEANnr for {updated_comm2ig} serial numbers.")
-            logger.info(f"Atea: KøbsEANnr updated for {updated_atea}")
+            logger.info(f"Comm2ig Historical data: Updated price, order date, and kob_ean_nr for {updated_comm2ig} serial numbers.")
+            logger.info(f"Atea: kob_ean_nr updated for {updated_atea}")
         return True
     except Exception as e:
         logger.error(f"Error with updating DeviceLicense, AfdelingsEAN, Comm2ig or Atea data: {e}")
@@ -431,9 +430,9 @@ def insert_atea_data():
 
         serial_info_map = {
             str(item.get('SerialNumber')).strip().lower(): {
-                'Price': item.get('Price'),
-                'OrderDate': item.get('OrderDate'),
-                'Warranty': item.get('Warranty')
+                'price': item.get('Price'),
+                'order_date': item.get('OrderDate'),
+                'warranty': item.get('Warranty')
             }
             for item in atea_data
             if item.get('SerialNumber') and item.get('Price') and item.get('OrderDate') and item.get('Warranty')
@@ -443,16 +442,16 @@ def insert_atea_data():
             computers = session.query(Computer).all()
             updated = 0
             for computer in computers:
-                serial_norm = str(computer.Serienummer).strip().lower() if computer.Serienummer else None
+                serial_norm = str(computer.serial_number).strip().lower() if computer.serial_number else None
                 info = serial_info_map.get(serial_norm)
                 if info:
                     try:
-                        computer.Price = float(info['Price'])
+                        computer.price = float(info['price'])
                     except Exception:
-                        logger.warning(f"Could not convert price '{info['Price']}' for serial '{serial_norm}'")
+                        logger.warning(f"Could not convert price '{info['price']}' for serial '{serial_norm}'")
                         continue
-                    computer.OrderDate = info['OrderDate']
-                    computer.Warranty = info['Warranty']
+                    computer.order_date = info['order_date']
+                    computer.warranty = info['warranty']
                     updated += 1
             session.commit()
             logger.info(f"Updated price, order date, and warranty for {updated} computers from Atea API.")
@@ -466,55 +465,55 @@ def upload_assets_to_topdesk():
     try:
         sql_command = """
         SELECT
-            STRING_AGG(a."Afdeling", ', ') AS "Afdeling",
-            STRING_AGG(a."AfdelingsEAN", ', ') AS "AfdelingsEAN",
-            b."PrimaryFullName",
-            b."PrimaryUser",
-            c."UnitName",
-            c."Producent",
-            c."Model",
-            c."Enhedstype",
-            c."Serienummer",
-            c."SidsteLoginDato",
-            c."SidsteRul",
-            c."BitlockerKode",
-            c."BitlockerStatus",
-            c."BitlockerKrypteringProcent",
-            c."OSVersion",
-            c."MACAdresse",
-            c."LanMACAdresse",
-            c."DeviceLicense",
-            c."Price",
-            c."OrderDate",
-            c."KøbsEANnr",
-            c."Warranty",
-            c."Drift"
-        FROM public."Computer" c
-        LEFT JOIN public."Bruger" b ON c."BrugerID" = b."BrugerID"
-        LEFT JOIN public."bruger_afdeling" ba ON b."BrugerID" = ba."bruger_id"
-        LEFT JOIN public."Afdeling" a ON ba."afdeling_id" = a."AfdelingID"
+            STRING_AGG(a."name", ', ') AS "afdeling",
+            STRING_AGG(a."ean", ', ') AS "afdelings_ean",
+            b."full_name",
+            b."primary_user",
+            c."unit_name",
+            c."producent",
+            c."model",
+            c."device_type",
+            c."serial_number",
+            c."last_login_date",
+            c."last_run",
+            c."bitlocker_code",
+            c."bitlocker_status",
+            c."bitlocker_encryption_percentage",
+            c."os_version",
+            c."mac_address",
+            c."lan_mac_address",
+            c."device_license",
+            c."price",
+            c."order_date",
+            c."kob_ean_nr",
+            c."warranty",
+            c."drift"
+        FROM public."computer" c
+        LEFT JOIN public."user" b ON c."user_id" = b."user_id"
+        LEFT JOIN public."user_department" ba ON b."user_id" = ba."user_id"
+        LEFT JOIN public."department" a ON ba."department_id" = a."department_id"
         GROUP BY
-            b."PrimaryFullName",
-            b."PrimaryUser",
-            c."UnitName",
-            c."Producent",
-            c."Model",
-            c."Enhedstype",
-            c."Serienummer",
-            c."SidsteLoginDato",
-            c."SidsteRul",
-            c."BitlockerKode",
-            c."BitlockerStatus",
-            c."BitlockerKrypteringProcent",
-            c."OSVersion",
-            c."MACAdresse",
-            c."LanMACAdresse",
-            c."DeviceLicense",
-            c."Price",
-            c."OrderDate",
-            c."KøbsEANnr",
-            c."Warranty",
-            c."Drift"
+            b."full_name",
+            b."primary_user",
+            c."unit_name",
+            c."producent",
+            c."model",
+            c."device_type",
+            c."serial_number",
+            c."last_login_date",
+            c."last_run",
+            c."bitlocker_code",
+            c."bitlocker_status",
+            c."bitlocker_encryption_percentage",
+            c."os_version",
+            c."mac_address",
+            c."lan_mac_address",
+            c."device_license",
+            c."price",
+            c."order_date",
+            c."kob_ean_nr",
+            c."warranty",
+            c."drift"
         """
         result = asset_db_client.execute_sql(sql_command)
         if not result:
@@ -522,29 +521,29 @@ def upload_assets_to_topdesk():
             return False
 
         columns = [
-            "Afdeling", "AfdelingsEAN", "PrimaryFullName", "PrimaryUser", "UnitName", "Producent", "Model",
-            "Enhedstype", "Serienummer", "SidsteLoginDato", "SidsteRul", "BitlockerKode", "BitlockerStatus",
-            "BitlockerKrypteringProcent", "OSVersion", "MACAdresse", "LanMACAdresse", "DeviceLicense",
-            "Price", "OrderDate", "KøbsEANnr", "Warranty", "Drift"
+            "afdeling", "afdelings_ean", "full_name", "primary_user", "unit_name", "producent", "model",
+            "device_type", "serial_number", "last_login_date", "last_run", "bitlocker_code", "bitlocker_status",
+            "bitlocker_encryption_percentage", "os_version", "mac_address", "lan_mac_address", "device_license",
+            "price", "order_date", "kob_ean_nr", "warranty", "drift"
         ]
         df = pd.DataFrame(result, columns=columns)
 
         # Transform data to match TopDesk requirements
-        for col in ["SidsteLoginDato", "SidsteRul", "OrderDate", "Warranty"]:
+        for col in ["last_login_date", "last_run", "order_date", "warranty"]:
             if col in df.columns:
                 df[col] = df[col].apply(
                     lambda val: "" if pd.isnull(val) else pd.to_datetime(val).strftime("%Y-%m-%dT%H:%M:%S.00")
                     if str(val).strip() else str(val)
                 )
 
-        for col in ["Drift", "DeviceLicense"]:
+        for col in ["drift", "device_license"]:
             if col in df.columns:
                 df[col] = df[col].apply(
                     lambda val: "TRUE" if val is True or str(val).lower() == "true" else ""
                 )
 
-        if "Price" in df.columns:
-            df["Price"] = df["Price"].apply(
+        if "price" in df.columns:
+            df["price"] = df["price"].apply(
                 lambda val: "{:.2f}".format(float(val)) if pd.notnull(val) and str(val).strip() else ""
             )
 
