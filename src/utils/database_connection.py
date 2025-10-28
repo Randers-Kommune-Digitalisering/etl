@@ -27,10 +27,10 @@ def get_db_client():
 def get_db_frontdesk():
     return DatabaseClient(
         db_type='postgresql',
-        database=FRONTDESK_POSTGRES_DB_HOST,
+        database=FRONTDESK_POSTGRES_DB_DATABASE,
         username=FRONTDESK_POSTGRES_DB_USER,
         password=FRONTDESK_POSTGRES_DB_PASS,
-        host=FRONTDESK_POSTGRES_DB_DATABASE,
+        host=FRONTDESK_POSTGRES_DB_HOST,
         port=FRONTDESK_POSTGRES_DB_PORT
     )
 
