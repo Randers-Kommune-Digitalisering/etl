@@ -82,3 +82,10 @@ def job():
         return False
     finally:
         driver.quit()
+        if sftp_client and REMOTE_EXCEL_PATH:
+            try:
+                with sftp_client.get_connection() as sftp:
+                    sftp.remove(REMOTE_EXCEL_PATH)
+                    logger.info(f"Deleted file from SFTP: {REMOTE_EXCEL_PATH}")
+            except Exception as e:
+                logger.error(f"Failed to delete file from SFTP: {e}")
