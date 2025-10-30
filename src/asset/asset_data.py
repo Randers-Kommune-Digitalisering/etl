@@ -316,10 +316,10 @@ def insert_device_license_and_historical_data():
 
         df_device_license = pd.read_csv(io.StringIO(device_license_csv_data))
         df_device_license.columns = df_device_license.columns.str.strip()
-        if 'ComputerName' not in df_device_license.columns:
-            logger.error("CSV is missing 'ComputerName' column.")
+        if 'Name' not in df_device_license.columns:
+            logger.error("CSV is missing 'Name' column.")
             return False
-        computer_names = [name.strip() for name in df_device_license['ComputerName'].dropna().tolist()]
+        computer_names = [name.strip() for name in df_device_license['Name'].dropna().tolist()]
 
         df_afdelings_ean = pd.read_excel(io.BytesIO(afdelings_ean_excel_data), dtype=str)
         df_afdelings_ean.columns = df_afdelings_ean.columns.str.strip()
