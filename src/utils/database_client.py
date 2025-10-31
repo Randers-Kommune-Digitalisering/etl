@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 
 
 class DatabaseClient:
-    def __init__(self, db_type, database, username, password, host, port=None):
+    def __init__(self, db_type: str, username: str, password: str, host: str, port: int = None, database: str = None) -> None:
         self.db_type = db_type.lower()
         self.database = database
         self.username = username
@@ -25,8 +25,9 @@ class DatabaseClient:
         else:
             raise ValueError(f"Invalid database type {self.db_type}")
 
-        connection_string = f'{driver}://{urllib.parse.quote_plus(username)}:{urllib.parse.quote_plus(password)}@{urllib.parse.quote_plus(host)}:{urllib.parse.quote_plus(port)}/{urllib.parse.quote_plus(database)}'
-        self.logger.info(f"Connection string: {connection_string}")
+        connection_string = f'{driver}://{urllib.parse.quote_plus(username)}:{urllib.parse.quote_plus(password)}@{urllib.parse.quote_plus(host)}:{port}'
+        if database:
+            connection_string += f'/{urllib.parse.quote_plus(database)}'
 
         self.engine = create_engine(connection_string)
 
