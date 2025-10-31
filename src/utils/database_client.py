@@ -27,7 +27,7 @@ class DatabaseClient:
 
         connection_string = f'{driver}://{urllib.parse.quote_plus(username)}:{urllib.parse.quote_plus(password)}@{urllib.parse.quote_plus(host)}'
 
-        if port:
+        if port is not None:
             connection_string += f':{urllib.parse.quote_plus(str(port))}'
 
         if database:
