@@ -25,10 +25,10 @@ class DatabaseClient:
         else:
             raise ValueError(f"Invalid database type {self.db_type}")
 
-        if port is not None:
-            connection_string = f'{driver}://{urllib.parse.quote_plus(username)}:{urllib.parse.quote_plus(password)}@{urllib.parse.quote_plus(host)}:{urllib.parse.quote_plus(str(port))}'
-        else:
-            connection_string = f'{driver}://{urllib.parse.quote_plus(username)}:{urllib.parse.quote_plus(password)}@{urllib.parse.quote_plus(host)}'
+        connection_string = f'{driver}://{urllib.parse.quote_plus(username)}:{urllib.parse.quote_plus(password)}@{urllib.parse.quote_plus(host)}'
+
+        if port:
+            connection_string += f':{urllib.parse.quote_plus(str(port))}'
 
         if database:
             connection_string += f'/{urllib.parse.quote_plus(database)}'
