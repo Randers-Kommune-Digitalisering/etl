@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 
 
 class DatabaseClient:
-    def __init__(self, db_type: str, username: str, password: str, host: str, port: int = None, database: str = None) -> None:
+    def __init__(self, db_type: str, username: str, password: str, host: str, port: int = None, database: str = None):
         self.db_type = db_type.lower()
         self.database = database
         self.username = username
