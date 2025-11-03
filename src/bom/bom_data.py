@@ -173,7 +173,7 @@ def get_bom_data():
 
                     const options = { day: '2-digit', month: '2-digit', year: 'numeric' };
                     const fraDato = firstDayOfPreviousMonth.toLocaleDateString('da-DK', options).replace(/\./g, '-');
-                    const tilDato = lastDayOfPreviousMonth.toLocaleDateString('da-DK', options).replace(/\./g, '-');
+                    const tilDato = firstDayOfCurrentMonth.toLocaleDateString('da-DK', options).replace(/\./g, '-');
 
                     console.log(`Setting date range: Fra Dato = ${fraDato}, Til Dato = ${tilDato}`);
 

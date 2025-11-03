@@ -3,7 +3,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def query_elasticsearch(es_client, scroll_size, body):
+def query_queue_elasticsearch(es_client, scroll_size, body):
     try:
         all_hits = es_client.get_all_hits(index="conversation-events-1", body=body, scroll='2m', size=scroll_size)
 
@@ -26,7 +26,7 @@ def query_elasticsearch(es_client, scroll_size, body):
         logger.error(f"Error querying Elasticsearch: {e}")
 
 
-def fetch_data_from_elasticsearch(queue_name, es_client, scroll_size=1000):
+def fetch_queue_data_from_elasticsearch(queue_name, es_client, scroll_size=1000):
     try:
         logger.info(f"Fetching data from Elasticsearch for queue: {queue_name}")
         body = {
@@ -45,10 +45,100 @@ def fetch_data_from_elasticsearch(queue_name, es_client, scroll_size=1000):
             }
         }
 
-        data_to_insert = query_elasticsearch(es_client, scroll_size, body)
+        data_to_insert = query_queue_elasticsearch(es_client, scroll_size, body)
         return data_to_insert
     except Exception as e:
         logger.error(f"Error fetching data from Elasticsearch for queue {queue_name}: {e}")
+        return None
+
+
+def query_activity_data(es_client, scroll_size, body):
+    try:
+        all_hits = es_client.get_all_hits(index="clientprod-t19n-activity-data-6", body=body, scroll='2m', size=scroll_size)
+        data_to_insert = []
+        for hit in all_hits:
+            source = hit['_source']
+            formatted_first_answer_time = hit['fields']['FormattedFirstAnswerTimeUtc'][0] if 'fields' in hit and 'FormattedFirstAnswerTimeUtc' in hit['fields'] else None
+            formatted_start_time = hit['fields']['FormattedStartTimeUtc'][0] if 'fields' in hit and 'FormattedStartTimeUtc' in hit['fields'] else None
+            data_to_insert.append({
+                "FirstQueueDisplayName": source.get("FirstQueueDisplayName"),
+                "FirstAnswerAgentDisplayName": source.get("FirstAnswerAgentDisplayName"),
+                "LastQueueDisplayName": source.get("LastQueueDisplayName"),
+                "FirstAnswerTimeUtc": formatted_first_answer_time,
+                "StartTimeUtc": formatted_start_time,
+                "TransferToName": source.get("TransferToName"),
+                "Result": source.get("Result")
+            })
+        return data_to_insert
+    except Exception as e:
+        logger.error(f"Error querying clientprod-t19n-activity-data-6: {e}")
+        return None
+
+
+EXCLUDED_QUEUE_NAMES = [
+    "Omstillingen",
+    "Jobcenter Randers",
+    "UURanders_4747",
+    "Ydelseskontor_Team HTF_7194"
+]
+
+
+def build_must_not_clause(excluded_names):
+    return [{"match": {"LastQueueDisplayName": name}} for name in excluded_names]
+
+
+def fetch_activity_data_from_elasticsearch(es_client, queue_name="Jobcenter Randers", excluded_queues=EXCLUDED_QUEUE_NAMES, scroll_size=1000):
+    try:
+        logger.info("Fetching data from Elasticsearch index: clientprod-t19n-activity-data-6")
+        body = {
+            "_source": [
+                "FirstQueueDisplayName",
+                "FirstAnswerAgentDisplayName",
+                "LastQueueDisplayName",
+                "FirstAnswerTimeUtc",
+                "StartTimeUtc",
+                "TransferToName",
+                "Result"
+            ],
+            "query": {
+                "bool": {
+                    "must": [
+                        {"match": {"FirstQueueDisplayName": queue_name}}
+                    ],
+                    "must_not": build_must_not_clause(excluded_queues)
+                }
+            },
+            "script_fields": {
+                "FormattedFirstAnswerTimeUtc": {
+                    "script": {
+                        "source": """
+                            if (doc.containsKey('FirstAnswerTimeUtc') && !doc['FirstAnswerTimeUtc'].empty) {
+                                SimpleDateFormat format = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+                                return format.format(new Date(doc['FirstAnswerTimeUtc'].value.toInstant().toEpochMilli()));
+                            } else {
+                                return null;
+                            }
+                        """
+                    }
+                },
+                "FormattedStartTimeUtc": {
+                    "script": {
+                        "source": """
+                            if (doc.containsKey('StartTimeUtc') && !doc['StartTimeUtc'].empty) {
+                                SimpleDateFormat format = new SimpleDateFormat('yyyy-MM-dd HH:mm:ss');
+                                return format.format(new Date(doc['StartTimeUtc'].value.toInstant().toEpochMilli()));
+                            } else {
+                                return null;
+                            }
+                        """
+                    }
+                }
+            }
+        }
+        data_to_insert = query_activity_data(es_client, scroll_size, body)
+        return data_to_insert
+    except Exception as e:
+        logger.error(f"Error fetching data from clientprod-t19n-activity-data-6: {e}")
         return None
 
 
@@ -62,6 +152,13 @@ def get_queue_names():
         "Jobcenter_Udviklingshuset_7735",
         "Jobcenter_Sygedagpenge_7732",
         "Jobcenter_Team Integration_7738",
-        "Hovednummer_89151515"
+        "Hovednummer_89151515",
+        "TM_Byggesag_5100",
+        "Borgerservice_Boliglån_1984",
+        "Borgerservice_Folkeregister_1978",
+        "Borgerservice_Pas_Korekort_89159000",
+        "Borgerservice_Pension_89151986",
+        "Borgerservice_Team Information_89159001",
+        "Omstillingen"
     ]
     return queue_names

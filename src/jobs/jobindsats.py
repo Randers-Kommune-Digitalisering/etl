@@ -1,7 +1,7 @@
 import urllib.parse
 import logging
 
-from jobindsats.jobindsats import get_data
+from jobindsats.jobindsats import get_data, fetch_and_store_table_updates
 from utils.api_requests import APIClient
 from utils.config import CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_URL, CONFIG_LIBRARY_BASE_PATH, JOBINDSATS_CONFIG_FILE
 
@@ -13,6 +13,7 @@ config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_L
 def job():
     try:
         logger.info('Starting jobindsats ETL job!')
+        fetch_and_store_table_updates()
 
         config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, JOBINDSATS_CONFIG_FILE)
         jobindsats_jobs_config = config_library_client.make_request(path=config_path)

@@ -122,8 +122,6 @@ class SDClient(APIClient):
             logger.error(e)
             return None
 
-    # Returns a string with the person full name
-    # In the form of: PersonGivenName PersonSurnameName
     def person_exist(self, institution_id, cpr_id, effective_date=datetime.now()):
         try:
             params = {
@@ -140,6 +138,32 @@ class SDClient(APIClient):
 
             if '<Fault>' in res_string:
                 if 'PersonCivilRegistrationIdentifier' in res_string:
+                    return False
+                else:
+                    raise Exception('api error')
+            else:
+                return True
+
+        except Exception as e:
+            logger.error(e)
+
+    def employment_exist(self, institution_id, cpr_id, employment_id, effective_date):
+        try:
+            params = {
+                'InstitutionIdentifier': institution_id,
+                'PersonCivilRegistrationIdentifier': cpr_id,
+                'EmploymentIdentifier': employment_id,
+                'EffectiveDate': effective_date,
+                'StatusActiveIndicator': True,
+                'StatusPassiveIndicator': True
+            }
+
+            res = self.make_request(method='POST', path='GetEmployment20070401', params=params)
+
+            res_string = res.decode()
+
+            if '<Fault>' in res_string:
+                if 'EmploymentIdentifier' in res_string:
                     return False
                 else:
                     raise Exception('api error')
@@ -235,22 +259,147 @@ class SDClient(APIClient):
             root = etree.fromstring(res)
 
             employments = []
-            for e in root.xpath("//Person"):
-                cpr = e.find('PersonCivilRegistrationIdentifier').text
-                employment = e.find('Employment/EmploymentIdentifier').text
-                effective_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(e.xpath('.//ActivationDate/text()')))])]
-                employment_status_code = e.find('Employment/EmploymentStatus/EmploymentStatusCode').text if e.find('Employment/EmploymentStatus/EmploymentStatusCode') is not None else None
+            for p in root.xpath("//Person"):
+                cpr = p.find('PersonCivilRegistrationIdentifier').text
+                for e in p.xpath('.//Employment'):
+                    employment = e.find('EmploymentIdentifier').text
+                    # print([date for date in list(set(e.xpath('.//ActivationDate/text()')))])
+                    effective_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(e.xpath('.//DeactivationDate/text()')))])]
+                    employment_status_code = e.find('EmploymentStatus/EmploymentStatusCode').text if e.find('EmploymentStatus/EmploymentStatusCode') is not None else None
 
-                # Only include effective dates after the end date
-                effective_dates = [date for date in effective_dates if datetime.strptime(date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d')]
+                    # Only include effective dates after the end date
+                    # effective_dates = [date for date in effective_dates if datetime.strptime(date, '%Y-%m-%d') > datetime.strptime(end_date, '%Y-%m-%d')]
 
-                # If not future date then include the current date
-                if not effective_dates:
-                    effective_dates = [end_date]
+                    # If not future date then include the current date
+                    if not effective_dates:
+                        effective_dates = [end_date]
 
-                employments.append({'institution': institution_id, 'cpr': cpr, 'employment_id': employment, 'effective_dates': effective_dates, 'employement_status_code': employment_status_code})
+                    employments.append({'institution': institution_id, 'cpr': cpr, 'employment_id': employment, 'effective_dates': effective_dates, 'employement_status_code': employment_status_code})
 
             return employments
+
+        except Exception as p:
+            logger.error(p)
+            return None
+
+    def get_employment_start_date(self, institution_id, cpr_id=None, employment_id=None, effective_date=None):
+        if cpr_id is None and employment_id is None:
+            raise Exception("Either cpr_id or employment_id must be provided")
+        try:
+            effective_date = datetime.now(pytz.timezone("Europe/Copenhagen")) if effective_date is None else effective_date
+
+            params = {
+                'InstitutionIdentifier': institution_id,
+                'EffectiveDate': effective_date.strftime("%Y-%m-%d"),
+                'StatusActiveIndicator': True,
+                'EmploymentStatusIndicator': True
+            }
+
+            if cpr_id is not None:
+                params['PersonCivilRegistrationIdentifier'] = cpr_id
+            if employment_id is not None:
+                params['EmploymentIdentifier'] = employment_id
+
+            res = self.make_request(method='POST', path='GetEmployment20070401', params=params)
+
+            root = etree.fromstring(res)
+
+            persons = root.xpath("//Person")
+
+            if len(persons) == 1:
+                p = persons[0]
+                emp_dates = p.findall('.//Employment/EmploymentDate')
+                employment_dates = [ed.text for ed in emp_dates if ed is not None and ed.text]
+                return employment_dates if employment_dates else None
+            elif len(persons) == 0:
+                return None
+            else:
+                raise Exception('Multiple results found')
+        except Exception as e:
+            logger.error(e)
+            return None
+
+    def get_employment_status_and_end_date(self, institution_id, cpr_id, employee_id, effective_date=None):
+        try:
+            effective_date = datetime.now(pytz.timezone("Europe/Copenhagen")).strftime("%Y-%m-%d") if effective_date is None else effective_date
+
+            params = {
+                'InstitutionIdentifier': institution_id,
+                'EmploymentIdentifier': employee_id,
+                'PersonCivilRegistrationIdentifier': cpr_id,
+                'EffectiveDate': effective_date,
+                'StatusActiveIndicator': True,
+                'ProfessionIndicator': True,
+                'DepartmentIndicator': True,
+                'EmploymentStatusIndicator': True
+            }
+
+            res = self.make_request(method='POST', path='GetEmployment20070401', params=params)
+
+            root = etree.fromstring(res)
+
+            persons = root.xpath("//Person")
+
+            if len(persons) == 1:
+                p = persons[0]
+                employment = {}
+
+                department = p.find('Employment/Department/DepartmentIdentifier')
+                employment['department'] = department.text if department is not None else None
+
+                job_position = p.find('Employment/Profession/JobPositionIdentifier')
+                employment['job_position'] = job_position.text if job_position is not None else None
+
+                status_code = p.find('Employment/EmploymentStatus/EmploymentStatusCode')
+                employment['employement_status_code'] = status_code.text if status_code is not None else None
+
+                activation_date = p.find('Employment/EmploymentStatus/ActivationDate')
+                employment['employment_status_activation_date'] = activation_date.text if activation_date is not None else None
+
+                deactivation_date = p.find('Employment/EmploymentStatus/DeactivationDate')
+                employment['employment_status_deactivation_date'] = deactivation_date.text if deactivation_date is not None else None
+
+                return employment
+            elif len(persons) == 0:
+                logger.warning('No results found')
+            else:
+                raise Exception('Multiple results found')
+        except Exception as e:
+            logger.error(e)
+            return None
+
+    def get_all_start_dates(self, institution_id, department_id, effective_date=None):
+        try:
+            effective_date = datetime.now(pytz.timezone("Europe/Copenhagen")).strftime("%Y-%m-%d") if effective_date is None else effective_date
+
+            params = {
+                'InstitutionIdentifier': institution_id,
+                'DepartmentIdentifier': department_id,
+                'EffectiveDate': effective_date,
+                'DepartmentLevelCode': 0,
+                'StatusActiveIndicator': True,
+                'EmploymentStatusIndicator': True
+            }
+
+            res = self.make_request(method='POST', path='GetEmployment20070401', params=params)
+
+            root = etree.fromstring(res)
+
+            persons = root.xpath("//Person")
+
+            employment_dates = []
+
+            if len(persons) > 0:
+                for p in persons:
+                    for e in p.xpath('.//Employment'):
+                        emp_id = e.find('EmploymentIdentifier')
+                        emp_date = e.find('EmploymentDate')
+                        employment_date = emp_date.text if emp_date is not None else None
+                        employment_id = emp_id.text if emp_id is not None else None
+                        employment_dates.append({'employment_id': employment_id, 'employment_date': employment_date})
+                return employment_dates if employment_dates else None
+            else:
+                return None
 
         except Exception as e:
             logger.error(e)

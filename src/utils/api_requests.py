@@ -6,7 +6,7 @@ logger = logging.getLogger(__name__)
 
 
 class APIClient:
-    def __init__(self, base_url, api_key=None, auth_url=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None, use_bearer=None, add_auth_to_path=True):
+    def __init__(self, base_url, api_key=None, auth_url=None, realm=None, client_id=None, client_secret=None, username=None, password=None, cert_base64=None, use_bearer=None, add_auth_to_path=True, use_subkey=None):
         self.base_url = base_url
         self.api_key = api_key
         self.auth_url = auth_url
@@ -16,6 +16,7 @@ class APIClient:
         self.username = username
         self.password = password
         self.use_bearer = use_bearer
+        self.use_subkey = use_subkey
 
         self.access_token = None
         self.refresh_token = None
@@ -34,6 +35,8 @@ class APIClient:
             if self.api_key:
                 if self.use_bearer:
                     return {'Authorization': f'Bearer {self.api_key}'}
+                elif self.use_subkey:
+                    return {'Authorization': f'SubKey {self.api_key}'}
                 else:
                     return {'Authorization': f'{self.api_key}'}
             elif self.client_id and self.client_secret:
@@ -81,6 +84,7 @@ class APIClient:
                 now = time.time()
 
                 response = requests.post(tmp_url, headers=tmp_headers, data=tmp_json_data)
+
                 response.raise_for_status()
                 data = response.json()
 
@@ -139,6 +143,7 @@ class APIClient:
             kwargs['headers']['Content-Type'] = 'application/json'
 
         response = method(url, **kwargs)
+
         if response.status_code != 200:
             logger.info(response.content)
         response.raise_for_status()
