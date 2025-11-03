@@ -62,7 +62,7 @@ def job():
                 new_groupings[dist.id] = GROUPINGS[key]
 
             def get_grouping_id(id: int) -> int:
-                "Helper function to get Byggesagsgruppe id"
+                """Helper function to get Byggesagsgruppe id"""
                 return next((k for k, v in new_groupings.items() if id in v), None)
 
             logger.info("Syncing data from SBSYS to byggesager Postgres DB")
