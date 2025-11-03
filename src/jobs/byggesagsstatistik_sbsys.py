@@ -1,33 +1,37 @@
 import logging
+import urllib.parse
 
 from datetime import datetime
 
+from utils.api_requests import APIClient
 from byggesagsstatistik.models.randers_sbsys_models import Sag, BeslutningsType, ByggeSag, \
     ByggeSagKode, SagSkabelon
-from byggesagsstatistik.models.kubernetes_byggesag_models import Base, Byggesagskode, \
+from byggesagsstatistik.models.byggesager_db_models import Base, Byggesagskode, \
     Byggesagsgruppe, Beslutningstype, ByggesagByg, ByggesagSag
 from utils.config import SBSYS_DB_HOST, SBSYS_DB_USER, SBSYS_DB_PASS, SBSYS_DB_PORT, BYGGESAGER_POSTGRES_DB_HOST, \
-    BYGGESAGER_POSTGRES_DB_USER, BYGGESAGER_POSTGRES_DB_PASS, BYGGESAGER_POSTGRES_DB_DATABASE, BYGGESAGER_POSTGRES_DB_PORT
+    BYGGESAGER_POSTGRES_DB_USER, BYGGESAGER_POSTGRES_DB_PASS, BYGGESAGER_POSTGRES_DB_DATABASE, BYGGESAGER_POSTGRES_DB_PORT, \
+    CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, BYGGESAGER_CONFIG_FILE
 from utils.database_client import DatabaseClient
 
 
-START_DATE = datetime(2000, 1, 1)
-SKABELON_IDS = [5837, 5846, 6378, 6388, 6400, 6403, 6453, 6454, 6455]
-GROUPINGS = {
-    "Industri og lager": [1, 36],
-    "Sekundært byggeri": [2, 35, 29, 44, 27, 5846],
-    "Erhverv": [3, 8, 40, 9, 12, 13, 14, 28, 37, 32, 38, 5837, 6378, 6388, 6400],
-    "Enfamiliehuse": [4, 5, 15, 17, 10, 16, 18, 24, 25, 26],
-    "Etageejendomme": [6, 7, 11, 31, 33],
-    "Landzone": [41, 42, 43, 6403, 6453, 6454, 6455]
-}
-
+START_DATE = datetime(2020, 1, 1)
 
 logger = logging.getLogger(__name__)
 
 
 def job():
     logger.info("Starting byggesagsstatistik_sbsys job")
+
+    config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
+    config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, BYGGESAGER_CONFIG_FILE)
+    config = config_library_client.make_request(path=config_path)
+
+    GROUPINGS = config["GROUPINGS"]
+    SKABELON_IDS = config["SKABELON_IDS"]
+
+    if not GROUPINGS or not SKABELON_IDS:
+        logging.error(f"Failed to load config file: {BYGGESAGER_CONFIG_FILE}")
+        return False
 
     db_client_sbsys = DatabaseClient(
         db_type='mssql',
@@ -37,7 +41,7 @@ def job():
         port=SBSYS_DB_PORT
     )
 
-    db_client_kubernetes = DatabaseClient(
+    db_client_byggesager = DatabaseClient(
         db_type='postgresql',
         host=BYGGESAGER_POSTGRES_DB_HOST,
         username=BYGGESAGER_POSTGRES_DB_USER,
@@ -47,10 +51,10 @@ def job():
     )
 
     logger.info("Initializing")
-    Base.metadata.create_all(db_client_kubernetes.get_engine())
+    Base.metadata.create_all(db_client_byggesager.get_engine())
 
     with db_client_sbsys.get_session() as sbsys_session:
-        with db_client_kubernetes.get_session() as kubernetes_session:
+        with db_client_byggesager.get_session() as kubernetes_session:
             # Create or get grouping ids
             new_groupings = {}
             for key in GROUPINGS.keys():
