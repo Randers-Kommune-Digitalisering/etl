@@ -923,3 +923,161 @@ class DeltaClient(APIClient):
                 logger.warning(f"SD Department ID mismatch: delta: {sd_department_id_delta}, sd: {sd_department_id}")
 
         return employees
+
+    def get_all_adm_units_with_children_and_ean(self):
+        results = []
+        offset = 0
+        limit = 1000
+
+        while True:
+            grapgh_query = {
+                "graphQueries": [
+                    {
+                        "computeAvailablePages": True,
+                        "graphQuery": {
+                            "structure": {
+                                "alias": "adm",
+                                "userKey": "APOS-Types-AdministrativeUnit"
+                            },
+                            "criteria": {
+                                "type": "AND",
+                                "criteria": [
+                                    {
+                                        "type": "MATCH",
+                                        "operator": "EQUAL",
+                                        "left": {
+                                            "source": "DEFINITION",
+                                            "alias": "adm.$state"
+                                        },
+                                        "right": {
+                                            "source": "STATIC",
+                                            "value": "STATE_ACTIVE"
+                                        }
+                                    }
+                                ]
+                            },
+                            "projection": {
+                                "identity": True,
+                                "attributes": [
+                                    "APOS-Types-AdministrativeUnit-Attribute-EANnr"
+                                ],
+                                "children": {
+                                    "identity": True,
+                                    "attributes": [
+                                        "APOS-Types-AdministrativeUnit-Attribute-EANnr"
+                                    ]
+                                }
+                            }
+                        },
+                        "validDate": "NOW",
+                        "offset": offset,
+                        "limit": limit
+                    }
+                ]
+            }
+
+            res = self.make_request(path='/api/object/graph-query', method='POST', json=grapgh_query)
+            graph_result = res["graphQueryResult"][0]
+            available_pages = graph_result.get("availablePages", 0)
+            instances = graph_result.get("instances", [])
+
+            for inst in instances:
+                parent_name = inst.get('identity', {}).get('name', '')
+                parent_ean = next(
+                    (att['value'] for att in inst.get('attributes', []) if att['userKey'] == 'APOS-Types-AdministrativeUnit-Attribute-EANnr'),
+                    None
+                )
+                logger.debug(f"Parent: {parent_name}, EAN: {parent_ean}")
+                children = inst.get('childrenObjects', [])
+                for child in children:
+                    name = child.get('identity', {}).get('name', '')
+                    ean = next(
+                        (att['value'] for att in child.get('attributes', []) if att['userKey'] == 'APOS-Types-AdministrativeUnit-Attribute-EANnr'),
+                        None
+                    )
+                    if not ean and parent_ean:
+                        ean = parent_ean
+                        logger.debug(f"Child: {name} inherits parent EAN: {ean} from parent: {parent_name}")
+                    else:
+                        logger.debug(f"Child: {name}, EAN: {ean}")
+                    results.append({
+                        'parent': parent_name,
+                        'name': name,
+                        'ean': ean
+                    })
+
+            total_instances = available_pages * limit
+            if offset + limit >= total_instances or len(instances) < limit:
+                break
+
+            offset += limit
+
+        return results
+
+    def get_all_adm_units_with_ean(self):
+        results = []
+        offset = 0
+        limit = 1000
+
+        while True:
+            grapgh_query = {
+                "graphQueries": [
+                    {
+                        "computeAvailablePages": True,
+                        "graphQuery": {
+                            "structure": {
+                                "alias": "adm",
+                                "userKey": "APOS-Types-AdministrativeUnit"
+                            },
+                            "criteria": {
+                                "type": "AND",
+                                "criteria": [
+                                    {
+                                        "type": "MATCH",
+                                        "operator": "EQUAL",
+                                        "left": {
+                                            "source": "DEFINITION",
+                                            "alias": "adm.$state"
+                                        },
+                                        "right": {
+                                            "source": "STATIC",
+                                            "value": "STATE_ACTIVE"
+                                        }
+                                    }
+                                ]
+                            },
+                            "projection": {
+                                "identity": True,
+                                "attributes": [
+                                    "APOS-Types-AdministrativeUnit-Attribute-EANnr"
+                                ]
+                            }
+                        },
+                        "validDate": "NOW",
+                        "offset": offset,
+                        "limit": limit
+                    }
+                ]
+            }
+
+            res = self.make_request(path='/api/object/graph-query', method='POST', json=grapgh_query)
+            graph_result = res["graphQueryResult"][0]
+            available_pages = graph_result.get("availablePages", 0)
+            instances = graph_result.get("instances", [])
+
+            for inst in instances:
+                name = inst.get('identity', {}).get('name', None)
+                attributes = inst.get('attributes', [])
+                ean = next(
+                    (att['value'] for att in attributes if att['userKey'] == 'APOS-Types-AdministrativeUnit-Attribute-EANnr'),
+                    None
+                )
+                results.append({"name": name, "ean": ean})
+
+            total_instances = available_pages * limit
+            if offset + limit >= total_instances or len(instances) < limit:
+                break
+
+            offset += limit
+
+        return results
