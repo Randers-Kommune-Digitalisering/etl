@@ -8,15 +8,18 @@ from utils.database_connection import get_asset_db, get_capa_cms_db
 from utils.sftp_connection import get_asset_sftp_client
 from asset.model import Base
 from asset.model import Department, User, Computer
+from delta_client import DeltaClient
 from utils.api_requests import APIClient
 from utils.config import (
-    ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH, ASSET_SFTP_DEVICE_FILE_PATH, ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, ASSET_SFTP_EAN_ATEA_FILE_PATH,
-    ATEA_API_KEY, ATEA_URL, TOPDESK_API_USERNAME, TOPDESK_API_PASSWORD, TOPDESK_API_URL, TOPDESK_ASSET_FILENAME,
+    ASSET_SFTP_DEVICE_FILE_PATH, ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, ASSET_SFTP_EAN_ATEA_FILE_PATH,
+    ATEA_API_KEY, ATEA_URL, DELTA_AUTH_URL, DELTA_CLIENT_ID, DELTA_CLIENT_SECRET, DELTA_REALM, DELTA_URL, TOPDESK_API_USERNAME, TOPDESK_API_PASSWORD, TOPDESK_API_URL, TOPDESK_ASSET_FILENAME,
+
 )
 from utils.utils import df_to_csv_bytes
 
 logger = logging.getLogger(__name__)
 
+delta_client = DeltaClient(base_url=DELTA_URL, auth_url=DELTA_AUTH_URL, realm=DELTA_REALM, client_id=DELTA_CLIENT_ID, client_secret=DELTA_CLIENT_SECRET)
 atea_client = APIClient(base_url=ATEA_URL, api_key=ATEA_API_KEY, use_subkey=True)
 topdesk_client = APIClient(base_url=TOPDESK_API_URL, username=TOPDESK_API_USERNAME, password=TOPDESK_API_PASSWORD)
 capa_cms_db_client = get_capa_cms_db()
@@ -307,8 +310,6 @@ def insert_device_license_and_historical_data():
         with sftp_client.get_connection() as conn:
             with conn.open(ASSET_SFTP_DEVICE_FILE_PATH, 'r') as file:
                 device_license_csv_data = file.read().decode('utf-8')
-            with conn.open(ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH, 'rb') as file:
-                afdelings_ean_excel_data = file.read()
             with conn.open(ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH, 'r') as file:
                 comm2ig_csv_data = file.read().decode('utf-8')
             with conn.open(ASSET_SFTP_EAN_ATEA_FILE_PATH, 'rb') as file:
@@ -320,12 +321,6 @@ def insert_device_license_and_historical_data():
             logger.error("CSV is missing 'Name' column.")
             return False
         computer_names = [name.strip() for name in df_device_license['Name'].dropna().tolist()]
-
-        df_afdelings_ean = pd.read_excel(io.BytesIO(afdelings_ean_excel_data), dtype=str)
-        df_afdelings_ean.columns = df_afdelings_ean.columns.str.strip()
-        if 'Institution/afdeling' not in df_afdelings_ean.columns or 'Ean-nummer' not in df_afdelings_ean.columns:
-            logger.error("Exel is missing 'Institution/afdeling' or 'Ean-nummer' column.")
-            return False
 
         df_comm2ig = pd.read_csv(io.StringIO(comm2ig_csv_data), dtype=str, sep=',')
         df_comm2ig.columns = df_comm2ig.columns.str.strip()
@@ -361,22 +356,6 @@ def insert_device_license_and_historical_data():
                 if computer:
                     computer.device_license = True
                     updated_device += 1
-
-            departments = session.query(Department).all()
-            department_lookup = {a.name: a for a in departments if a.name}
-
-            # AfdelingsEAN/Delta
-            updated_ean = 0
-            for _, row in df_afdelings_ean.iterrows():
-                department = str(row['Institution/afdeling']).strip().lower()
-                ean_nummer = str(row['Ean-nummer']).strip()
-                if not ean_nummer or ean_nummer.lower() == 'nan':
-                    logger.info(f"Skipping update for Department: {department} as Ean-nummer is empty.")
-                    continue
-                department_obj = department_lookup.get(department)
-                if department_obj:
-                    department_obj.ean = ean_nummer
-                    updated_ean += 1
 
             # Comm2ig historisk data
             updated_comm2ig = 0
@@ -414,12 +393,44 @@ def insert_device_license_and_historical_data():
 
             session.commit()
             logger.info(f"DeviceLicense updated for {updated_device} computers")
-            logger.info(f"AfdelingsEAN updated for {updated_ean} departments")
             logger.info(f"Comm2ig Historical data: Updated price, order date, and kob_ean_nr for {updated_comm2ig} serial numbers.")
             logger.info(f"Atea: kob_ean_nr updated for {updated_atea}")
         return True
     except Exception as e:
-        logger.error(f"Error with updating DeviceLicense, AfdelingsEAN, Comm2ig or Atea data: {e}")
+        logger.error(f"Error with updating DeviceLicense, Comm2ig or Atea data: {e}")
+        return False
+
+
+def insert_department_ean_from_delta():
+    try:
+        logger.info("Fetching department EAN numbers from Delta...")
+        res = delta_client.get_all_adm_units_with_children_and_ean()
+        logger.info(f"Found {len(res)} departments with EAN numbers from Delta.")
+        if not res:
+            logger.error("No departments/EAN numbers fetched from Delta.")
+            return False
+
+        with asset_db_client.get_session() as session:
+            departments = session.query(Department).all()
+            department_lookup = {d.name: d for d in departments if d.name}
+            updated = 0
+
+            for adm in res:
+                name = str(adm.get("name", "")).strip().lower()
+                ean = adm.get("ean", None)
+                if not name:
+                    continue
+                if ean and str(ean).strip().lower() != "nan":
+                    department_obj = department_lookup.get(name)
+                    if department_obj:
+                        department_obj.ean = str(ean).strip()
+                        updated += 1
+
+            session.commit()
+            logger.info(f"Updated EAN number for {updated} departments from Delta.")
+        return True
+    except Exception as e:
+        logger.error(f"Error updating department EAN from Delta: {e}")
         return False
 
 
