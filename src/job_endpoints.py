@@ -71,4 +71,3 @@ def start_job(job_name):
             'success': False,
             'message': str(e)
         }), 500
-
