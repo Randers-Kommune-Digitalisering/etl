@@ -545,7 +545,7 @@ class DeltaClient(APIClient):
 
         return data
 
-    def get_employees(self, adm_userkey):
+    def get_employees_and_leaders_by_adm_org(self, adm_userkey):
         graph_query = {
             "graphQueries": [
                 {
@@ -560,11 +560,25 @@ class DeltaClient(APIClient):
                                     "userKey": "APOS-Types-Engagement-TypeRelation-AdmUnit",
                                     "typeUserKey": "APOS-Types-Engagement",
                                     "direction": "OUT"
+                                },
+                                {
+                                    "alias": "leader",
+                                    "userKey": "APOS-Types-Engagement-TypeRelation-Leader",
+                                    "typeUserKey": "APOS-Types-Leader",
+                                    "direction": "IN",
+                                    "relations": [
+                                        {
+                                            "alias": "leaderAdm",
+                                            "userKey": "APOS-Types-Leader-TypeRelation-AdmUnit",
+                                            "typeUserKey": "APOS-Types-AdmUnit",
+                                            "direction": "OUT"
+                                        }
+                                    ]
                                 }
                             ]
                         },
                         "criteria": {
-                            "type": "AND",
+                            "type": "OR",
                             "criteria": [
                                 {
                                     "type": "MATCH",
@@ -583,24 +597,28 @@ class DeltaClient(APIClient):
                                     "operator": "EQUAL",
                                     "left": {
                                         "source": "DEFINITION",
-                                        "alias": "employee.$state"
+                                        "alias": "employee.leader.leaderAdm.$userKey"
                                     },
                                     "right": {
                                         "source": "STATIC",
-                                        "value": "STATE_ACTIVE"
+                                        "value": adm_userkey
                                     }
                                 }
                             ]
                         },
                         "projection": {
                             "identity": True,
+                            "state": True,
+                            "attributes": [
+                                "APOS-Types-Engagement-Attribute-Email"
+                            ],
                             "incomingTypeRelations": [
-                                    {
-                                        "userKey": "APOS-Types-User-TypeRelation-Engagement",
-                                        "projection": {
-                                            "identity": True
-                                        }
+                                {
+                                    "userKey": "APOS-Types-User-TypeRelation-Engagement",
+                                    "projection": {
+                                        "identity": True
                                     }
+                                }
                             ]
 
                         }
@@ -616,18 +634,25 @@ class DeltaClient(APIClient):
         data = []
 
         for inst in instances:
-            # userkey = inst.get('identity', {}).get('userKey', '')
-            name = inst.get('identity', {}).get('name', '')
-            user = None
-            for ref in inst.get('inTypeRefs', []):
-                if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
-                    user = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)
+            if 'state' not in inst:
+                logger.warning("No state found for instance: %s", inst)
+                continue
+            if inst['state'] == "STATE_ACTIVE":
+                email = None
+                user = None
+                name = inst.get('identity', {}).get('name', None)
+                for attr in inst.get('attributes', []):
+                    if attr.get('userKey') == 'APOS-Types-Engagement-Attribute-Email':
+                        email = attr.get('value', None)
+                for ref in inst.get('inTypeRefs', []):
+                    if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
+                        user = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)
 
-            data.append({
-                'user': user,
-                'name': name
-            })
-
+                data.append({
+                    'SamAccountName': user.upper() if user else user,
+                    'Name': name,
+                    'EmailAddress': email.lower() if email else email
+                })
         return data
 
     def get_leaders(self, adm_userkey):
@@ -687,13 +712,16 @@ class DeltaClient(APIClient):
                         },
                         "projection": {
                             "identity": True,
+                            "attributes": [
+                                "APOS-Types-Engagement-Attribute-Email"
+                            ],
                             "incomingTypeRelations": [
-                                    {
-                                        "userKey": "APOS-Types-User-TypeRelation-Engagement",
-                                        "projection": {
-                                            "identity": True
-                                        }
+                                {
+                                    "userKey": "APOS-Types-User-TypeRelation-Engagement",
+                                    "projection": {
+                                        "identity": True
                                     }
+                                }
                             ]
 
                         }
@@ -710,16 +738,20 @@ class DeltaClient(APIClient):
         data = []
 
         for inst in instances:
-            # userkey = inst.get('identity', {}).get('userKey', '')
-            name = inst.get('identity', {}).get('name', '')
+            email = None
             user = None
+            name = inst.get('identity', {}).get('name', None)
+            for attr in inst.get('attributes', []):
+                if attr.get('userKey') == 'APOS-Types-Engagement-Attribute-Email':
+                    email = attr.get('value', None)
             for ref in inst.get('inTypeRefs', []):
                 if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
                     user = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)
 
             data.append({
-                'user': user,
-                'name': name
+                'user': user.upper() if user else user,
+                'name': name,
+                'email': email.lower() if email else email
             })
 
         return data
