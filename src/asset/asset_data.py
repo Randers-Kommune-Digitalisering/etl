@@ -405,10 +405,10 @@ def insert_department_ean_from_delta():
     try:
         logger.info("Fetching department EAN numbers from Delta...")
         res = delta_client.get_all_adm_units_with_children_and_ean()
-        logger.info(f"Found {len(res)} departments with EAN numbers from Delta.")
         if not res:
             logger.error("No departments/EAN numbers fetched from Delta.")
             return False
+        logger.info(f"Found {len(res)} departments with EAN numbers from Delta.")
 
         with asset_db_client.get_session() as session:
             departments = session.query(Department).all()
