@@ -181,7 +181,6 @@ ATEA_URL = os.environ['ATEA_URL'].rstrip()
 ASSET_SFTP_DEVICE_FILE_PATH = 'Computers.csv'
 ASSET_SFTP_COMM2IG_HISTORICAL_FILE_PATH = '/Historisk_data/Historisk_Comm2ig.csv'
 ASSET_SFTP_EAN_ATEA_FILE_PATH = '/Historisk_data/ATEA kundenumre med EAN.xlsx'
-ASSET_SFTP_AFDELINGS_EAN_DELTA_FILE_PATH = '/Historisk_data/Afdeling_EAN_Delta.xlsx'
 
 TOPDESK_API_USERNAME = os.getenv("TOPDESK_API_USERNAME")
 TOPDESK_API_PASSWORD = os.getenv("TOPDESK_API_PASSWORD")

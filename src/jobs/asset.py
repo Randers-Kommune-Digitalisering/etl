@@ -1,7 +1,7 @@
 import logging
 from asset.asset_data import (
     create_asset_tables, insert_departments_data, insert_users_data, insert_computers_data,
-    insert_device_license_and_historical_data, insert_atea_data, upload_assets_to_topdesk
+    insert_device_license_and_historical_data, insert_atea_data, upload_assets_to_topdesk, insert_department_ean_from_delta
 )
 
 logger = logging.getLogger(__name__)
@@ -15,6 +15,10 @@ def job():
 
         if not insert_departments_data():
             logger.error("Failed to insert departments data.")
+            return False
+
+        if not insert_department_ean_from_delta():
+            logger.error("Failed to insert department EAN data from Delta.")
             return False
 
         if not insert_users_data():
