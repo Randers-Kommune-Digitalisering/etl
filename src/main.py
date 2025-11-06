@@ -40,21 +40,23 @@ if __name__ == "__main__":  # pragma: no cover
 
     orgs_to_save = []
     orgs = delta_client.get_adm_orgs()
-    for org in orgs:
+    for org in orgs[:2]:
         if org['name'].lower().strip() not in ['politikerne', 'borgmesterkontoret', 'handicaprådet', 'eksterne']:
-            employees_leaders = delta_client.get_employees_and_leaders_by_adm_org(org['userkey'])
+            employees_leaders = delta_client.get_employees_and_leaders_with_user_by_adm_org(org['userkey'])
             if len(employees_leaders) > 1:
-                # leaders = delta_client.get_leaders(org['userkey'])
-                # for leader in leaders:
-                #     if leader not in employees:
-                #         employees.append(leader)
-                print(org['name'])
-                orgs_to_save.append({org['name']: employees_leaders})
-                print(len(employees_leaders))
-                # Check if any duplicate EmailAddress in employees_leaders
-                email_addresses = [e.get('EmailAddress') for e in employees_leaders if 'EmailAddress' in e]
-                if len(email_addresses) != len(set(email_addresses)):
-                    print(f"Duplicate EmailAddress found in org '{org['name']}'")
-                print("-----")
+                orgs_to_save.append({"TeamName": org['name'], "Users": employees_leaders})
     with open("teams.json", "w", encoding="utf-8") as f:
         json.dump(orgs_to_save, f, indent=4, ensure_ascii=False)
+
+    # with open("teams_new.json", "r", encoding="utf-8") as f:
+    #     orgs = json.load(f)
+    #     new_orgs = []
+    #     for org in orgs:
+    #         users = [user for user in org['Users'] if user.get('SamAccountName') is not None]
+
+    #         if len(users) > 1:
+    #             new_org = {"TeamName": org['TeamName'], "Users": users}
+    #             new_orgs.append(new_org)
+
+    #     with open("teams.json", "w", encoding="utf-8") as out_f:
+    #         json.dump(new_orgs, out_f, indent=4, ensure_ascii=False)

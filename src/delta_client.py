@@ -545,7 +545,7 @@ class DeltaClient(APIClient):
 
         return data
 
-    def get_employees_and_leaders_by_adm_org(self, adm_userkey):
+    def get_employees_and_leaders_with_user_by_adm_org(self, adm_userkey):
         graph_query = {
             "graphQueries": [
                 {
@@ -609,14 +609,15 @@ class DeltaClient(APIClient):
                         "projection": {
                             "identity": True,
                             "state": True,
-                            "attributes": [
-                                "APOS-Types-Engagement-Attribute-Email"
-                            ],
                             "incomingTypeRelations": [
                                 {
                                     "userKey": "APOS-Types-User-TypeRelation-Engagement",
                                     "projection": {
-                                        "identity": True
+                                        "identity": True,
+                                        "attributes": [
+                                            "APOS-Types-User-Attribute-UserName",
+                                            "APOS-Types-User-Attribute-UserPrincipalName"
+                                        ]
                                     }
                                 }
                             ]
@@ -631,7 +632,14 @@ class DeltaClient(APIClient):
         res = self.make_request(path='/api/object/graph-query', method='POST', json=graph_query)
 
         instances = res.get('graphQueryResult', [{}])[0].get('instances', [])
-        data = []
+
+        user_dict = {}
+
+        def add_to_user_dict(new_dict: dict) -> None:
+            """Helper function to add a dictionary to the user_dict while avoiding duplicates based on SamAccountName.            """
+            key = new_dict['SamAccountName']
+            if key not in user_dict:
+                user_dict[key] = new_dict
 
         for inst in instances:
             if 'state' not in inst:
@@ -641,19 +649,21 @@ class DeltaClient(APIClient):
                 email = None
                 user = None
                 name = inst.get('identity', {}).get('name', None)
-                for attr in inst.get('attributes', []):
-                    if attr.get('userKey') == 'APOS-Types-Engagement-Attribute-Email':
-                        email = attr.get('value', None)
                 for ref in inst.get('inTypeRefs', []):
                     if ref.get('refObjTypeUserKey') == 'APOS-Types-User':
-                        user = ref.get('targetObject', {}).get('identity', {}).get('userKey', None)
+                        for attr in ref.get('targetObject', {}).get('attributes', []):
+                            if attr.get('userKey') == 'APOS-Types-User-Attribute-UserName':
+                                user = attr.get('value', None)
+                            elif attr.get('userKey') == 'APOS-Types-User-Attribute-UserPrincipalName':
+                                email = attr.get('value', None)
 
-                data.append({
-                    'SamAccountName': user.upper() if user else user,
-                    'Name': name,
-                    'EmailAddress': email.lower() if email else email
-                })
-        return data
+                if user and email and name:
+                    add_to_user_dict({
+                        'SamAccountName': user.upper() if user else user,
+                        'Name': name,
+                        'EmailAddress': email.lower() if email else email
+                    })
+        return list(user_dict.values())
 
     def get_leaders(self, adm_userkey):
         graph_query = {
