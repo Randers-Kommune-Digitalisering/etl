@@ -30,9 +30,7 @@ def job():
 
     logger.info('Getting user data')
 
-    user_df = get_user_data_df(departments)
-
-    user_df.to_csv('user_data.csv', index=False, sep=';')
+    user_df = get_user_data_df(departments=departments, all_deparments_df=all_deparments_df)
 
     logger.info('Uploading CSV file')
 
@@ -45,8 +43,24 @@ def job():
     return True
 
 
-def get_user_data_df(departments: list[tuple[str, str]], institution_id: str = 'RG'):
+def get_user_data_df(departments: list[tuple[str, str]], institution_id: str = 'RG', all_deparments_df: pd.DataFrame = None) -> pd.DataFrame:
     ekko_employees_df = pd.DataFrame(columns=['Navn', 'Personalenr.', 'Email', 'MasterGroup', 'UserGroup', 'Titel', 'Fødselsdag', 'Ansættelsesdato', 'Mobiltelefonnr.'])
+    org = sd_client.get_all_organization(institution_id)
+
+    def _find_level3_parent_code(org, child_code):
+        for dept in org:
+            if _contains_department(dept, child_code):
+                if dept['DepartmentLevel'] == '3':
+                    return dept['DepartmentCode']
+                result = _find_level3_parent_code(dept.get('Departments', []), child_code)
+                if result:
+                    return result
+        return None
+
+    def _contains_department(dept, target_code):
+        if dept['DepartmentCode'] == target_code:
+            return True
+        return any(_contains_department(sub, target_code) for sub in dept.get('Departments', []))
 
     for sd_department in departments:
         sd_id = sd_department[0]
@@ -61,7 +75,10 @@ def get_user_data_df(departments: list[tuple[str, str]], institution_id: str = '
             name = next((p['name'] for p in persons if emp['cpr'] in p['cpr']), None)
             employment_id = emp['employment_id']
             email = next((p['email'] for p in persons if emp['cpr'] in p['cpr']), None)
-            master_group = 'Ejendomme og Drift'
+
+            master_group_id = _find_level3_parent_code(org=org, child_code=sd_id)
+            master_group = all_deparments_df.loc[all_deparments_df['DepartmentIdentifier'] == master_group_id, 'DepartmentName'].squeeze() if master_group_id else None
+
             user_group = sd_name
             profession = emp['profession']
             birth_day = get_birth_date_from_cpr(emp['cpr'])

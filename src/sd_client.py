@@ -45,6 +45,41 @@ class SDClient(APIClient):
             logger.error(e)
             return None
 
+    # Returns a pandas dataframe
+    def get_all_organization(self, institution_code):
+        try:
+            params = {
+                'RegionCode': '9r',
+                'InstitutionCode': institution_code
+            }
+
+            res = self.make_request(method='POST', path='GetOrganization', params=params)
+
+            root = etree.fromstring(res)
+            departments = []
+
+            def parse_department(dept_elem):
+                dept = {
+                    'DepartmentCode': dept_elem.findtext('DepartmentCode'),
+                    'DepartmentLevel': dept_elem.findtext('DepartmentLevel'),
+                    'Departments': []
+                }
+                for child in dept_elem.findall('Department'):
+                    dept['Departments'].append(parse_department(child))
+                return dept
+
+            region = root.find('.//Region')
+            if region is not None:
+                institution = region.find('Institution')
+                if institution is not None:
+                    for dept_elem in institution.findall('Department'):
+                        departments.append(parse_department(dept_elem))
+
+            return departments
+        except Exception as e:
+            logger.error(e)
+            return None
+
     # Returns a string with the department name and the institution and department id
     # in the form of: DepartmentName (InstitutionCode_DepartmentCode)
     def get_department_name(self, institution_id, department_id, start_datetime=datetime.now(), end_datetime=datetime.now()):
