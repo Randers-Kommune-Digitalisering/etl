@@ -4,14 +4,13 @@ import urllib.parse
 import pandas as pd
 
 from io import StringIO
-from datetime import datetime, timedelta, time
+from datetime import datetime, timedelta
 
 from sd_delta import delta_client, get_employments_with_changes_df
-from mail import send_mail_with_attachment
 from utils.utils import df_to_excel_bytes
 from utils.api_requests import APIClient
 
-from utils.config import CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE, SD_DELTA_FROM_MAIL, SD_DELTA_TO_MAIL
+from utils.config import CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY_PASS, CONFIG_LIBRARY_BASE_PATH, SD_DELTA_EXCLUDED_DEPARTMENTS_CONFIG_FILE
 
 
 logger = logging.getLogger(__name__)
@@ -43,23 +42,6 @@ def job():
 
         if excel_file:
             if delta_client.upload_sd_file(file_name, excel_file.read()):
-                if time(8, 0) <= end_time.time() < time(10, 0):
-                    send_mail_with_attachment(
-                        SD_DELTA_TO_MAIL,
-                        SD_DELTA_FROM_MAIL,
-                        'SD Delta Robot opdatering',
-                        f'Vedhæftet er en liste over personer med ændringer i SD og har "nyansat" i Logiva/Signflow for perioden {start_time.strftime("%H:%M:%S %d/%m-%Y")} - {end_time.strftime("%H:%M:%S %d/%m-%Y")}',
-                        file_name,
-                        excel_file
-                    )
-                    send_mail_with_attachment(
-                        "rune.aagaard.keena@randers.dk",
-                        SD_DELTA_FROM_MAIL,
-                        'SD Delta Robot opdatering',
-                        f'Vedhæftet er en liste over personer med ændringer i SD og har "nyansat" i Logiva/Signflow for perioden {start_time.strftime("%H:%M:%S %d/%m-%Y")} - {end_time.strftime("%H:%M:%S %d/%m-%Y")}',
-                        file_name,
-                        excel_file
-                    )
                 logger.info("SD Delta job done")
                 return True
         return False
