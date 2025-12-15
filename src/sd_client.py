@@ -183,6 +183,32 @@ class SDClient(APIClient):
         except Exception as e:
             logger.error(e)
 
+    def employment_exist(self, institution_id, cpr_id, employment_id, effective_date):
+        try:
+            params = {
+                'InstitutionIdentifier': institution_id,
+                'PersonCivilRegistrationIdentifier': cpr_id,
+                'EmploymentIdentifier': employment_id,
+                'EffectiveDate': effective_date,
+                'StatusActiveIndicator': True,
+                'StatusPassiveIndicator': True
+            }
+
+            res = self.make_request(method='POST', path='GetEmployment20070401', params=params)
+
+            res_string = res.decode()
+
+            if '<Fault>' in res_string:
+                if 'EmploymentIdentifier' in res_string:
+                    return False
+                else:
+                    raise Exception('api error')
+            else:
+                return True
+
+        except Exception as e:
+            logger.error(e)
+
     # Returns a tuple with the department id and the profession id
     def get_employment_details(self, institution_id, cpr_id, employee_id, effective_date=None):
         try:
@@ -273,8 +299,8 @@ class SDClient(APIClient):
                 cpr = p.find('PersonCivilRegistrationIdentifier').text
                 for e in p.xpath('.//Employment'):
                     employment = e.find('EmploymentIdentifier').text
-
-                    effective_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(e.xpath('.//ActivationDate/text()')))])]
+                    # print([date for date in list(set(e.xpath('.//ActivationDate/text()')))])
+                    effective_dates = [date.strftime('%Y-%m-%d') for date in sorted([datetime.strptime(date, '%Y-%m-%d') for date in list(set(e.xpath('.//DeactivationDate/text()')))])]
                     employment_status_code = e.find('EmploymentStatus/EmploymentStatusCode').text if e.find('EmploymentStatus/EmploymentStatusCode') is not None else None
 
                     # Only include effective dates after the end date

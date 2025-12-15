@@ -20,7 +20,6 @@ def job():
 
     try:
         workdata = connectToFrontdeskDB()
-        # workdata = pd.read_csv('data/FrontdeskBorgerserviceTables.csv', sep=';')
     except Exception as e:
         logger.error(e)
         logger.error("Failed to connect to Frontdesk Borgerservice database")
@@ -58,8 +57,8 @@ def job():
                 logger.info(f"Forecasted {queue} successfully")
                 predictions = pd.concat([predictions, predictions_grouped], axis=0)
 
-        # logger.info(predictions.info())
-        # logger.info(predictions.describe())
+        logger.debug(predictions.info())
+        logger.debug(predictions.describe())
         # Create a connection to the PostgreSQL server
 
         try:
@@ -98,7 +97,6 @@ def job():
             return False
 
         # Upload forcasts
-        # predictions.to_csv('data/Forecasts.csv', index=False, sep=';')
         file = io.BytesIO(predictions.to_csv(index=False, sep=';').encode('utf-8'))
         filename = "SA" + "FrontdeskBorgerserviceForecasts" + ".csv"
 
@@ -131,7 +129,7 @@ def connectToFrontdeskDB():
     for table in tables:
         cursor.execute(f"SELECT * FROM {table}")
         rows = cursor.fetchall()
-        # logger.info(cursor.description)
+        logger.debug(cursor.description)
         columns = [desc[0] for desc in cursor.description]
         df = pd.DataFrame(rows, columns=columns)
 

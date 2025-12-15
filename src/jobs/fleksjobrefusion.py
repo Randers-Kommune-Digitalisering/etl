@@ -7,8 +7,13 @@ from sd_fleksjobrefusion.fleksjobrefusion_data import (
     excel_to_sd_fleksjobrefusion_config,
 )
 from selenium import webdriver
+from mail import send_mail_with_attachment
+from utils.utils import df_to_excel_bytes
+import datetime
 from selenium.webdriver.chrome.options import Options
-from utils.sftp_connection import get_sd_sftp_client
+from utils.sftp_connection import get_shared_sftp_client
+import pandas as pd
+from utils.config import SD_FLEKSJOBREFUSION_TO_MAIL, SD_FLEKSJOBREFUSION_FROM_MAIL
 logger = logging.getLogger(__name__)
 
 options = Options()
@@ -25,7 +30,7 @@ def job():
     try:
         logger.info("Starting Fleksjob Refusion job...")
 
-        sftp_client = get_sd_sftp_client()
+        sftp_client = get_shared_sftp_client()
         REMOTE_EXCEL_PATH = get_latest_excel_path(sftp_client)
         df = read_excel_from_sftp(sftp_client, REMOTE_EXCEL_PATH)
         sd_fleksjobrefusion_config = excel_to_sd_fleksjobrefusion_config(df)
@@ -41,12 +46,32 @@ def job():
             beloeb = person["beloeb"]
             loenart = person["loenart"]
             if not process_person(driver, tjenestenummer, institution, beloeb, loenart):
-                error.append((tjenestenummer, institution, beloeb, loenart))
+                error.append({
+                    "Tjenestenummer": tjenestenummer,
+                    "Institution": institution,
+                    "Beløb": beloeb,
+                    "Lønart": loenart
+                })
 
         if error:
             logger.info("The following persons failed:")
-            for tjenestenummer, institution, beloeb, loenart in error:
-                logger.error(f"- {tjenestenummer} ({institution}): {beloeb} - {loenart}")
+            for e in error:
+                logger.error(f"- {e['Tjenestenummer']} ({e['Institution']}): {e['Beløb']} - {e['Lønart']}")
+
+            df_error = pd.DataFrame(error)
+            today = datetime.date.today()
+            excel_file = df_to_excel_bytes(df_error)
+
+            send_mail_with_attachment(
+                to_mail=SD_FLEKSJOBREFUSION_TO_MAIL,
+                from_mail=SD_FLEKSJOBREFUSION_FROM_MAIL,
+                title=f'Fleksjob Refusion fejl for {today.strftime("%d.%m.%Y")}',
+                body='Liste af personer med fejl er vedhæftet.',
+                file_name='FleksjobRefusionFejl.xlsx',
+                file_bytes=excel_file
+            )
+
+            logger.error("Some persons had errors. Check the email for details")
             return False
         else:
             logger.info("All persons were processed correctly.")
@@ -57,3 +82,10 @@ def job():
         return False
     finally:
         driver.quit()
+        if sftp_client and REMOTE_EXCEL_PATH:
+            try:
+                with sftp_client.get_connection() as sftp:
+                    sftp.remove(REMOTE_EXCEL_PATH)
+                    logger.info(f"Deleted file from SFTP: {REMOTE_EXCEL_PATH}")
+            except Exception as e:
+                logger.error(f"Failed to delete file from SFTP: {e}")

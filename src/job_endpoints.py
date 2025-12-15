@@ -66,6 +66,7 @@ def start_job(job_name):
                 'message': f'Invalid job name: {job_name}'
             }), 400
     except Exception as e:
+        logger.error(e)
         return jsonify({
             'success': False,
             'message': str(e)

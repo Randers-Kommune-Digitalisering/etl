@@ -23,12 +23,34 @@ ls_client = LogivaSignflowClient(LOGIVA_URL, LOGIVA_USER, LOGIVA_PASS)
 
 def handle_deleted_employment(employee):
     try:
+        def handle_deleted_employment(employee):
+            employment_in_sd = None
+            for date in employee['effective_dates']:
+                res = sd_client.employment_exist(employee['institution'], employee['cpr'], employee['employment_id'], date)
+                if res:
+                    employment_in_sd = True
+                    break
+                elif res is None:
+                    pass
+                else:
+                    employment_in_sd = False
+                    break
+
+            if employment_in_sd is False:
+                can_deactivate, uuid = delta_client.employment_can_deactivate(employee['institution'], employee['employment_id'], employee['cpr'])
+                if can_deactivate:
+                    if delta_client.employment_deactivate(uuid):
+                        logger.info(f'Employment {employee["employment_id"]} deactivated in Delta')
+                else:
+                    logger.info(f'Employment {employee["employment_id"]} not found in Delta - not making any changes')
+
         in_sd = sd_client.person_exist(employee['institution'], employee['cpr'])
         if in_sd is None:
             raise Exception('Failed to check if person exists in SD')
         elif in_sd:
-            logger.info(f'Person with employment {employee["employment_id"]} exists in SD - not making any changes in Delta')
+            handle_deleted_employment(employee)
         else:
+            handle_deleted_employment(employee)
             can_deactivate, uuid = delta_client.person_can_deactivate(employee['cpr'])
             if can_deactivate:
                 if delta_client.person_deactivate(uuid):
@@ -36,7 +58,7 @@ def handle_deleted_employment(employee):
             else:
                 logger.info(f'Person with employment {employee["employment_id"]} has related objects in Delta - not making any changes')
     except Exception as e:
-        logger.warning(f'Failed to deactivated person with employment {employee["employment_id"]} with error: {e}')
+        logger.warning(f'Failed to deactivated person or employment, employment id: {employee["employment_id"]} with error: {e}')
 
 
 def get_employments_with_changes_df(excluded_institutions_df, excluded_departments_df, start_datetime, end_datetime, include_logiva=False):
@@ -55,7 +77,7 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
             if not isinstance(signflow_df, pd.DataFrame):
                 raise Exception('Failed to get signflow authorizations')
 
-            filtered_signflow_df = signflow_df.loc[(signflow_df['Action'] == 'Nyansat') & (signflow_df['Assigned Login'].isnull())]
+            filtered_signflow_df = signflow_df.loc[signflow_df['Action'].isin(['Nyansat', 'Genopret'])]
 
             all_rows = []
 
@@ -74,13 +96,16 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                             handle_deleted_employment(employee)
                             continue
 
+                        if employee['employement_status_code'] == '3':
+                            continue
+
                         has_active = False
 
                         for date in employee['effective_dates']:
                             extra_employee_details = sd_client.get_employment_details(inst[0], employee['cpr'], employee['employment_id'], date)
 
                             if extra_employee_details:
-                                if not has_active and extra_employee_details['employement_status_code'] in ['0', '1', '3']:
+                                if not has_active and extra_employee_details['employement_status_code'] in ['0', '1']:
                                     has_active = True
 
                                 if has_active and extra_employee_details['employement_status_code'] not in ['7', '8', '9'] or not has_active:
@@ -93,12 +118,40 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                         employment_status = EMPLOYMENT_STATUS.get(employee['employement_status_code'])
                                         employee_name = sd_client.get_person_names(inst[0], employee['cpr'])
 
+                                        if not all([department_name, niveau0, niveau2, employee_name]):
+                                            logger.warning(f'Failed to get full details for employee {employee["employment_id"]} in institution {inst[0]}')
+                                            continue
+
                                         old_start_date = None
 
                                         if datetime.strptime(employee['start_date'], '%Y-%m-%d').date() < datetime.today().date():
                                             old_start_date = delta_client.get_engagement_start_date_based_on_sd_dates(employee['employment_id'], employee['cpr'][:6], employee['start_date'], employee['end_date'])
 
                                         if employment_status and employee_name:
+                                            if employee['employement_status_code'] == '3':
+                                                row = next(
+                                                    (
+                                                        r for r in all_rows
+                                                        if (r['CPR-nummer'] == employee['cpr'] and r['Navn (for-/efternavn)'] == employee_name and r['Tjenestenummer'] == employee['employment_id'] and r['Institutions-niveau'] == f'{inst[1]} ({inst[0]})' and r['Stamafdeling'] == department_name and r['Stillingskode nuværende'] == niveau0 and r['Stillingskode niveau 2'] == niveau2 and r['Afdeling'] == employee['department'] and r['Ansættelsesstatus'] == 'Aktiv')
+                                                    ),
+                                                    None
+                                                )
+                                                if row:
+                                                    # Update existing row with new start and end dates to cover entire period
+                                                    existing_start = datetime.strptime(row['Startdato'], "%d.%m.%Y")
+                                                    existing_end = datetime.strptime(row['Slutdato'], "%d.%m.%Y")
+
+                                                    new_start_string = ".".join(reversed(old_start_date.split("-"))) if old_start_date else ".".join(reversed(employee['start_date'].split("-")))
+                                                    new_start = datetime.strptime(new_start_string, "%d.%m.%Y")
+                                                    new_end = datetime.strptime(".".join(reversed(employee['end_date'].split("-"))), "%d.%m.%Y")
+
+                                                    row['Startdato'] = (new_start if new_start < existing_start else existing_start).strftime("%d.%m.%Y")
+                                                    row['Slutdato'] = (new_end if new_end > existing_end else existing_end).strftime("%d.%m.%Y")
+                                                    continue
+                                                else:
+                                                    # Set to '1' / 'Aktiv'- to avoid Delta setting employee to inactive
+                                                    employment_status = EMPLOYMENT_STATUS.get('1')
+
                                             row = {
                                                 'Institutions-niveau': f'{inst[1]} ({inst[0]})',
                                                 'Stamafdeling': department_name,
@@ -122,6 +175,10 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
                                 logger.warning(f'Failed to get extra employee details for employee {employee["employment_id"]} in institution {inst[0]} at {date}')
 
                     logger.info(f'{changes_found} changes found for institution {inst}')
+                else:
+                    if employees is None:
+                        logger.error(f'Failed to get employees with changes for institution {inst[0]}')
+                        return
 
             # Handle logiva
             if include_logiva:
