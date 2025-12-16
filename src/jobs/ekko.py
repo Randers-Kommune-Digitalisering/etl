@@ -13,7 +13,13 @@ from utils.config import CONFIG_LIBRARY_URL, CONFIG_LIBRARY_USER, CONFIG_LIBRARY
 logger = logging.getLogger()
 
 
-def job():
+def job() -> bool:
+    """
+    Main job function to update EKKO user data.
+
+    :return: Job success status
+    :rtype: bool
+    """
     logger.info('Getting config files')
     config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
     ekko_config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, EKKO_CONFIG_FILE)
@@ -30,11 +36,11 @@ def job():
 
     logger.info('Getting user data')
 
-    user_df = get_user_data_df(departments=departments, all_deparments_df=all_deparments_df)
+    user_df = _get_user_data_df(departments=departments, all_deparments_df=all_deparments_df)
 
     logger.info('Uploading CSV file')
 
-    if upload_csv(user_df):
+    if _upload_csv(user_df):
         logger.info('Successfully uploaded user data to EKKO')
     else:
         logger.error('Failed to update user data')
@@ -43,11 +49,24 @@ def job():
     return True
 
 
-def get_user_data_df(departments: list[tuple[str, str]], institution_id: str = 'RG', all_deparments_df: pd.DataFrame = None) -> pd.DataFrame:
+def _get_user_data_df(departments: list[tuple[str, str]], institution_id: str = 'RG', all_deparments_df: pd.DataFrame = None) -> pd.DataFrame:
+    """
+    Get user data DataFrame from SD client.
+
+    :param departments: List of department tuples (id, name)
+    :type departments: list[tuple[str, str]]
+    :param institution_id: Institution identifier
+    :type institution_id: str
+    :param all_deparments_df: DataFrame containing all departments
+    :type all_deparments_df: pd.DataFrame
+    :return: DataFrame containing user data
+    :rtype: pd.DataFrame
+    """
     ekko_employees_df = pd.DataFrame(columns=['Navn', 'Personalenr.', 'Email', 'MasterGroup', 'UserGroup', 'Titel', 'Fødselsdag', 'Ansættelsesdato', 'Mobiltelefonnr.'])
     org = sd_client.get_all_organization(institution_id)
 
-    def _find_level3_parent_code(org, child_code):
+    def _find_level3_parent_code(org: list[dict], child_code: str) -> str | None:
+        """Find the level 3 parent department code for a given child department code."""
         for dept in org:
             if _contains_department(dept, child_code):
                 if dept['DepartmentLevel'] == '3':
@@ -57,7 +76,8 @@ def get_user_data_df(departments: list[tuple[str, str]], institution_id: str = '
                     return result
         return None
 
-    def _contains_department(dept, target_code):
+    def _contains_department(dept: dict, target_code: str) -> bool:
+        """Check if a department or its sub-departments contain the target department code."""
         if dept['DepartmentCode'] == target_code:
             return True
         return any(_contains_department(sub, target_code) for sub in dept.get('Departments', []))
@@ -81,16 +101,25 @@ def get_user_data_df(departments: list[tuple[str, str]], institution_id: str = '
 
             user_group = sd_name
             profession = emp['profession']
-            birth_day = get_birth_date_from_cpr(emp['cpr'])
+            birth_day = _get_birth_date_from_cpr(emp['cpr'])
             employment_date = emp['employment_date']
-            mobile_phone = get_mobile_number(person_phones)
+            mobile_phone = _get_mobile_number(person_phones)
 
             ekko_employees_df.loc[len(ekko_employees_df)] = [name, employment_id, email, master_group, user_group, profession, birth_day, employment_date, mobile_phone]
 
     return ekko_employees_df
 
 
-def get_mobile_number(person_phones: dict):
+def _get_mobile_number(person_phones: dict) -> str | None:
+    """
+    Attempt to retrieve a mobile number from the provided phone data.
+    Prioritizes employment phones over personal phones.
+
+    :param person_phones: Dictionary containing employment and personal phone numbers. List under keys 'employment_phones' and 'person_phones'.
+    :type person_phones: dict
+    :return: Mobile phone number if found, otherwise None
+    :rtype: str | None
+    """
     mobile_number = None
     for num in person_phones['employment_phones']:
         mobile_number = check_if_mobile_number_and_clean(num)
@@ -104,7 +133,16 @@ def get_mobile_number(person_phones: dict):
     return mobile_number
 
 
-def get_century_from_cpr(cpr_number: str):
+def _get_century_from_cpr(cpr_number: str) -> int:
+    """
+    Determine the century of birth from a CPR number, using the control digit rules.
+    Rules based on Danish CPR number system: https://www.cpr.dk/cpr-systemet/opbygning-af-cpr-nummeret
+
+    :param cpr_number: CPR number string
+    :type cpr_number: str
+    :return: Century of birth (e.g., 1900, 2000, 1800)
+    :rtype: int
+    """
     first_control_digit = int(cpr_number[6])
     if first_control_digit in [0, 1, 2, 3]:
         return 1900
@@ -121,13 +159,29 @@ def get_century_from_cpr(cpr_number: str):
             return 1800
 
 
-def get_birth_date_from_cpr(cpr_number: str):
-    century = get_century_from_cpr(cpr_number)
+def _get_birth_date_from_cpr(cpr_number: str) -> str:
+    """
+    Extract and format the birth date from a CPR number.
+
+    :param cpr_number: CPR number string
+    :type cpr_number: str
+    :return: Birth date in DD-MM-YYYY format
+    :rtype: str
+    """
+    century = _get_century_from_cpr(cpr_number)
     dt = datetime(year=century + int(cpr_number[4:6]), month=int(cpr_number[2:4]), day=int(cpr_number[0:2]))
     return dt.strftime("%d-%m-%Y")
 
 
-def upload_csv(dataframe: pd.DataFrame):
+def _upload_csv(dataframe: pd.DataFrame) -> bool:
+    """
+    Upload the given DataFrame as a CSV file to the EKKO system via FTPS.
+
+    :param dataframe: DataFrame to be uploaded as CSV
+    :type dataframe: pd.DataFrame
+    :return: True if upload was successful, False otherwise
+    :rtype: bool
+    """
     csv_file = df_to_csv_bytes(dataframe)
     filename = f"ejendomme-og-drift-brugere-{datetime.now().strftime('%d-%m-%Y')}.csv"
 
