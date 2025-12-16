@@ -45,10 +45,10 @@ class FTPSClient:
                 raise ValueError('No file extenstion in filename')
 
             filedata.seek(0)
-            host = f"{self.host}/{filename.strip('/')}"
+            file_url = f"{self.host}/{filename.strip('/')}"
 
             upload_curl = pycurl.Curl()
-            upload_curl.setopt(upload_curl.URL, f"{host}/{filename}")
+            upload_curl.setopt(upload_curl.URL, file_url)
             upload_curl.setopt(upload_curl.USERPWD, f'{self.username}:{self.password}')
             upload_curl.setopt(upload_curl.SSL_VERIFYPEER, 0)
             upload_curl.setopt(upload_curl.SSL_VERIFYHOST, 0)
@@ -59,6 +59,27 @@ class FTPSClient:
             upload_curl.setopt(upload_curl.FTP_USE_EPSV, 1)
             upload_curl.perform()
             upload_curl.close()
+
+            return True
+        except Exception as e:
+            logger.error(e)
+            return False
+
+    def delete(self, filename: str):
+        try:
+            file_url = f"{self.host.rstrip('/')}/{filename}"
+
+            delete_curl = pycurl.Curl()
+            delete_curl.setopt(delete_curl.URL, file_url)
+            delete_curl.setopt(delete_curl.USERPWD, f'{self.username}:{self.password}')
+            delete_curl.setopt(delete_curl.SSL_VERIFYPEER, 0)
+            delete_curl.setopt(delete_curl.SSL_VERIFYHOST, 0)
+            delete_curl.setopt(delete_curl.FTP_SSL, pycurl.FTPSSL_ALL)
+            delete_curl.setopt(delete_curl.FTPSSLAUTH, pycurl.FTPAUTH_TLS)
+            delete_curl.setopt(delete_curl.FTP_USE_EPSV, 1)
+            delete_curl.setopt(delete_curl.QUOTE, [f"DELE {filename}"])
+            delete_curl.perform()
+            delete_curl.close()
 
             return True
         except Exception as e:

@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 
 from utils.api_requests import APIClient
 from utils.utils import flatten_xml
+from utils.config import SD_URL, SD_USER, SD_PASS
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,41 @@ class SDClient(APIClient):
             res = self.make_request(method='POST', path='GetDepartment20111201', params=params)
 
             return pd.read_xml(res, xpath='.//Department')
+        except Exception as e:
+            logger.error(e)
+            return None
+
+    # Returns a pandas dataframe
+    def get_all_organization(self, institution_code):
+        try:
+            params = {
+                'RegionCode': '9r',
+                'InstitutionCode': institution_code
+            }
+
+            res = self.make_request(method='POST', path='GetOrganization', params=params)
+
+            root = etree.fromstring(res)
+            departments = []
+
+            def parse_department(dept_elem):
+                dept = {
+                    'DepartmentCode': dept_elem.findtext('DepartmentCode'),
+                    'DepartmentLevel': dept_elem.findtext('DepartmentLevel'),
+                    'Departments': []
+                }
+                for child in dept_elem.findall('Department'):
+                    dept['Departments'].append(parse_department(child))
+                return dept
+
+            region = root.find('.//Region')
+            if region is not None:
+                institution = region.find('Institution')
+                if institution is not None:
+                    for dept_elem in institution.findall('Department'):
+                        departments.append(parse_department(dept_elem))
+
+            return departments
         except Exception as e:
             logger.error(e)
             return None
@@ -368,7 +404,7 @@ class SDClient(APIClient):
             logger.error(e)
             return None
 
-    def get_all_start_dates(self, institution_id, department_id, effective_date=None):
+    def get_employments_by_department(self, institution_id, department_id, effective_date=None):
         try:
             effective_date = datetime.now(pytz.timezone("Europe/Copenhagen")).strftime("%Y-%m-%d") if effective_date is None else effective_date
 
@@ -378,7 +414,8 @@ class SDClient(APIClient):
                 'EffectiveDate': effective_date,
                 'DepartmentLevelCode': 0,
                 'StatusActiveIndicator': True,
-                'EmploymentStatusIndicator': True
+                'EmploymentStatusIndicator': True,
+                'ProfessionIndicator': True
             }
 
             res = self.make_request(method='POST', path='GetEmployment20070401', params=params)
@@ -387,20 +424,87 @@ class SDClient(APIClient):
 
             persons = root.xpath("//Person")
 
-            employment_dates = []
+            employments = []
 
             if len(persons) > 0:
                 for p in persons:
+                    cpr = p.find('PersonCivilRegistrationIdentifier').text if p.find('PersonCivilRegistrationIdentifier') is not None else None
+                    if not cpr:
+                        continue
                     for e in p.xpath('.//Employment'):
                         emp_id = e.find('EmploymentIdentifier')
                         emp_date = e.find('EmploymentDate')
                         employment_date = emp_date.text if emp_date is not None else None
                         employment_id = emp_id.text if emp_id is not None else None
-                        employment_dates.append({'employment_id': employment_id, 'employment_date': employment_date})
-                return employment_dates if employment_dates else None
+                        profession = e.find('Profession/EmploymentName').text if e.find('Profession/EmploymentName') is not None else None
+                        employments.append({'cpr': cpr, 'employment_id': employment_id, 'employment_date': employment_date, 'profession': profession})
+                return employments
             else:
                 return None
 
         except Exception as e:
             logger.error(e)
             return None
+
+    def get_persons_by_department(self, institution_id, department_id, effective_date=None):
+        try:
+            effective_date = datetime.now(pytz.timezone("Europe/Copenhagen")).strftime("%Y-%m-%d") if effective_date is None else effective_date
+
+            params = {
+                'InstitutionIdentifier': institution_id,
+                'DepartmentIdentifier': department_id,
+                'EffectiveDate': effective_date,
+                'DepartmentLevelCode': 0,
+                'StatusActiveIndicator': True,
+                'ContactInformationIndicator': True
+            }
+
+            res = self.make_request(method='POST', path='GetPerson', params=params)
+
+            root = etree.fromstring(res)
+
+            persons = root.xpath("//Person")
+
+            persons_data = []
+
+            if len(persons) > 0:
+                for p in persons:
+                    cpr = p.find('PersonCivilRegistrationIdentifier').text
+                    person_phones = p.xpath('./ContactInformation/TelephoneNumberIdentifier/text()')
+                    person_emails = p.xpath('./ContactInformation/EmailAddressIdentifier/text()')
+                    first_name = p.find('PersonGivenName').text
+                    last_name = p.find('PersonSurnameName').text
+                    name = f"{first_name} {last_name}"
+                    employment_ids = []
+                    employment_phones = []
+                    employment_emails = []
+                    for e in p.xpath('./Employment'):
+                        emp_id = e.find('EmploymentIdentifier')
+                        emp_phones = e.xpath('./ContactInformation/TelephoneNumberIdentifier/text()')
+                        emp_emails = e.xpath('./ContactInformation/EmailAddressIdentifier/text()')
+                        employment_ids.append(emp_id.text)
+                        employment_phones.extend(emp_phones)
+                        employment_emails.extend(emp_emails)
+
+                    all_emails = person_emails + employment_emails
+                    randers_email = next((email.lower() for email in all_emails if email.lower().endswith('@randers.dk')), None)
+
+                    person_dict = {
+                        'cpr': cpr,
+                        'name': name,
+                        'employment_ids': employment_ids if employment_ids else [],
+                        'person_phones': person_phones if person_phones else [],
+                        'employment_phones': employment_phones if employment_phones else [],
+                        'email': randers_email
+                    }
+                    persons_data.append(person_dict)
+                return persons_data
+            else:
+                return None
+
+        except Exception as e:
+            logger.error(e)
+            return None
+
+
+SD_CLIENT = SDClient(SD_URL, SD_USER, SD_PASS)

@@ -34,7 +34,19 @@ def df_to_excel_bytes(df: pd.DataFrame):
     return excel_file
 
 
-def df_to_csv_bytes(df: pd.DataFrame, sep: str = ';', encoding: str = 'cp1252'):
+def df_to_csv_bytes(df: pd.DataFrame, sep: str = ';', encoding: str = 'cp1252') -> io.BytesIO:
+    """
+    Convert a DataFrame to a CSV file in memory.
+
+    :param df: DataFrame to convert
+    :type df: pd.DataFrame
+    :param sep: Separator for the CSV file
+    :type sep: str
+    :param encoding: Encoding for the CSV file
+    :type encoding: str
+    :return: BytesIO object containing the CSV file
+    :rtype: io.BytesIO
+    """
     csv_file = io.BytesIO()
 
     df.to_csv(csv_file, index=False, sep=sep, encoding=encoding)
@@ -42,3 +54,24 @@ def df_to_csv_bytes(df: pd.DataFrame, sep: str = ';', encoding: str = 'cp1252'):
     csv_file.seek(0)
 
     return csv_file
+
+
+def check_if_mobile_number_and_clean(number: str) -> str | bool:
+    """
+    Check if the given number is a valid mobile number and clean it.
+    Based on Danish mobile number rules: https://guldnummer.com/tjek-nummer
+
+    :param number: Phone number to check
+    :type number: str
+    :return: Cleaned mobile number if valid, otherwise False
+    :rtype: str | bool
+    """
+    FIRST_NUMBER_FOR_MOBILE = [2, 30, 31, 40, 41, 42, 50, 51, 52, 53, 60, 61, 71, 81, 91, 92, 93]
+
+    if len(number) > 8:
+        number = number[-8:]
+
+    if len(number) == 8 and (int(number[0]) in FIRST_NUMBER_FOR_MOBILE or int(number[:2]) in FIRST_NUMBER_FOR_MOBILE):
+        return number
+    else:
+        return False
