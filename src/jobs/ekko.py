@@ -104,13 +104,26 @@ def get_mobile_number(person_phones: dict):
     return mobile_number
 
 
+def get_century_from_cpr(cpr_number: str):
+    first_control_digit = int(cpr_number[6])
+    if first_control_digit in [0, 1, 2, 3]:
+        return 1900
+    short_year = int(cpr_number[4:6])
+    if first_control_digit in [4, 9]:
+        if short_year >= 37:
+            return 1900
+        else:
+            return 2000
+    elif first_control_digit in [5, 6, 7, 8]:
+        if short_year <= 57:
+            return 2000
+        else:
+            return 1800
+
+
 def get_birth_date_from_cpr(cpr_number: str):
-    dt = datetime.strptime(cpr_number[:6], "%d%m%y")
-    year = dt.year
-    today = datetime.today()
-    age = today.year - year - ((today.month, today.day) < (dt.month, dt.day))
-    if year >= 2000 and age < 18:
-        dt = dt.replace(year=year - 100)
+    century = get_century_from_cpr(cpr_number)
+    dt = datetime(year=century + int(cpr_number[4:6]), month=int(cpr_number[2:4]), day=int(cpr_number[0:2]))
     return dt.strftime("%d-%m-%Y")
 
 
