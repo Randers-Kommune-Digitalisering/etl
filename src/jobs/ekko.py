@@ -112,7 +112,7 @@ def _get_user_data_df_by_employment_ids(employment_ids: list[int], departments: 
     :param all_deparments_df: DataFrame containing all departments
     :type all_deparments_df: pd.DataFrame
     :return: DataFrame containing user data
-    :rtype: DataFrame
+    :rtype: pd.DataFrame
     """
     ekko_employees_df = pd.DataFrame(columns=['Navn', 'Personalenr.', 'Email', 'MasterGroup', 'UserGroup', 'Titel', 'Fødselsdag', 'Ansættelsesdato', 'Mobiltelefonnr.'])
     org = sd_client.get_all_organization('RG')
