@@ -43,7 +43,7 @@ def job() -> bool:
 
     if sd_employee_ids:
         filtered_departments = all_deparments_df[['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
-        tmp_user_df = _get_user_data_df_by_employment_ids(employment_ids=sd_employee_ids, departments=filtered_departments)
+        tmp_user_df = _get_user_data_df_by_employment_ids(employment_ids=sd_employee_ids, departments=filtered_departments, all_deparments_df=all_deparments_df)
         user_df = pd.concat([user_df, tmp_user_df]).drop_duplicates().reset_index(drop=True)
 
     logger.info('Uploading CSV file')
@@ -101,7 +101,7 @@ def _get_user_data_df(departments: list[tuple[str, str]], institution_id: str = 
     return ekko_employees_df
 
 
-def _get_user_data_df_by_employment_ids(employment_ids: list[int], departments: list[tuple[str, str]]) -> pd.DataFrame:
+def _get_user_data_df_by_employment_ids(employment_ids: list[int], departments: list[tuple[str, str]], all_deparments_df: pd.DataFrame) -> pd.DataFrame:
     """
     Get user data DataFrame from SD client by employment IDs.
 
@@ -109,6 +109,8 @@ def _get_user_data_df_by_employment_ids(employment_ids: list[int], departments: 
     :type employment_ids: list[int]
     :param departments: List of department tuples (id, name)
     :type departments: list[tuple[str, str]]
+    :param all_deparments_df: DataFrame containing all departments
+    :type all_deparments_df: pd.DataFrame
     :return: DataFrame containing user data
     :rtype: DataFrame
     """
@@ -116,7 +118,6 @@ def _get_user_data_df_by_employment_ids(employment_ids: list[int], departments: 
     for emp_id in employment_ids:
         per = sd_client.get_person_by_employment_id(institution_id='RG', employment_id=emp_id)
         emp = sd_client.get_employment_by_employment_id(institution_id='RG', employment_id=emp_id)
-        all_deparments_df = sd_client.get_all_departments_df('RG')
 
         org = sd_client.get_all_organization('RG')
         master_group_id = _find_level3_parent_code(org=org, child_code=emp['department_id'])
