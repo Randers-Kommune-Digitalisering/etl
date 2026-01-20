@@ -115,11 +115,11 @@ def _get_user_data_df_by_employment_ids(employment_ids: list[int], departments: 
     :rtype: DataFrame
     """
     ekko_employees_df = pd.DataFrame(columns=['Navn', 'Personalenr.', 'Email', 'MasterGroup', 'UserGroup', 'Titel', 'Fødselsdag', 'Ansættelsesdato', 'Mobiltelefonnr.'])
+    org = sd_client.get_all_organization('RG')
     for emp_id in employment_ids:
         per = sd_client.get_person_by_employment_id(institution_id='RG', employment_id=emp_id)
         emp = sd_client.get_employment_by_employment_id(institution_id='RG', employment_id=emp_id)
 
-        org = sd_client.get_all_organization('RG')
         master_group_id = _find_level3_parent_code(org=org, child_code=emp['department_id'])
         master_group = all_deparments_df.loc[all_deparments_df['DepartmentIdentifier'] == master_group_id, 'DepartmentName'].squeeze() if master_group_id else None
 
