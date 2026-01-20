@@ -23,7 +23,10 @@ def job() -> bool:
     logger.info('Getting config files')
     config_library_client = APIClient(base_url=CONFIG_LIBRARY_URL, username=CONFIG_LIBRARY_USER, password=CONFIG_LIBRARY_PASS)
     ekko_config_path = urllib.parse.urljoin(CONFIG_LIBRARY_BASE_PATH, EKKO_CONFIG_FILE)
-    sd_department_ids = config_library_client.make_request(path=ekko_config_path)
+    ekko_config_file = config_library_client.make_request(path=ekko_config_path)
+
+    sd_department_ids = ekko_config_file.get('departments', []) if ekko_config_file else []
+    sd_employee_ids = ekko_config_file.get('employees', []) if ekko_config_file else []
 
     if not sd_department_ids:
         logging.error(f"Failed to load config file: {EKKO_CONFIG_FILE}")
@@ -32,11 +35,16 @@ def job() -> bool:
     logger.info('Getting department names')
     all_deparments_df = sd_client.get_all_departments_df('RG')
 
-    departments = all_deparments_df[all_deparments_df['DepartmentIdentifier'].isin(sd_department_ids)][['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
+    filtered_departments = all_deparments_df[all_deparments_df['DepartmentIdentifier'].isin(sd_department_ids[:1])][['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
 
     logger.info('Getting user data')
 
-    user_df = _get_user_data_df(departments=departments, all_deparments_df=all_deparments_df)
+    user_df = _get_user_data_df(departments=filtered_departments, all_deparments_df=all_deparments_df)
+
+    if sd_employee_ids:
+        filtered_departments = all_deparments_df[['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
+        tmp_user_df = _get_user_data_df_by_employment_ids(employment_ids=sd_employee_ids, departments=filtered_departments)
+        user_df = pd.concat([user_df, tmp_user_df]).drop_duplicates().reset_index(drop=True)
 
     logger.info('Uploading CSV file')
 
@@ -65,23 +73,6 @@ def _get_user_data_df(departments: list[tuple[str, str]], institution_id: str = 
     ekko_employees_df = pd.DataFrame(columns=['Navn', 'Personalenr.', 'Email', 'MasterGroup', 'UserGroup', 'Titel', 'Fødselsdag', 'Ansættelsesdato', 'Mobiltelefonnr.'])
     org = sd_client.get_all_organization(institution_id)
 
-    def _find_level3_parent_code(org: list[dict], child_code: str) -> str | None:
-        """Find the level 3 parent department code for a given child department code."""
-        for dept in org:
-            if _contains_department(dept, child_code):
-                if dept['DepartmentLevel'] == '3':
-                    return dept['DepartmentCode']
-                result = _find_level3_parent_code(dept.get('Departments', []), child_code)
-                if result:
-                    return result
-        return None
-
-    def _contains_department(dept: dict, target_code: str) -> bool:
-        """Check if a department or its sub-departments contain the target department code."""
-        if dept['DepartmentCode'] == target_code:
-            return True
-        return any(_contains_department(sub, target_code) for sub in dept.get('Departments', []))
-
     for sd_department in departments:
         sd_id = sd_department[0]
         sd_name = sd_department[1]
@@ -108,6 +99,60 @@ def _get_user_data_df(departments: list[tuple[str, str]], institution_id: str = 
             ekko_employees_df.loc[len(ekko_employees_df)] = [name, employment_id, email, master_group, user_group, profession, birth_day, employment_date, mobile_phone]
 
     return ekko_employees_df
+
+
+def _get_user_data_df_by_employment_ids(employment_ids: list[int], departments: list[tuple[str, str]]) -> pd.DataFrame:
+    """
+    Get user data DataFrame from SD client by employment IDs.
+
+    :param employment_ids: List of employment IDs
+    :type employment_ids: list[int]
+    :param departments: List of department tuples (id, name)
+    :type departments: list[tuple[str, str]]
+    :return: DataFrame containing user data
+    :rtype: DataFrame
+    """
+    ekko_employees_df = pd.DataFrame(columns=['Navn', 'Personalenr.', 'Email', 'MasterGroup', 'UserGroup', 'Titel', 'Fødselsdag', 'Ansættelsesdato', 'Mobiltelefonnr.'])
+    for emp_id in employment_ids:
+        per = sd_client.get_person_by_employment_id(institution_id='RG', employment_id=emp_id)
+        emp = sd_client.get_employment_by_employment_id(institution_id='RG', employment_id=emp_id)
+        all_deparments_df = sd_client.get_all_departments_df('RG')
+
+        org = sd_client.get_all_organization('RG')
+        master_group_id = _find_level3_parent_code(org=org, child_code=emp['department_id'])
+        master_group = all_deparments_df.loc[all_deparments_df['DepartmentIdentifier'] == master_group_id, 'DepartmentName'].squeeze() if master_group_id else None
+
+        user_group = next((dept_name for dept_id, dept_name in departments if dept_id == emp['department_id']), None)
+        profession = emp['profession']
+        birth_day = _get_birth_date_from_cpr(emp['cpr'])
+        employment_date = emp['employment_date']
+        mobile_phone = _get_mobile_number(per)
+
+        name = per['name']
+        employment_id = emp_id
+        email = per['email']
+
+        ekko_employees_df.loc[len(ekko_employees_df)] = [name, employment_id, email, master_group, user_group, profession, birth_day, employment_date, mobile_phone]
+    return ekko_employees_df
+
+
+def _contains_department(dept: dict, target_code: str) -> bool:
+    """Check if a department or its sub-departments contain the target department code."""
+    if dept['DepartmentCode'] == target_code:
+        return True
+    return any(_contains_department(sub, target_code) for sub in dept.get('Departments', []))
+
+
+def _find_level3_parent_code(org: list[dict], child_code: str) -> str | None:
+    """Find the level 3 parent department code for a given child department code."""
+    for dept in org:
+        if _contains_department(dept, child_code):
+            if dept['DepartmentLevel'] == '3':
+                return dept['DepartmentCode']
+            result = _find_level3_parent_code(dept.get('Departments', []), child_code)
+            if result:
+                return result
+    return None
 
 
 def _get_mobile_number(person_phones: dict) -> str | None:
