@@ -35,7 +35,7 @@ def job() -> bool:
     logger.info('Getting department names')
     all_deparments_df = sd_client.get_all_departments_df('RG')
 
-    filtered_departments = all_deparments_df[all_deparments_df['DepartmentIdentifier'].isin(sd_department_ids[:1])][['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
+    filtered_departments = all_deparments_df[all_deparments_df['DepartmentIdentifier'].isin(sd_department_ids)][['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
 
     logger.info('Getting user data')
 
