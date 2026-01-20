@@ -42,8 +42,8 @@ def job() -> bool:
     user_df = _get_user_data_df(departments=filtered_departments, all_deparments_df=all_deparments_df)
 
     if sd_employee_ids:
-        filtered_departments = all_deparments_df[['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
-        tmp_user_df = _get_user_data_df_by_employment_ids(employment_ids=sd_employee_ids, departments=filtered_departments, all_deparments_df=all_deparments_df)
+        all_departments_tuples = all_deparments_df[['DepartmentIdentifier', 'DepartmentName']].apply(tuple, axis=1).tolist()
+        tmp_user_df = _get_user_data_df_by_employment_ids(employment_ids=sd_employee_ids, departments=all_departments_tuples, all_deparments_df=all_deparments_df)
         user_df = pd.concat([user_df, tmp_user_df]).drop_duplicates().reset_index(drop=True)
 
     logger.info('Uploading CSV file')
