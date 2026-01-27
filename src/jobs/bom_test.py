@@ -2,7 +2,8 @@ import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-from bom_test.bom_data import fetch_bom_data_with_selenium, process_and_save_bom_data
+from bom_test.bom_data import fetch_bom_data_with_selenium_historical, process_and_save_bom_data_historical
+
 from utils.database_connection import get_byggesager_db
 
 logger = logging.getLogger(__name__)
@@ -22,14 +23,17 @@ def job():
     try:
         logger.info("Starting BOM ETL job (Selenium)!")
 
-        bom_dict = fetch_bom_data_with_selenium(driver)
+        bom_dict = fetch_bom_data_with_selenium_historical(driver)
         if not bom_dict:
             logger.error("No BOM data returned from Selenium run.")
             return False
 
-        df = process_and_save_bom_data(bom_dict)
-        if df is None or df.empty:
-            logger.error("Processed BOM DataFrame is empty.")
+        df_monthly, df_glidende = process_and_save_bom_data_historical(bom_dict)
+        if df_monthly is None or df_monthly.empty:
+            logger.error("Processed monthly BOM DataFrame is empty.")
+            return False
+        if df_glidende is None or df_glidende.empty:
+            logger.error("Processed Glidende Gennemsnit BOM DataFrame is empty.")
             return False
 
         logger.info("Inserting data into the database...")
@@ -38,12 +42,11 @@ def job():
         if not connection:
             raise Exception("Failed to get database connection")
 
-        table_name = "bom_data_test"
-        df.to_sql(table_name, con=connection, if_exists="append", index=False)
-        logger.info(f"Data successfully inserted into PostgreSQL table: {table_name}")
-        connection.close()
+        df_monthly.to_sql("bom_data_monthly", con=connection, if_exists="append", index=False)
+        df_glidende.to_sql("bom_data_glidende", con=connection, if_exists="append", index=False)
 
-        logger.info("BOM Data successfully fetched, processed, and saved into DB.")
+        logger.info("Data successfully inserted into PostgreSQL tables: bom_data_monthly, bom_data_glidende")
+        connection.close()
         return True
 
     except Exception as e:
