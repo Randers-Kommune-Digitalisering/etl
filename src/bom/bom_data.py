@@ -231,8 +231,8 @@ def fetch_bom_data_with_selenium(driver: WebDriver) -> dict[str, NoegletalPayloa
         username_input = wait.until(EC.element_to_be_clickable((By.ID, "userNameInput")))
         password_input = wait.until(EC.element_to_be_clickable((By.ID, "passwordInput")))
 
-        _clear_and_type(e=username_input, text=BOM_USERNAME)
-        _clear_and_type(e=password_input, text=BOM_PASSWORD)
+        _clear_and_type(el=username_input, text=BOM_USERNAME)
+        _clear_and_type(el=password_input, text=BOM_PASSWORD)
 
         logger.info("Username/password entered.")
 
