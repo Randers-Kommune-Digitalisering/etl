@@ -2,7 +2,7 @@ import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-from bom.bom_data import fetch_bom_data_with_selenium, process_and_save_bom_data
+from bom.bom_data import fetch_bom_data, process_and_save_bom_data
 
 from utils.database_connection import get_byggesager_db
 
@@ -23,7 +23,7 @@ def job():
     try:
         logger.info("Starting BOM ETL job (Selenium)!")
 
-        bom_dict = fetch_bom_data_with_selenium(driver)
+        bom_dict = fetch_bom_data(driver)
         if not bom_dict:
             logger.error("No BOM data returned from Selenium run.")
             return False

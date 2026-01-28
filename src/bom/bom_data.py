@@ -196,7 +196,7 @@ def _extract_noegletal_payload(driver: WebDriver, wait: WebDriverWait, max_rows:
     }
 
 
-def fetch_bom_data_with_selenium(driver: WebDriver) -> dict[str, NoegletalPayload] | None:
+def fetch_bom_data(driver: WebDriver) -> dict[str, NoegletalPayload] | None:
     """
     Log into BOM, navigate to 'Statistik og Servicemål', and extract monthly + glidende gennemsnit 'Nøgletal'.
 
@@ -338,7 +338,7 @@ def process_and_save_bom_data(
     """
     Transform extracted BOM payloads into pandas DataFrames.
 
-    :param response_json: Response dict from fetch_bom_data_with_selenium().
+    :param response_json: Response dict from fetch_bom_data().
     :return: Tuple (df_monthly, df_glidende). Returns (None, None) on failure/empty input.
     """
     try:
