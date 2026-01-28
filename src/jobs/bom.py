@@ -1,53 +1,57 @@
 import logging
-import requests
-import json
-from requests.auth import HTTPBasicAuth
-from utils.config import BROWSERLESS_CLIENT_ID, BROWSERLESS_CLIENT_SECRET
-from bom.bom_data import get_bom_data, process_and_save_bom_data
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+
+from bom_test.bom_data import fetch_bom_data_with_selenium_historical, process_and_save_bom_data_historical
+
 from utils.database_connection import get_byggesager_db
 
 logger = logging.getLogger(__name__)
-
 db_client = get_byggesager_db()
+
+options = Options()
+options.add_argument("--incognito")
+options.add_argument("--no-sandbox")
+options.add_argument("--disable-dev-shm-usage")
+options.add_argument("--disable-gpu")
+options.add_argument("--headless")
+options.add_argument("--window-size=1920,1080")
+driver = webdriver.Chrome(options=options)
 
 
 def job():
     try:
-        logger.info("Starting BOM ETL job!")
-        url, headers, data = get_bom_data()
+        logger.info("Starting BOM ETL job (Selenium)!")
 
-        response = requests.post(url, headers=headers, data=data,
-                                 auth=HTTPBasicAuth(BROWSERLESS_CLIENT_ID, BROWSERLESS_CLIENT_SECRET), timeout=None)
-        logger.info(f"Response content: {response.content}")
+        bom_dict = fetch_bom_data_with_selenium_historical(driver)
+        if not bom_dict:
+            logger.error("No BOM data returned from Selenium run.")
+            return False
 
-        if response.status_code == 200 and response.content:
-            try:
-                response_json = response.json()
-                for response in response_json:
-                    logger.info(f"Response from json: {response}")
+        df_monthly, df_glidende = process_and_save_bom_data_historical(bom_dict)
+        if df_monthly is None or df_monthly.empty:
+            logger.error("Processed monthly BOM DataFrame is empty.")
+            return False
+        if df_glidende is None or df_glidende.empty:
+            logger.error("Processed Glidende Gennemsnit BOM DataFrame is empty.")
+            return False
 
-                df = process_and_save_bom_data(response_json)
+        logger.info("Inserting data into the database...")
+        db_client.ensure_database_exists()
+        connection = db_client.get_connection()
+        if not connection:
+            raise Exception("Failed to get database connection")
 
-                logger.info("Inserting data into the database...")
-                db_client.ensure_database_exists()
-                connection = db_client.get_connection()
-                if connection:
-                    logger.info("Database connection established")
-                    table_name = "bom_data_updated"
-                    df.to_sql(table_name, con=connection, if_exists='append', index=False)
-                    logger.info(f"Data successfully inserted into PostgreSQL table: {table_name}")
-                    connection.close()
-                else:
-                    raise Exception("Failed to get database connection")
+        df_monthly.to_sql("bom_data_monthly", con=connection, if_exists="append", index=False)
+        df_glidende.to_sql("bom_data_glidende", con=connection, if_exists="append", index=False)
 
-                logger.info("BOM Data successfully fetched, processed, and saved into DB.")
-                return True
-            except json.JSONDecodeError as e:
-                logger.error(f"Failed to parse response as JSON: {e}")
-            except Exception as e:
-                logger.error(f"An error occurred while processing data: {e}")
-        else:
-            logger.error(f"Failed to get a successful response. Status code: {response.status_code}")
+        logger.info("Data successfully inserted into PostgreSQL tables: bom_data_monthly, bom_data_glidende")
+        connection.close()
+        return True
+
     except Exception as e:
-        logger.error(f"An error occurred: {e}")
-    return False
+        logger.error(f"An error occurred in BOM job: {e}")
+        return False
+    finally:
+        if driver:
+            driver.quit()
