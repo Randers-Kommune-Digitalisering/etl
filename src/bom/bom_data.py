@@ -1,17 +1,28 @@
-from utils.config import BOM_USERNAME, BOM_PASSWORD
-import pandas as pd
-import logging
 import datetime
+import logging
+import pandas as pd
 
+from typing import Any
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.support.ui import Select, WebDriverWait
+
+from utils.config import BOM_PASSWORD, BOM_USERNAME
 
 logger = logging.getLogger(__name__)
 
+NoegletalPayload = dict[str, Any]
 
-def _date_range_prev_month_to_first_of_current():
+
+def _date_range_prev_month_to_first_of_current() -> tuple[str, str]:
+    """
+    Build a date range from the first day of the previous month up to the first day of the current month.
+
+    :return: Tuple (fra, til) as strings in 'DD-MM-YYYY' format.
+    """
     today = datetime.date.today()
     first_day_current_month = today.replace(day=1)
     last_day_previous_month = first_day_current_month - datetime.timedelta(days=1)
@@ -22,7 +33,12 @@ def _date_range_prev_month_to_first_of_current():
     return fra, til
 
 
-def _date_range_last_12_months_to_first_of_current():
+def _date_range_last_12_months_to_first_of_current() -> tuple[str, str]:
+    """
+    Build a date range from the first day 12 months back up to the first day of the current month.
+
+    :return: Tuple (fra, til) as strings in 'DD-MM-YYYY' format.
+    """
     today = datetime.date.today()
     til_date = today.replace(day=1)
 
@@ -36,14 +52,28 @@ def _date_range_last_12_months_to_first_of_current():
     return fra_date.strftime("%d-%m-%Y"), til_date.strftime("%d-%m-%Y")
 
 
-def _clear_and_type(el, text: str):
+def _clear_and_type(el: WebElement, text: str) -> None:
+    """
+    Clear an input element and type new text.
+
+    :param el: Selenium WebElement (typically an input).
+    :param text: Text to type into the element.
+    :return: None.
+    """
     el.click()
     el.send_keys(Keys.CONTROL, "a")
     el.send_keys(Keys.DELETE)
     el.send_keys(text)
 
 
-def _close_open_multiselect_dropdowns(driver, wait: WebDriverWait):
+def _close_open_multiselect_dropdowns(driver: WebDriver, wait: WebDriverWait) -> None:
+    """
+    Close any open Bootstrap multiselect dropdowns (if present).
+
+    :param driver: Selenium WebDriver instance.
+    :param wait: WebDriverWait instance.
+    :return: None.
+    """
     try:
         if driver.find_elements(By.CSS_SELECTOR, "div.btn-group.open"):
             try:
@@ -60,24 +90,40 @@ def _close_open_multiselect_dropdowns(driver, wait: WebDriverWait):
         pass
 
 
-def _set_date_range(driver, wait: WebDriverWait, fra: str, til: str):
-    _close_open_multiselect_dropdowns(driver, wait)
+def _set_date_range(driver: WebDriver, wait: WebDriverWait, fra: str, til: str) -> None:
+    """
+    Set the BOM datepicker range (Fra/Til) and trigger validation.
+
+    :param driver: Selenium WebDriver instance.
+    :param wait: WebDriverWait instance.
+    :param fra: Start date as 'DD-MM-YYYY'.
+    :param til: End date as 'DD-MM-YYYY'.
+    :return: None.
+    """
+    _close_open_multiselect_dropdowns(driver=driver, wait=wait)
 
     fra_input = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#datepicker > input:nth-child(1)")))
     til_input = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, "#datepicker > input:nth-child(2)")))
 
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", fra_input)
-    _clear_and_type(fra_input, fra)
-    _clear_and_type(til_input, til)
+    _clear_and_type(el=fra_input, text=fra)
+    _clear_and_type(el=til_input, text=til)
 
-    # Trigger evt. blur/validering
+    # Try TAB on both inputs
     try:
         til_input.send_keys(Keys.TAB)
     except Exception:
         pass
 
 
-def _click_noegletal_and_wait_refresh(driver, wait: WebDriverWait):
+def _click_noegletal_and_wait_refresh(driver: WebDriver, wait: WebDriverWait) -> None:
+    """
+    Click 'Søg' (if present) and then 'Nøgletal', then wait for the table to refresh.
+
+    :param driver: Selenium WebDriver instance.
+    :param wait: WebDriverWait instance.
+    :return: None.
+    """
     soeg_css = "body > div > div.container > form > div:nth-child(3) > div > span > button.btn.btn-primary"
 
     before_html = ""
@@ -100,7 +146,7 @@ def _click_noegletal_and_wait_refresh(driver, wait: WebDriverWait):
     noegletal_btn.click()
 
     # 3) Wait for table to refresh
-    def _table_changed(d):
+    def _table_changed(d: WebDriver) -> bool:
         try:
             now = d.find_element(By.CSS_SELECTOR, "#servicemaal-noegletal-table").get_attribute("innerHTML") or ""
             if not before_html:
@@ -115,7 +161,15 @@ def _click_noegletal_and_wait_refresh(driver, wait: WebDriverWait):
         wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#servicemaal-noegletal-table tbody tr")))
 
 
-def _extract_noegletal_payload(driver, wait: WebDriverWait, max_rows: int = 6):
+def _extract_noegletal_payload(driver: WebDriver, wait: WebDriverWait, max_rows: int = 6) -> NoegletalPayload:
+    """
+    Extract values from the 'Nøgletal' table and return as a JSON payload.
+
+    :param driver: Selenium WebDriver instance.
+    :param wait: WebDriverWait instance.
+    :param max_rows: Maximum number of table rows to extract (default 6).
+    :return: Dictionary payload with dates and lists for 'Kategori', 'Sagsbehandling', 'Servicemal Procent'.
+    """
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#servicemaal-noegletal-table tbody tr")))
 
     fra_val = driver.find_element(By.CSS_SELECTOR, "#datepicker > input:nth-child(1)").get_attribute("value").strip()
@@ -123,9 +177,9 @@ def _extract_noegletal_payload(driver, wait: WebDriverWait, max_rows: int = 6):
 
     rows = driver.find_elements(By.CSS_SELECTOR, "#servicemaal-noegletal-table tbody tr")[:max_rows]
 
-    kategori = []
-    sagsbehandling = []
-    servicemaal_procent = []
+    kategori: list[str] = []
+    sagsbehandling: list[str] = []
+    servicemaal_procent: list[str] = []
 
     for r in rows:
         tds = r.find_elements(By.CSS_SELECTOR, "td")
@@ -142,7 +196,13 @@ def _extract_noegletal_payload(driver, wait: WebDriverWait, max_rows: int = 6):
     }
 
 
-def fetch_bom_data_with_selenium(driver):
+def fetch_bom_data_with_selenium(driver: WebDriver) -> dict[str, NoegletalPayload] | None:
+    """
+    Log into BOM, navigate to 'Statistik og Servicemål', and extract monthly + glidende gennemsnit 'Nøgletal'.
+
+    :param driver: Selenium WebDriver instance.
+    :return: Dict with keys {'monthly', 'glidende_gennemsnit'} on success, otherwise None.
+    """
     wait = WebDriverWait(driver, 30)
     login_url = "https://sag.bygogmiljoe.dk/"
 
@@ -171,8 +231,8 @@ def fetch_bom_data_with_selenium(driver):
         username_input = wait.until(EC.element_to_be_clickable((By.ID, "userNameInput")))
         password_input = wait.until(EC.element_to_be_clickable((By.ID, "passwordInput")))
 
-        _clear_and_type(username_input, BOM_USERNAME)
-        _clear_and_type(password_input, BOM_PASSWORD)
+        _clear_and_type(e=username_input, text=BOM_USERNAME)
+        _clear_and_type(e=password_input, text=BOM_PASSWORD)
 
         logger.info("Username/password entered.")
 
@@ -220,7 +280,7 @@ def fetch_bom_data_with_selenium(driver):
         if not byg_checkbox.is_selected():
             byg_checkbox.click()
 
-        # Step 7: Servicemål checkboxes (5 stk)
+        # Step 7: Servicemål checkboxes (Simple Konstruktioner,  Enfamilieshuse,  Industri og lagerbygninger,  Etagebyggeri, Erhverv &  Etagebyggeri, Boliger)
         logger.info("Selecting Servicemål checkboxes...")
         servicemaal_btn = wait.until(
             EC.element_to_be_clickable((By.CSS_SELECTOR, "form > div:nth-child(2) > div > div:nth-child(4) > button"))
@@ -242,30 +302,29 @@ def fetch_bom_data_with_selenium(driver):
             logger.info(f"Clicking servicemål: {label_text or sel}")
             label.click()
 
-        _close_open_multiselect_dropdowns(driver, wait)
+        _close_open_multiselect_dropdowns(driver=driver, wait=wait)
 
         # Monthly data extraction
         fra_m, til_m = _date_range_prev_month_to_first_of_current()
         logger.info(f"Setting date range (monthly) Fra={fra_m}, Til={til_m}")
-        _set_date_range(driver, wait, fra_m, til_m)
+        _set_date_range(driver=driver, wait=wait, fra=fra_m, til=til_m)
 
         logger.info("Clicking Nøgletal (monthly)...")
-        _click_noegletal_and_wait_refresh(driver, wait)
-        monthly_payload = _extract_noegletal_payload(driver, wait)
+        _click_noegletal_and_wait_refresh(driver=driver, wait=wait)
+        monthly_payload = _extract_noegletal_payload(driver=driver, wait=wait)
 
         # Glidende Gennemsnit data extraction
         fra_g, til_g = _date_range_last_12_months_to_first_of_current()
-        logger.info(f"Setting date range (glidende_12m) Fra={fra_g}, Til={til_g}")
-        _set_date_range(driver, wait, fra_g, til_g)
+        logger.info(f"Setting date range (glidende_gennemsnit) Fra={fra_g}, Til={til_g}")
+        _set_date_range(driver=driver, wait=wait, fra=fra_g, til=til_g)
 
-        logger.info("Clicking Nøgletal (glidende_12m)...")
-        _click_noegletal_and_wait_refresh(driver, wait)
-        glidende_payload = _extract_noegletal_payload(driver, wait)
-
-        logger.info("BOM data extracted successfully (monthly + glidende_12m).")
+        logger.info("Clicking Nøgletal (glidende_gennemsnit)...")
+        _click_noegletal_and_wait_refresh(driver=driver, wait=wait)
+        glidende_payload = _extract_noegletal_payload(driver=driver, wait=wait)
+        logger.info("BOM data extracted successfully (monthly + glidende_gennemsnit).")
         return {
             "monthly": monthly_payload,
-            "glidende_12m": glidende_payload,
+            "glidende_gennemsnit": glidende_payload,
         }
 
     except Exception as e:
@@ -273,15 +332,29 @@ def fetch_bom_data_with_selenium(driver):
         return None
 
 
-def process_and_save_bom_data(response_json):
+def process_and_save_bom_data(
+    response_json: dict[str, NoegletalPayload] | None,
+) -> tuple[pd.DataFrame | None, pd.DataFrame | None]:
+    """
+    Transform extracted BOM payloads into pandas DataFrames.
+
+    :param response_json: Response dict from fetch_bom_data_with_selenium().
+    :return: Tuple (df_monthly, df_glidende). Returns (None, None) on failure/empty input.
+    """
     try:
         if not response_json:
             return None, None
 
         monthly = response_json.get("monthly") or {}
-        glidende = response_json.get("glidende_12m") or {}
+        glidende = response_json.get("glidende_gennemsnit") or {}
 
-        def _payload_to_df(payload: dict):
+        def _payload_to_df(payload: NoegletalPayload) -> pd.DataFrame:
+            """
+            Convert a single BOM payload into a DataFrame.
+
+            :param payload: Extracted payload from the Nøgletal table.
+            :return: DataFrame with normalized columns.
+            """
             kategori = payload.get("Kategori", [])
             sagsbehandling = payload.get("Sagsbehandling", [])
             servicemaal_procent = payload.get("Servicemal Procent", [])
@@ -296,8 +369,8 @@ def process_and_save_bom_data(response_json):
                 "Servicemål i procent": servicemaal_procent,
             })
 
-        df_monthly = _payload_to_df(monthly)
-        df_glidende = _payload_to_df(glidende)
+        df_monthly = _payload_to_df(payload=monthly)
+        df_glidende = _payload_to_df(payload=glidende)
 
         return df_monthly, df_glidende
 

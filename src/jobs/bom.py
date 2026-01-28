@@ -33,7 +33,7 @@ def job():
             logger.error("Processed monthly BOM DataFrame is empty.")
             return False
         if df_glidende is None or df_glidende.empty:
-            logger.error("Processed rolling 12m BOM DataFrame is empty.")
+            logger.error("Processed glidende gennemsnit BOM DataFrame is empty.")
             return False
 
         logger.info("Inserting data into the database...")
