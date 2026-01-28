@@ -2,7 +2,7 @@ import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 
-from bom_test.bom_data import fetch_bom_data_with_selenium_historical, process_and_save_bom_data_historical
+from bom.bom_data import fetch_bom_data_with_selenium, process_and_save_bom_data
 
 from utils.database_connection import get_byggesager_db
 
@@ -23,17 +23,17 @@ def job():
     try:
         logger.info("Starting BOM ETL job (Selenium)!")
 
-        bom_dict = fetch_bom_data_with_selenium_historical(driver)
+        bom_dict = fetch_bom_data_with_selenium(driver)
         if not bom_dict:
             logger.error("No BOM data returned from Selenium run.")
             return False
 
-        df_monthly, df_glidende = process_and_save_bom_data_historical(bom_dict)
+        df_monthly, df_glidende = process_and_save_bom_data(bom_dict)
         if df_monthly is None or df_monthly.empty:
             logger.error("Processed monthly BOM DataFrame is empty.")
             return False
         if df_glidende is None or df_glidende.empty:
-            logger.error("Processed Glidende Gennemsnit BOM DataFrame is empty.")
+            logger.error("Processed rolling 12m BOM DataFrame is empty.")
             return False
 
         logger.info("Inserting data into the database...")

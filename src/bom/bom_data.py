@@ -1,5 +1,4 @@
 from utils.config import BOM_USERNAME, BOM_PASSWORD
-
 import pandas as pd
 import logging
 import datetime
@@ -12,29 +11,29 @@ from selenium.webdriver.support import expected_conditions as EC
 logger = logging.getLogger(__name__)
 
 
-def _add_months_first_day(d: datetime.date, months: int) -> datetime.date:
-    y = d.year
-    m = d.month - 1 + months
-    y += m // 12
-    m = m % 12 + 1
-    return datetime.date(y, m, 1)
+def _date_range_prev_month_to_first_of_current():
+    today = datetime.date.today()
+    first_day_current_month = today.replace(day=1)
+    last_day_previous_month = first_day_current_month - datetime.timedelta(days=1)
+    first_day_previous_month = last_day_previous_month.replace(day=1)
+
+    fra = first_day_previous_month.strftime("%d-%m-%Y")
+    til = first_day_current_month.strftime("%d-%m-%Y")
+    return fra, til
 
 
-def _iter_til_months(start_year: int, start_month: int, end_til: datetime.date):
-    start = datetime.date(start_year, start_month, 1)
-    til = _add_months_first_day(start, 1)
-    while til <= end_til:
-        yield til
-        til = _add_months_first_day(til, 1)
+def _date_range_last_12_months_to_first_of_current():
+    today = datetime.date.today()
+    til_date = today.replace(day=1)
 
+    year = til_date.year
+    month = til_date.month - 12
+    while month <= 0:
+        month += 12
+        year -= 1
 
-def _iter_month_starts_inclusive(start: datetime.date, end: datetime.date):
-    if start.day != 1 or end.day != 1:
-        raise ValueError("start og end skal være den 1. i en måned (day=1)")
-    cur = start
-    while cur <= end:
-        yield cur
-        cur = _add_months_first_day(cur, 1)
+    fra_date = datetime.date(year, month, 1)
+    return fra_date.strftime("%d-%m-%Y"), til_date.strftime("%d-%m-%Y")
 
 
 def _clear_and_type(el, text: str):
@@ -83,26 +82,24 @@ def _click_noegletal_and_wait_refresh(driver, wait: WebDriverWait):
 
     before_html = ""
     try:
-        before_html = (
-            driver.find_element(By.CSS_SELECTOR, "#servicemaal-noegletal-table").get_attribute("innerHTML") or ""
-        )
+        before_html = driver.find_element(By.CSS_SELECTOR, "#servicemaal-noegletal-table").get_attribute("innerHTML") or ""
     except Exception:
         pass
 
-    # 1) Klik Søg hvis den findes
+    # 1) Click Søg if it exists
     soeg_buttons = driver.find_elements(By.CSS_SELECTOR, soeg_css)
     if soeg_buttons:
         soeg_btn = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, soeg_css)))
         driver.execute_script("arguments[0].scrollIntoView({block:'center'});", soeg_btn)
         soeg_btn.click()
 
-    # 2) Klik Nøgletal
+    # 2) Click Nøgletal
     noegletal_btn = wait.until(
         EC.element_to_be_clickable((By.CSS_SELECTOR, "#servicemaal-result-toggler > button:nth-child(2)"))
     )
     noegletal_btn.click()
 
-    # 3) Vent på refresh
+    # 3) Wait for table to refresh
     def _table_changed(d):
         try:
             now = d.find_element(By.CSS_SELECTOR, "#servicemaal-noegletal-table").get_attribute("innerHTML") or ""
@@ -119,7 +116,6 @@ def _click_noegletal_and_wait_refresh(driver, wait: WebDriverWait):
 
 
 def _extract_noegletal_payload(driver, wait: WebDriverWait, max_rows: int = 6):
-
     wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, "#servicemaal-noegletal-table tbody tr")))
 
     fra_val = driver.find_element(By.CSS_SELECTOR, "#datepicker > input:nth-child(1)").get_attribute("value").strip()
@@ -133,7 +129,6 @@ def _extract_noegletal_payload(driver, wait: WebDriverWait, max_rows: int = 6):
 
     for r in rows:
         tds = r.find_elements(By.CSS_SELECTOR, "td")
-        # Kolonneindeks: 1 => td[0], 4 => td[3], 14 => td[13]
         kategori.append(tds[0].text.strip() if len(tds) > 0 else "")
         sagsbehandling.append(tds[3].text.strip() if len(tds) > 3 else "")
         servicemaal_procent.append(tds[13].text.strip() if len(tds) > 13 else "")
@@ -147,21 +142,12 @@ def _extract_noegletal_payload(driver, wait: WebDriverWait, max_rows: int = 6):
     }
 
 
-def fetch_bom_data_with_selenium_historical(driver, start_year: int = 2023, start_month: int = 1):
-    if not (1 <= start_month <= 12):
-        raise ValueError("start_month skal være mellem 1 og 12")
-
+def fetch_bom_data_with_selenium(driver):
     wait = WebDriverWait(driver, 30)
     login_url = "https://sag.bygogmiljoe.dk/"
 
-    today = datetime.date.today()
-    end_til = today.replace(day=1)  # 1. i indeværende måned
-
-    monthly_payloads = []
-    glidende_payloads = []
-
     try:
-        logger.info("Start BOM RPA job (Selenium) - historical")
+        logger.info("Start BOM RPA job (Selenium)")
         driver.get(login_url)
 
         # Step 1: Select kommune
@@ -252,76 +238,69 @@ def fetch_bom_data_with_selenium_historical(driver, start_year: int = 2023, star
         for sel in checkbox_labels:
             label = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, sel)))
             driver.execute_script("arguments[0].scrollIntoView({block:'center'});", label)
+            label_text = label.text.strip()
+            logger.info(f"Clicking servicemål: {label_text or sel}")
             label.click()
 
         _close_open_multiselect_dropdowns(driver, wait)
 
-        logger.info(
-            f"Starting Monthly loop from {start_year}-{start_month:02d} to til={end_til.strftime('%Y-%m-%d')}"
-        )
-        for til_date in _iter_til_months(start_year, start_month, end_til):
-            fra_m = _add_months_first_day(til_date, -1).strftime("%d-%m-%Y")
-            til_m = til_date.strftime("%d-%m-%Y")
+        # Monthly data extraction
+        fra_m, til_m = _date_range_prev_month_to_first_of_current()
+        logger.info(f"Setting date range (monthly) Fra={fra_m}, Til={til_m}")
+        _set_date_range(driver, wait, fra_m, til_m)
 
-            _set_date_range(driver, wait, fra_m, til_m)
-            _click_noegletal_and_wait_refresh(driver, wait)
-            payload_m = _extract_noegletal_payload(driver, wait)
-            monthly_payloads.append(payload_m)
+        logger.info("Clicking Nøgletal (monthly)...")
+        _click_noegletal_and_wait_refresh(driver, wait)
+        monthly_payload = _extract_noegletal_payload(driver, wait)
 
-        rolling_start_til = datetime.date(start_year, start_month, 1)
+        # Glidende Gennemsnit data extraction
+        fra_g, til_g = _date_range_last_12_months_to_first_of_current()
+        logger.info(f"Setting date range (glidende_12m) Fra={fra_g}, Til={til_g}")
+        _set_date_range(driver, wait, fra_g, til_g)
 
-        logger.info(
-            f"Starting Glidende Gennemsnit loop from til={rolling_start_til.strftime('%Y-%m-%d')} "
-            f"to til={end_til.strftime('%Y-%m-%d')}"
-        )
+        logger.info("Clicking Nøgletal (glidende_12m)...")
+        _click_noegletal_and_wait_refresh(driver, wait)
+        glidende_payload = _extract_noegletal_payload(driver, wait)
 
-        if rolling_start_til <= end_til:
-            for til_date in _iter_month_starts_inclusive(rolling_start_til, end_til):
-                fra_g = _add_months_first_day(til_date, -12).strftime("%d-%m-%Y")
-                til_g = til_date.strftime("%d-%m-%Y")
-
-                _set_date_range(driver, wait, fra_g, til_g)
-                _click_noegletal_and_wait_refresh(driver, wait)
-                payload_g = _extract_noegletal_payload(driver, wait)
-                glidende_payloads.append(payload_g)
-
-        logger.info("BOM historical data extracted successfully.")
+        logger.info("BOM data extracted successfully (monthly + glidende_12m).")
         return {
-            "monthly": monthly_payloads,
-            "glidende_12m": glidende_payloads,
+            "monthly": monthly_payload,
+            "glidende_12m": glidende_payload,
         }
 
     except Exception as e:
-        logger.error(f"Failed to fetch BOM historical data with Selenium: {e}")
+        logger.error(f"Failed to fetch BOM data with Selenium: {e}")
         return None
 
 
-def process_and_save_bom_data_historical(response_json):
+def process_and_save_bom_data(response_json):
     try:
         if not response_json:
             return None, None
 
-        monthly_list = response_json.get("monthly") or []
-        glidende_list = response_json.get("glidende_12m") or []
+        monthly = response_json.get("monthly") or {}
+        glidende = response_json.get("glidende_12m") or {}
 
-        def _payload_list_to_df(payloads):
-            frames = []
-            for p in payloads:
-                frames.append(pd.DataFrame({
-                    "Fra Dato": p.get("Fra Dato", ""),
-                    "Til Dato": p.get("Til Dato", ""),
-                    "Kategori": p.get("Kategori", []),
-                    "Sagsbehandlingstid": p.get("Sagsbehandling", []),
-                    "Servicemål i procent": p.get("Servicemal Procent", []),
-                }))
+        def _payload_to_df(payload: dict):
+            kategori = payload.get("Kategori", [])
+            sagsbehandling = payload.get("Sagsbehandling", [])
+            servicemaal_procent = payload.get("Servicemal Procent", [])
+            fra_dato = payload.get("Fra Dato", "")
+            til_dato = payload.get("Til Dato", "")
 
-            return pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+            return pd.DataFrame({
+                "Fra Dato": fra_dato,
+                "Til Dato": til_dato,
+                "Kategori": kategori,
+                "Sagsbehandlingstid": sagsbehandling,
+                "Servicemål i procent": servicemaal_procent,
+            })
 
-        df_monthly_hist = _payload_list_to_df(monthly_list)
-        df_glidende_hist = _payload_list_to_df(glidende_list)
+        df_monthly = _payload_to_df(monthly)
+        df_glidende = _payload_to_df(glidende)
 
-        return df_monthly_hist, df_glidende_hist
+        return df_monthly, df_glidende
 
     except Exception as e:
-        logger.error(f"Failed to process and save historical BOM data: {e}")
+        logger.error(f"Failed to process and save data: {e}")
         return None, None
