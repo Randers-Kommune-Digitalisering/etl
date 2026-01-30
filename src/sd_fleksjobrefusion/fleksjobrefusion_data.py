@@ -141,14 +141,16 @@ def process_person(driver, tjenestenummer, institution, beloeb, loenart):
         # Click on Indberetning
         logger.info("Clicking on Indberetning...")
         indberetning_button = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="fe19"]'))
+            # EC.element_to_be_clickable((By.XPATH, '//*[@id="fe19"]'))
+            EC.element_to_be_clickable((By.XPATH, '//*[@id="fe20"]'))
         )
         indberetning_button.click()
 
         # Click on Merarbejde
         logger.info("Clicking on Merarbejde...")
         merarbejde_button = WebDriverWait(driver, 20).until(
-            EC.element_to_be_clickable((By.XPATH, '//*[@id="tab_2711"]'))
+            # EC.element_to_be_clickable((By.XPATH, '//*[@id="tab_2711"]'))
+            EC.element_to_be_clickable((By.XPATH, '//*[@id="tab_2737"]'))
         )
         merarbejde_button.click()
 
