@@ -9,13 +9,16 @@ Formålet med jobbet er at robotten atuomatisere aflæsning af byggesagsbehandli
 
 Koden består af et ETL-job, der udfører følgende trin:
 
-- Logger ind i BOM via Browserless med en Robot bruger
--  Via Browserless hentes og aflæses byggebehandlingstider og servicemål-opfyldelse på afgjorte sager: (`Fra Dato`, `Kategori`, `Sagsbehandling`, `Servicemal Procent`,) 
-- Data bliver gemt i en Postgres DB (`bom_data_updated`)  
+- Logger ind i BOM via Selenium med en Robot bruger(Robot_BOM)
+-  Via Selenium hentes og aflæses byggebehandlingstider og servicemål-opfyldelse på afgjorte sager: (`Fra Dato`, `Kategori`, `Sagsbehandling`, `Servicemal Procent`,)
+- Henter “Nøgletal” for to perioder:
+   - **Månedlig**: fra 1. dag i forrige måned til 1. dag i indeværende måned
+   - **Glidende gennemsnit**: fra 1. dag 12 måneder tilbage til 1. dag i indeværende måned
+- Data bliver gemt i en Postgres DB for tabellerne (`bom_data_monthly`) og (`bom_data_glidende`)
 
 
 **Dataflow:**
-- Browserless RPA → Henter og aflæser nøgletal → Data gemmes i en Postgres DB
+- Selenium RPA → Henter og aflæser nøgletal → Data gemmes i en Postgres DB i to forskellige tabeller
 
 ## Afhængigheder
 
@@ -30,11 +33,6 @@ pip install -r src/requirements.txt
 Byg og Miljø(BOM) login oplysning
 - `BOM_USERNAME` Brugernavn til BOM login
 - `BOM_PASSWORD` Adgangskode til BOM login
-
-Browserless 
-- `BROWSERLESS_URL` URL til Browserless service
-- `BROWSERLESS_CLIENT_ID` Client ID til Browserless
-- `BROWSERLESS_CLIENT_SECRET` Client Secret til Browserless
 
 Postgres DB
 - `BYGGESAGER_POSTGRES_DB_USER` Brugernavn til Byggesager Postgres DB
