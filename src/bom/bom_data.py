@@ -10,7 +10,7 @@ from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.support.ui import Select, WebDriverWait
 
-from utils.config import BOM_PASSWORD, BOM_USERNAME
+from utils.config import BOM_PASSWORD, BOM_USERNAME, BOM_URL
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,7 @@ def _clear_and_type(el: WebElement, text: str) -> None:
     :return: None.
     """
     el.click()
-    el.send_keys(Keys.CONTROL, "a")
-    el.send_keys(Keys.DELETE)
+    el.clear()
     el.send_keys(text)
 
 
@@ -204,7 +203,7 @@ def fetch_bom_data(driver: WebDriver) -> dict[str, NoegletalPayload] | None:
     :return: Dict with keys {'monthly', 'glidende_gennemsnit'} on success, otherwise None.
     """
     wait = WebDriverWait(driver, 30)
-    login_url = "https://sag.bygogmiljoe.dk/"
+    login_url = BOM_URL
 
     try:
         logger.info("Start BOM RPA job (Selenium)")
