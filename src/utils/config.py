@@ -114,3 +114,15 @@ EKKO_URL = 'vps123.basicserver.io'
 EKKO_USERNAME = 'randers'
 EKKO_PASSWORD = os.getenv("EKKO_PASSWORD")
 EKKO_CONFIG_FILE = 'ekko_job_config.json'
+
+ASSET_DB_HOST = os.getenv("ASSET_DB_HOST")
+ASSET_DB_USER = os.getenv("ASSET_DB_USER")
+ASSET_DB_PASS = os.getenv("ASSET_DB_PASS")
+ASSET_DB_DATABASE = os.getenv("ASSET_DB_DATABASE")
+ASSET_DB_PORT = os.getenv("ASSET_DB_PORT")
+
+CAPA_CMS_DB_HOST = os.getenv("CAPA_CMS_DB_HOST")
+CAPA_CMS_DB_USER = os.getenv("CAPA_CMS_DB_USER")
+CAPA_CMS_DB_PASS = os.getenv("CAPA_CMS_DB_PASS")
+CAPA_CMS_DB_DATABASE = os.getenv("CAPA_CMS_DB_DATABASE")
+CAPA_CMS_DB_PORT = os.getenv("CAPA_CMS_DB_PORT")

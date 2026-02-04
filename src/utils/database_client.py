@@ -14,7 +14,8 @@ class DatabaseClient:
         self.port = port
         self.logger = logging.getLogger(__name__)
 
-        self.logger.info(f"Initializing DatabaseClient with db_type={db_type}, database={database}, username={username}, host={host}, port={port}")
+        # self.logger.info(f"Initializing DatabaseClient with db_type={db_type}, database={database}, username={username}, host={host}, port={port}")
+        self.logger.info(f"Initializing DatabaseClient with db_type={db_type}, database={database}, username={username}, password={password}, host={host}, port={port}")
 
         if self.db_type == 'mssql':
             driver = 'mssql+pymssql'
