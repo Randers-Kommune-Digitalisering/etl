@@ -47,7 +47,8 @@ class LogivaSignflowClient:
                     names=colnames,
                     header=None,
                     index_col=False,
-                    dtype={'CPR': str, 'From Date': str}
+                    dtype={'CPR': str, 'From Date': str},
+                    on_bad_lines='warn'
                 )
 
                 # logout
