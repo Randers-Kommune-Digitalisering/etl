@@ -239,7 +239,9 @@ def get_employments_with_changes_df(excluded_institutions_df, excluded_departmen
 
                                         logiva_rows.append(row)
                                 else:
-                                    raise Exception(f'Institution {logiva_emp_details["institution_code"]} not found in institutions_to_check')
+                                    logger.error(f'Institution {logiva_emp_details["institution_code"]} not found in institutions_to_check - skipping')
+                                    continue
+                                    # raise Exception(f'Institution {logiva_emp_details["institution_code"]} not found in institutions_to_check')
 
                 all_rows.extend(logiva_rows)
             return pd.DataFrame(all_rows)
