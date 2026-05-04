@@ -3,6 +3,7 @@ import pytz
 import urllib.parse
 import pandas as pd
 
+from collections import defaultdict
 from io import StringIO
 from datetime import datetime, timedelta
 
@@ -38,8 +39,6 @@ def job():
 
         # Split all_df into the minimum number of DataFrames so that no 'CPR-nummer' is repeated within a DataFrame
         def split_df_no_duplicate_cpr(df, column):
-            from collections import defaultdict
-            import numpy as np
 
             # Count occurrences of each CPR-nummer
             value_counts = df[column].value_counts()
@@ -66,13 +65,13 @@ def job():
         for i, df in enumerate(dfs_no_duplicates):
             excel_file = df_to_excel_bytes(df)
 
-            file_name = f'{i+1}_sd-delta-robot_{end_time.strftime("%Y-%m-%d_%H-%M-%S")}.xlsx'
+            file_name = f'{i + 1}_sd-delta-robot_{end_time.strftime("%Y-%m-%d_%H-%M-%S")}.xlsx'
 
             if excel_file:
                 if delta_client.upload_sd_file(file_name, excel_file.read()):
-                    logger.info(f"Successfully uploaded file: {file_name} ({i+1}/{len(dfs_no_duplicates)})")
+                    logger.info(f"Successfully uploaded file: {file_name} ({i + 1}/{len(dfs_no_duplicates)})")
             else:
-                logger.error(f"Failed to create Excel file for DataFrame {i+1}/{len(dfs_no_duplicates)}")
+                logger.error(f"Failed to create Excel file for DataFrame {i + 1}/{len(dfs_no_duplicates)}")
         return True
     except Exception as e:
         logger.error(e)
