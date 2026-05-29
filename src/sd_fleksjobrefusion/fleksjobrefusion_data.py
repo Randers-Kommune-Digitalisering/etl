@@ -39,15 +39,19 @@ def login_to_sd(driver):
 
         logger.info("Waiting for Dropdown menu element to be clickable...")
         select_element = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.XPATH, '/html/body/div/select'))
+            EC.element_to_be_clickable((By.XPATH, '//*[@id="oiosaml-idp"]'))
         )
+
+        logger.info("Dropdown menu element found. Selecting 'Randers Kommune'...")
+
         select_element.click()
         select_element.send_keys('R')
+        select_element.send_keys(Keys.ENTER)
         logger.info("Dropdown menu Randers Kommune Selected.")
 
         logger.info("Waiting for Arbejdsplads-log in Button to be clickable...")
         workplace_login_button = WebDriverWait(driver, 30).until(
-            EC.element_to_be_clickable((By.XPATH, '/html/body/div/input'))
+            EC.element_to_be_clickable((By.XPATH, '//*[@id="oiosaml-login-btn"]'))
         )
         workplace_login_button.click()
         logger.info("Arbejdsplads Login button clicked.")
