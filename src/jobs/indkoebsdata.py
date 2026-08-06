@@ -99,6 +99,7 @@ def handle_bi_sys(files, connection, prefix):
             with io.BytesIO() as outfile:
                 encoded_outfile = io.TextIOWrapper(outfile, 'utf-8', newline='')
                 encoded_outfile.write('\n'.join(all_lines))
+                encoded_outfile.flush()
 
                 new_filename = Path(filename).stem.replace(' ', '_')
 
@@ -137,7 +138,8 @@ def handle_climate_db(files, connection, prefix, keyword):
         for col in df.columns:
             if df.dtypes[col] == ObjectDType:
                 try:
-                    df[col] = pd.to_datetime(df[col])
+                    # Parse mixed date formats while avoiding per-element inference warnings.
+                    df[col] = pd.to_datetime(df[col], format='mixed', dayfirst=True)
                 except Exception:
                     pass
 
@@ -156,7 +158,7 @@ def handle_climate_db(files, connection, prefix, keyword):
                 df.to_sql(table_name, con=conn, if_exists='replace')
                 conn.execute(text(f'ALTER TABLE `{table_name}` ADD PRIMARY KEY (`id`);'))
         except Exception as e:
-            logger.error(f'Failed to update {keyword}', e)
+            logger.exception(f'Failed to update {keyword}: {e}')
             return False
 
     logger.info(f'Updated {keyword}')
