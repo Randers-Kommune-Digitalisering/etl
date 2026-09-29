@@ -124,7 +124,6 @@ def job():
 def connectToFrontdeskDB():
     conn = pymssql.connect(FRONTDESK_DB_HOST, FRONTDESK_DB_USER, FRONTDESK_DB_PASS, FRONTDESK_DB_DATABASE)
     cursor = conn.cursor()
-    logger.info(f"Connected to Frontdesk DB at {FRONTDESK_DB_HOST}, database: {FRONTDESK_DB_DATABASE}, user: {FRONTDESK_DB_USER}, password: {FRONTDESK_DB_PASS}")
 
     tables = ["Operation"]
     for table in tables:
